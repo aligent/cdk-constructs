@@ -1,0 +1,43 @@
+{
+  "name": "@aligent/cdk-static-hosting",
+  "version": "0.1.5",
+  "private": true,
+  "main": "index.ts",
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/aligent/aws-cdk-static-hosting-stack#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aligent/aws-cdk-static-hosting-stack"
+  },
+  "types": "index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublish": "tsc"
+  },
+  "devDependencies": {
+    "@aws-cdk/assert": "^1.111.0",
+    "@aws-cdk/aws-cloudfront": "^1.111.0",
+    "@aws-cdk/aws-iam": "^1.111.0",
+    "@aws-cdk/aws-route53": "^1.111.0",
+    "@aws-cdk/aws-route53-targets": "^1.111.0",
+    "@aws-cdk/aws-s3": "^1.111.0",
+    "@aws-cdk/core": "^1.111.0",
+    "@types/jest": "^26.0.24",
+    "@types/node": "16.4.13",
+    "aws-cdk": "^1.111.0",
+    "jest": "^26.4.2",
+    "source-map-support": "^0.5.16",
+    "ts-jest": "^26.5.4",
+    "ts-node": "^10.2.1",
+    "typescript": "~4.3.5"
+  },
+  "peerDependencies": {
+    "@aws-cdk/aws-cloudfront": "^1.111.0",
+    "@aws-cdk/aws-iam": "^1.111.0",
+    "@aws-cdk/aws-route53": "^1.111.0",
+    "@aws-cdk/aws-route53-targets": "^1.111.0",
+    "@aws-cdk/aws-s3": "^1.111.0",
+    "@aws-cdk/core": "^1.111.0",
+    "aws-cdk": "^1.111.0"
+  }
+}
