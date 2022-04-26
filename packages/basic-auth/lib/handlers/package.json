@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/aws-lambda": "^8.10.77",
+    "@types/node": "^15.12.4",
+    "source-map-support": "^0.5.19"
+  }
+}
