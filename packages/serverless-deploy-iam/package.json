@@ -23,7 +23,7 @@
   "dependencies": {
     "@aws-cdk/assets": "^1.111.0",
     "@aws-cdk/aws-iam": "^1.111.0",
-    "@aws-cdk/aws-ssm": "^1.111.0",
+    "@aws-cdk/aws-ssm": "^1.153.1",
     "@aws-cdk/core": "1.92.0",
     "@aws-cdk/region-info": "^1.111.0",
     "aws-cdk": "^1.111.0",
