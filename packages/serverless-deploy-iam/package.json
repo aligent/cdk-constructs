@@ -28,6 +28,6 @@
     "@aws-cdk/region-info": "^1.111.0",
     "aws-cdk": "^1.111.0",
     "constructs": "^3.3.75",
-    "source-map-support": "^0.5.16"
+    "source-map-support": "^0.5.21"
   }
 }
