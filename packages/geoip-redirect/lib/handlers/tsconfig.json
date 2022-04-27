@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "lib": ["es2019"],
+    "removeComments": true,
+    "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "sourceMap": true,
+    "target": "es2017",
+    "outDir": "lib",
+    "typeRoots": ["./types", "../node_modules/@types"]
+  },
+  "include": ["./**/*.ts"],
+  "exclude": [
+    "node_modules/**/*",
+    ".build/**/*",
+    "_warmup/**/*",
+    ".vscode/**/*",
+    "types"
+  ]
+}
