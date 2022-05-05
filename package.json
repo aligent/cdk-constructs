@@ -1,0 +1,24 @@
+{
+    "name": "@aligent/cdk-constructs",
+    "version": "0.0.1",
+    "private": true,
+    "description": "A collection of CDK constructs",
+    "workspaces": {
+        "packages": [
+            "packages/*"
+        ]
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
+    },
+    "license": "GPL-3.0-only",
+    "bugs": {
+        "url": "https://github.com/aligent/aws-cdk-constructs/issues"
+    },
+    "homepage": "https://github.com/aligent/aws-cdk-constructs#readme",
+    "scripts": {
+        "build": "tsc",
+        "prepublish": "tsc"
+    }
+}

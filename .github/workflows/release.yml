@@ -1,0 +1,30 @@
+name: Publish to NPM
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.release.target_commitish }}
+    - name: Use Node.js 16
+      uses: actions/setup-node@v1
+      with:
+        node-version: 16
+        registry-url: https://registry.npmjs.org/
+    - run: npm ci
+    - run: git config --global user.name "Automated NPM Release"
+    - run: git config --global user.email "sysadmin+npm-deploy@aligent.com.au"
+    - run: npm version ${{ github.event.release.tag_name }} --allow-same-version
+    - run: npm run build
+    - run: npm test
+    - run: npm publish --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    - run: git push
+      env:
+        github-token: ${{ secrets.GITHUB_TOKEN }}

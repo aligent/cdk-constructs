@@ -1,0 +1,46 @@
+{
+  "name": "@aligent/cdk-geoip-redirect",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Cloudfront Lambda@Edge stack for performing redirection based on CloudFront-Viewer-Country",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && cd ./lib/handlers && npm ci",
+    "prepublish": "tsc && cd ./lib/handlers && npm ci"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aligent/aws-cdk-prerender-proxy-stack.git"
+  },
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/aligent/aws-cdk-prerender-proxy-stack/issues"
+  },
+  "homepage": "https://github.com/aligent/aws-cdk-prerender-proxy-stack#readme",
+  "devDependencies": {
+    "@aws-cdk/assert": "^1.111.0",
+    "@types/jest": "^26.0.21",
+    "@types/node": "10.17.27",
+    "jest": "^26.4.2",
+    "ts-jest": "^26.5.4",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "@aws-cdk/aws-cloudfront": "^1.111.0",
+    "@aws-cdk/aws-lambda": "^1.111.0",
+    "@aws-cdk/aws-lambda-nodejs": "^1.111.0",
+    "@aws-cdk/core": "^1.111.0",
+    "aws-cdk": "^1.111.0",
+    "esbuild": "0.12.15",
+    "source-map-support": "^0.5.16"
+  },
+  "peerDependencies": {
+    "@aws-cdk/aws-cloudfront": "^1.111.0",
+    "@aws-cdk/aws-lambda": "^1.111.0",
+    "@aws-cdk/aws-lambda-nodejs": "^1.111.0",
+    "@aws-cdk/core": "^1.111.0",
+    "aws-cdk": "^1.111.0",
+    "esbuild": "0.12.15"
+  }
+}
