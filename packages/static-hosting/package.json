@@ -24,7 +24,7 @@
     "@aws-cdk/core": "^1.111.0",
     "@types/jest": "^26.0.24",
     "@types/node": "16.4.13",
-    "aws-cdk": "^1.111.0",
+    "aws-cdk": "^2.23.0",
     "jest": "^26.4.2",
     "source-map-support": "^0.5.16",
     "ts-jest": "^26.5.4",
@@ -38,6 +38,6 @@
     "@aws-cdk/aws-route53-targets": "^1.111.0",
     "@aws-cdk/aws-s3": "^1.111.0",
     "@aws-cdk/core": "^1.111.0",
-    "aws-cdk": "^1.111.0"
+    "aws-cdk": "^2.23.0"
   }
 }
