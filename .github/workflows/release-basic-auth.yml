@@ -27,7 +27,7 @@ jobs:
     - run: git config --global user.email "sysadmin+npm-deploy@aligent.com.au"
     - run: npm version $VERSION --allow-same-version --workspace "@aligent/cdk-${package}"
     - run: npm run build --workspace "@aligent/cdk-${package}"
-    - run: npm test --workspace "@aligent/cdk-${package}"
+    - run: npm test --workspace "@aligent/cdk-${package}" --if-present
     - run: npm publish --access public --workspace "@aligent/cdk-${package}" --dry-run
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
