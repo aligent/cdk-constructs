@@ -1,7 +1,12 @@
 name: Publish to NPM
 
+env:
+  package: basic-auth
+
 on:
   release:
+    tags:
+      - '$package-*' # Push events matching the package name, i.e. basic-auth-1.12.6
     types: [published]
 
 jobs:
@@ -16,13 +21,14 @@ jobs:
       with:
         node-version: 16
         registry-url: https://registry.npmjs.org/
+    - run: echo "VERSION=${{ github.event.release.tag_name }}#"$package-"" # strip the package out of the release name
     - run: npm ci
     - run: git config --global user.name "Automated NPM Release"
     - run: git config --global user.email "sysadmin+npm-deploy@aligent.com.au"
-    - run: npm version ${{ github.event.release.tag_name }} --allow-same-version
-    - run: npm run build
-    - run: npm test
-    - run: npm publish --access public
+    - run: npm version $VERSION --allow-same-version --workspace "@aligent/cdk-${package}"
+    - run: npm run build --workspace "@aligent/cdk-${package}"
+    - run: npm test --workspace "@aligent/cdk-${package}" --if-present
+    - run: npm publish --access public --workspace "@aligent/cdk-${package}" --dry-run
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     - run: git push
