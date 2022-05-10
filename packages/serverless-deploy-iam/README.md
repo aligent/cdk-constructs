@@ -67,6 +67,14 @@ S3_QUALIFIER="some-other-bucket" AWS_REGION=<AWS_REGION> SERVICE_NAME=<SERVICE_N
 LAMBDA_QUALIFIER="some-lambda,another-lambda" AWS_REGION=<AWS_REGION> SERVICE_NAME=<SERVICE_NAME> npx cdk deploy --profile <AWS_PROFILE>
 ```
 
+##### Deploy Group Invocation Permissions
+Occasionally the user that deploys a function will also need permission to invoke it, e.g. Webhook registration in a serverless plugin. We have added an environment variable `ALLOW_DEPLOY_INVOCATION` which will grant the deployment group permission to invoke functions deployed as part of the service.
+
+##### Example:
+```
+ALLOW_DEPLOY_INVOCATION="true" AWS_REGION=<AWS_REGION> SERVICE_NAME=<SERVICE_NAME> npx cdk deploy --profile <AWS_PROFILE>
+```
+
 ### Next Steps
 Once this finishes a user will be created (ARN in stack output). This user will have the appropriate permissions to assume the CloudFormation role and deploy the service.
 
