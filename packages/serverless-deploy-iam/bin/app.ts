@@ -12,11 +12,11 @@ import {
    User
 } from '@aws-cdk/aws-iam';
 
-const SERVICE_NAME = process.env.SERVICE_NAME ? process.env.SERVICE_NAME : ''
+const SERVICE_NAME = process.env.SERVICE_NAME ? process.env.SERVICE_NAME : 'unknown-service'
 const SHARED_VPC_ID = process.env.SHARED_VPC_ID
 const STACK_SUFFIX = '-deploy-iam'
 const EXPORT_PREFIX = process.env.EXPORT_PREFIX ? process.env.EXPORT_PREFIX : SERVICE_NAME
-class ServiceDeployIAM extends cdk.Stack {
+export class ServiceDeployIAM extends cdk.Stack {
 
      constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
           super(scope, id, props);
@@ -38,7 +38,8 @@ class ServiceDeployIAM extends cdk.Stack {
           const eventBridgeResources = ServiceDeployIAM.formatResourceQualifier('EVENT_BRIDGE', `arn:aws:events:${region}:${accountId}`, [`rule/${serviceName}*`, `event-bus/${serviceName}*`], ":");
           const apiGatewayResources = ServiceDeployIAM.formatResourceQualifier('API_GATEWAY', `arn:aws:apigateway:${region}::`, [`*`]);
           const ssmDeploymentResources = ServiceDeployIAM.formatResourceQualifier('SSM', `arn:aws:ssm:${region}:${accountId}:parameter`, [`${serviceName}*`]);
-          const snsResources = ServiceDeployIAM.formatResourceQualifier('SNS', `arn:aws:sns:${region}:${accountId}:`, [`${serviceName}*`]);
+          const snsResources = ServiceDeployIAM.formatResourceQualifier('SNS', `arn:aws:sns:${region}:${accountId}:`, [`${serviceName}*`], "");
+          const sqsResources = ServiceDeployIAM.formatResourceQualifier('SQS', `arn:aws:sqs:${region}:${accountId}:`, [`${serviceName}*`], "");
 
           const serviceRole = new Role(this, `ServiceRole-v${version}`, {
                assumedBy: new CompositePrincipal(
@@ -266,6 +267,28 @@ class ServiceDeployIAM extends cdk.Stack {
                })
           );
 
+          // SQS policy
+          serviceRole.addToPolicy(
+               new PolicyStatement({
+                    effect: Effect.ALLOW,
+                    resources: sqsResources,
+                    actions: [
+                         "sqs:UntagQueue",
+                         "sqs:RemovePermission",
+                         "sqs:GetQueueUrl",
+                         "sqs:GetQueueAttributes",
+                         "sqs:AddPermission",
+                         "sqs:DeleteQueue",
+                         "sqs:ListQueueTags",
+                         "sqs:SetQueueAttributes",
+                         "sqs:ChangeMessageVisibility",
+                         "sqs:TagQueue",
+                         "sqs:ListDeadLetterSourceQueues",
+                         "sqs:CreateQueue",
+                    ]
+               })
+          );
+
           const deployUser = new User(this, 'DeployUser', {
                userName: `${serviceName}-deployer`,
           })
@@ -378,10 +401,34 @@ class ServiceDeployIAM extends cdk.Stack {
                     resources: [`arn:aws:apigateway:${region}::/apikeys/*`],
                     actions: [
                          "apigateway:GET",
+                         "apigateway:PATCH",
                     ]
                })
           );
-
+          
+          // The serverless-api-gateway-throttling requires PATCH access using the deploy user to update maxRequestsPerSecond and maxConcurrentRequests
+          deployGroup.addToPolicy(
+               new PolicyStatement({
+                    effect: Effect.ALLOW,
+                    resources: [`arn:aws:apigateway:${region}::/restapis/*/stages/*`],
+                    actions: [
+                         "apigateway:PATCH",
+                    ]
+               })
+          );
+          
+          if (process.env.ALLOW_DEPLOY_INVOCATION) {
+               deployGroup.addToPolicy(
+                    new PolicyStatement({
+                         effect: Effect.ALLOW,
+                         resources: lambdaResources,
+                         actions: [
+                              "lambda:GetFunction",
+                              "lambda:InvokeFunction"
+                         ]
+                    })
+               );
+          }
 
           deployUser.addToGroup(deployGroup);
 
