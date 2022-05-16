@@ -21,7 +21,7 @@
     "typescript": "~3.9.7"
   },
   "dependencies": {
-    "@aws-cdk/assets": "^1.107.0",
+    "@aws-cdk/assets": "^1.156.1",
     "@aws-cdk/aws-iam": "^1.107.0",
     "@aws-cdk/aws-ssm": "^1.107.0",
     "@aws-cdk/core": "1.92.0",
