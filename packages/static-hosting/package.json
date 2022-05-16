@@ -15,7 +15,7 @@
     "prepublish": "tsc"
   },
   "devDependencies": {
-    "@aws-cdk/assert": "^1.111.0",
+    "@aws-cdk/assert": "^2.24.1",
     "@aws-cdk/aws-cloudfront": "^1.111.0",
     "@aws-cdk/aws-iam": "^1.111.0",
     "@aws-cdk/aws-route53": "^1.111.0",
