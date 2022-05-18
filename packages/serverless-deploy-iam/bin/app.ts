@@ -138,7 +138,8 @@ export class ServiceDeployIAM extends cdk.Stack {
                          "lambda:GetFunctionConfiguration",
                          "lambda:AddPermission",
                          "lambda:RemovePermission",
-                         "lambda:InvokeFunction"
+                         "lambda:InvokeFunction",
+                         "lambda:ListTags"
                     ]
                })
           );
