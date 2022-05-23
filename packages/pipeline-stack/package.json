@@ -28,7 +28,7 @@
     "@aws-cdk/aws-codepipeline-actions": "^1.111.0",
     "@aws-cdk/core": "^1.111.0",
     "@aws-cdk/pipelines": "^1.111.0",
-    "aws-cdk": "^1.111.0",
+    "aws-cdk": "^2.25.0",
     "source-map-support": "^0.5.16"
   }
 }
