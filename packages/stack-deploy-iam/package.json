@@ -27,7 +27,7 @@
     "@aws-cdk/core": "1.92.0",
     "@aws-cdk/region-info": "^1.107.0",
     "aws-cdk": "1.92.0",
-    "constructs": "^3.3.75",
+    "constructs": "^10.1.15",
     "source-map-support": "^0.5.16"
   }
 }
