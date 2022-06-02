@@ -1,7 +1,7 @@
 name: Publish to NPM
 
 env:
-  package: basic-auth
+  package: cloudfront-security-headers
 
 on:
   release:
