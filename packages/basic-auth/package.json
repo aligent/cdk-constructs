@@ -16,20 +16,5 @@
   "bugs": {
     "url": "https://github.com/aligent/aws-cdk-prerender-proxy-stack/issues"
   },
-  "homepage": "https://github.com/aligent/aws-cdk-prerender-proxy-stack#readme",
-  "devDependencies": {
-    "@types/jest": "^26.0.21",
-    "@types/node": "10.17.27",
-    "jest": "^26.4.2",
-    "ts-jest": "^26.5.4",
-    "ts-node": "^10.0.0",
-    "typescript": "^4.3.5",
-    "esbuild": "0.12.15"
-  },
-  "dependencies": {
-    "source-map-support": "^0.5.16"
-  },
-  "peerDependencies": {
-    "aws-cdk-lib": "^2.26.0"
-  }
+  "homepage": "https://github.com/aligent/aws-cdk-prerender-proxy-stack#readme"
 }

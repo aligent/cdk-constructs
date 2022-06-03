@@ -26,7 +26,6 @@
   "exclude": [
     "**/node_modules",
     "cdk.out",
-    "**/handlers/**",
-    "packages/geoip-redirect/**"
+    "**/handlers/**"
   ]
 }

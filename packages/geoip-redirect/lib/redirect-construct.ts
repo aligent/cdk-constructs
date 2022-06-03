@@ -2,7 +2,7 @@ import { Construct } from 'constructs';
 import { Bundling } from 'aws-cdk-lib/aws-lambda-nodejs/lib/bundling';
 import { experimental } from 'aws-cdk-lib/aws-cloudfront';
 import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
-import {  aws_lambda } from 'aws-cdk-lib';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
 
 export interface RedirectFunctionOptions {
     redirectHost: string,
@@ -24,7 +24,7 @@ export class RedirectFunction extends Construct {
             {
               code: Bundling.bundle({
                 entry: `${__dirname}/handlers/redirect.ts`,
-                runtime: aws_lambda.NODEJS_12_X,
+                runtime: Runtime.NODEJS_12_X,
                 sourceMap: true,
                 projectRoot: `${__dirname}/handlers/`,
                 depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
@@ -37,7 +37,7 @@ export class RedirectFunction extends Construct {
                   'process.env.DEFAULT_REGION': JSON.stringify(options.defaultRegion),
                 }
               } as any),
-              runtime: aws_lambda.NODEJS_12_X,
+              runtime: Runtime.NODEJS_12_X,
               handler: 'index.handler',
             }
           );
