@@ -1,5 +1,5 @@
-import { Construct } from '@aws-cdk/core';
-import * as wafv2 from '@aws-cdk/aws-wafv2';
+import { Construct } from 'constructs';
+import { aws_wafv2 as wafv2 } from 'aws-cdk-lib';
 
 export interface WebApplicationFirewallProps {
   activate?: boolean;

@@ -1,8 +1,8 @@
-import { Construct } from "@aws-cdk/core";
-import { Bundling } from '@aws-cdk/aws-lambda-nodejs/lib/bundling';
-import { Runtime } from '@aws-cdk/aws-lambda';
-import { experimental } from '@aws-cdk/aws-cloudfront';
-import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
+import { Construct } from 'constructs';
+import { Bundling } from 'aws-cdk-lib/aws-lambda-nodejs/lib/bundling';
+import { Runtime, Architecture } from 'aws-cdk-lib/aws-lambda';
+import { experimental } from 'aws-cdk-lib/aws-cloudfront';
+import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
 
 export interface BasicAuthFunctionOptions {
     username: string,
@@ -19,6 +19,8 @@ export class BasicAuthFunction extends Construct {
             this,
             'BasicAuthFunction',
             {
+              runtime: Runtime.NODEJS_12_X,
+              handler: 'index.handler',
               code: Bundling.bundle({
                 entry: `${__dirname}/handlers/basic-auth.ts`,
                 runtime: Runtime.NODEJS_12_X,
@@ -31,10 +33,9 @@ export class BasicAuthFunction extends Construct {
                 define: {
                   'process.env.AUTH_USERNAME': JSON.stringify(options.username),
                   'process.env.AUTH_PASSWORD': JSON.stringify(options.password),
-                }
+                },
+                architecture: Architecture.X86_64
               }),
-              runtime: Runtime.NODEJS_12_X,
-              handler: 'index.handler',
             }
           );
     }

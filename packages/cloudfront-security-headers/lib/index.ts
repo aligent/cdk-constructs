@@ -1,17 +1,18 @@
-import { Bundling } from '@aws-cdk/aws-lambda-nodejs/lib/bundling';
-import { Runtime } from '@aws-cdk/aws-lambda';
-import { experimental } from '@aws-cdk/aws-cloudfront';
-import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
-import * as cdk from '@aws-cdk/core';
+import { Construct } from 'constructs';
+import { CfnOutput } from 'aws-cdk-lib';
+import { Bundling } from 'aws-cdk-lib/aws-lambda-nodejs/lib/bundling';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { experimental } from 'aws-cdk-lib/aws-cloudfront';
+import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
 
 export interface SecurityHeaderFunctionProps {
   contentSecurityPolicy?: Array<String>
 }
 
-export class SecurityHeaderFunction extends cdk.Construct {
+export class SecurityHeaderFunction extends Construct {
   readonly edgeFunction: EdgeFunction;
 
-  constructor(scope: cdk.Construct, id: string, props?: SecurityHeaderFunctionProps) {
+  constructor(scope: Construct, id: string, props?: SecurityHeaderFunctionProps) {
     super(scope, id);
 
     let defineOptions: any = {};
@@ -37,7 +38,7 @@ export class SecurityHeaderFunction extends cdk.Construct {
       }
     );
 
-    new cdk.CfnOutput(this, 'SecurityHeaderVersionARN', {
+    new CfnOutput(this, 'SecurityHeaderVersionARN', {
       description: 'SecurityHeaderVersionARN',
       value: this.edgeFunction.currentVersion.edgeArn,
     });

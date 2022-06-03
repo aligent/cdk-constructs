@@ -1,5 +1,5 @@
-import { expect as expectCDK, countResources } from '@aws-cdk/assert';
-import * as cdk from '@aws-cdk/core';
+import { Template } from 'aws-cdk-lib/assertions';
+import * as cdk from 'aws-cdk-lib/core';
 import { SecurityHeaderFunction } from '../lib/index';
 
 /*
@@ -11,5 +11,6 @@ test('Lambda Function Created', () => {
   // WHEN
   new SecurityHeaderFunction(stack, 'MyTestConstruct');
   // THEN
-  expectCDK(stack).to(countResources("AWS::Lambda::Function",1));
+  const template = Template.fromStack(stack);
+  template.resourceCountIs("AWS::Lambda::Function",1);
 });

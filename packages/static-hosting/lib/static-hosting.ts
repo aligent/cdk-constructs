@@ -1,9 +1,10 @@
-import { Construct, CfnOutput, RemovalPolicy, StackProps, Stack} from '@aws-cdk/core';
-import { Bucket, BucketEncryption, BlockPublicAccess } from '@aws-cdk/aws-s3';
-import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps } from '@aws-cdk/aws-cloudfront';
-import { HostedZone, RecordTarget, ARecord } from '@aws-cdk/aws-route53';
-import { CloudFrontTarget } from '@aws-cdk/aws-route53-targets';
-import { User, Group, Policy, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
+import { Construct } from 'constructs';
+import { CfnOutput, RemovalPolicy, StackProps, Stack} from 'aws-cdk-lib/core';
+import { Bucket, BucketEncryption, BlockPublicAccess } from 'aws-cdk-lib/aws-s3';
+import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps } from 'aws-cdk-lib/aws-cloudfront';
+import { HostedZone, RecordTarget, ARecord } from 'aws-cdk-lib/aws-route53';
+import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
+import { User, Group, Policy, PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
 
 export interface StaticHostingProps {
     domainName: string;
@@ -161,11 +162,13 @@ export class StaticHosting extends Construct {
 
 
         let distributionProps: CloudFrontWebDistributionProps = {
-          aliasConfiguration: {
-            acmCertRef: props.certificateArn,
-            names: distributionCnames,
-            securityPolicy: SecurityPolicyProtocol.TLS_V1_2_2018,
-            sslMethod: SSLMethod.SNI,
+          viewerCertificate: {
+            aliases: distributionCnames,
+            props: {
+                acmCertificateArn: props.certificateArn,
+                minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2018,
+                sslSupportMethod: SSLMethod.SNI,
+            }
           },
           originConfigs,
           defaultRootObject: props.defaultRootObject,
@@ -208,7 +211,7 @@ export class StaticHosting extends Construct {
         });
         new CfnOutput(this, 'DistributionDomainName', {
             description: 'DistributionDomainName',
-            value: distribution.domainName,
+            value: distribution.distributionDomainName,
         });
 
         if (props.createDnsRecord && props.zoneName) {

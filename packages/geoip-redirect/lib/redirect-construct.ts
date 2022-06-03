@@ -1,7 +1,7 @@
-import { Construct } from "@aws-cdk/core";
-import { Bundling } from '@aws-cdk/aws-lambda-nodejs/lib/bundling';
-import { experimental } from '@aws-cdk/aws-cloudfront';
-import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
+import { Construct } from 'constructs';
+import { Bundling } from 'aws-cdk-lib/aws-lambda-nodejs/lib/bundling';
+import { experimental } from 'aws-cdk-lib/aws-cloudfront';
+import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
 import {  aws_lambda } from 'aws-cdk-lib';
 
 export interface RedirectFunctionOptions {
