@@ -1,17 +1,16 @@
 {
   "name": "@aligent/cdk-static-hosting",
   "version": "0.1.5",
-  "private": true,
+  "description": "Defines a CDK construct for hosting a static website on AWS using S3 and CloudFront",
   "main": "index.ts",
-  "license": "GPL-3.0-only",
-  "homepage": "https://github.com/aligent/aws-cdk-static-hosting-stack#readme",
+  "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/aligent/aws-cdk-static-hosting-stack"
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
   },
-  "types": "index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "prepublish": "tsc"
-  }
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/aligent/cdk-constructs/issues"
+  },
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/static-hosting#readme"
 }

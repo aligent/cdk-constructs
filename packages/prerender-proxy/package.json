@@ -1,20 +1,20 @@
 {
   "name": "@aligent/cdk-prerender-proxy",
   "version": "0.1.7",
-  "private": true,
   "description": "A Cloudfront Lambda@Edge stack for integrating with prerender.io",
   "main": "index.js",
+  "private": true,
   "scripts": {
     "build": "tsc && cd ./lib/handlers && npm ci",
     "prepublish": "tsc && cd ./lib/handlers && npm ci"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aligent/aws-cdk-prerender-proxy-stack.git"
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
   },
   "license": "GPL-3.0-only",
   "bugs": {
-    "url": "https://github.com/aligent/aws-cdk-prerender-proxy-stack/issues"
+    "url": "https://github.com/aligent/cdk-constructs/issues"
   },
-  "homepage": "https://github.com/aligent/aws-cdk-prerender-proxy-stack#readme"
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/prerender-proxy#readme"
 }

@@ -10,11 +10,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aligent/aws-cdk-prerender-proxy-stack.git"
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
   },
   "license": "GPL-3.0-only",
   "bugs": {
-    "url": "https://github.com/aligent/aws-cdk-prerender-proxy-stack/issues"
+    "url": "https://github.com/aligent/cdk-constructs/issues"
   },
-  "homepage": "https://github.com/aligent/aws-cdk-prerender-proxy-stack#readme"
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/basic-auth#readme"
 }

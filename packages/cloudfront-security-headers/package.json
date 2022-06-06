@@ -1,20 +1,22 @@
 {
   "name": "@aligent/cdk-cloudfront-security-headers",
   "version": "0.1.1",
-  "private": true,
+  "description": "Contains a Lambda@Edge function for cloudfront to add security headers to the origin response of all requests",
   "main": "lib/index.ts",
-  "license": "GPL-3.0-only",
-  "homepage": "https://github.com/aligent/cloudfront-security-headers#readme",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/aligent/cloudfront-security-headers"
-  },
-  "description": "A Cloudfront Lambda@Edge function for adding security headers.",
-  "types": "lib/index.d.ts",
+  "private": true,
   "scripts": {
     "build": "tsc && cd ./lib/handlers && npm ci",
     "prepublish": "tsc && cd ./lib/handlers && npm ci",
     "watch": "tsc -w",
     "test": "jest"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
+  },
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/aligent/cdk-constructs/issues"
+  },
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/cloudfront-security-headers#readme"
 }
