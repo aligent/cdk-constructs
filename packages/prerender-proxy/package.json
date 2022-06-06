@@ -19,7 +19,7 @@
   "homepage": "https://github.com/aligent/aws-cdk-prerender-proxy-stack#readme",
   "devDependencies": {
     "@aws-cdk/assert": "^1.111.0",
-    "@types/jest": "^26.0.21",
+    "@types/jest": "^28.1.1",
     "@types/node": "10.17.27",
     "jest": "^26.4.2",
     "ts-jest": "^26.5.4",
