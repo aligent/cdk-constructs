@@ -27,7 +27,6 @@
     "**/node_modules",
     "cdk.out",
     "**/handlers/**",
-    "packages/cloudwatch-rds-alert/**",
     "packages/geoip-redirect/**"
   ]
 }
