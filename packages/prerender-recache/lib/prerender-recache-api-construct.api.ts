@@ -1,7 +1,7 @@
 import { Context, APIGatewayEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { S3Client, DeleteObjectsCommand, DeleteObjectsCommandOutput, ObjectIdentifier } from '@aws-sdk/client-s3';
 import { SQSClient, SendMessageBatchCommand, SendMessageBatchRequestEntry } from '@aws-sdk/client-sqs';
-import { SSMClient, GetParametersCommand } from "@aws-sdk/client-ssm";
+import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 
 interface PreRenderRequestBody {
     prerenderToken: string;
@@ -19,18 +19,19 @@ const sqsClient = new SQSClient({});
 const s3Client = new S3Client({});
 const ssmClient = new SSMClient({});
 
-const tokens = {};
+const tokens: Map<string,string[]> = new Map();
 
 export const handler = async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
     let urlsToRecache: string[];
 
     try {
         urlsToRecache = await getUrlsToRecache(event.body || "");
-    } catch (e) {
+        console.log(urlsToRecache);
+    } catch (error) {
         return {
             statusCode: 403,
             body: JSON.stringify({
-                error: e.message,                
+                error,                
                 message: `Token does not exist or is misconfigured`,
             }),
         } 
@@ -43,6 +44,15 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
                 error: `Too many urls, maximum is ${MAX_URLS}`,
             }),
         }
+    }
+
+    if (urlsToRecache.length === 0) {
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                message: "No urls to recache"
+            })
+        };
     }
 
     await deleteCacheContentForUrls(urlsToRecache);
@@ -69,32 +79,33 @@ const getUrlsToRecache = async (body: string): Promise<string[]> => {
         urls = [];
     }
 
-    if (!tokens.hasOwnProperty(requestBody.prerenderToken)) {
-        const getAllowedUrls = new GetParametersCommand({
-            Names: [
-                `${PARAM_PREFIX}/${requestBody.prerenderToken}`
-            ]
-        });
+    const token = requestBody.prerenderToken;
+
+    if (!tokens.has(token)) {
+        const Name = `/${PARAM_PREFIX}/${token}`;
+        const getAllowedUrls = new GetParameterCommand({ Name });
 
         const ssmResponse = await ssmClient.send(getAllowedUrls);
 
-        if (ssmResponse.Parameters === undefined) {
+        if (ssmResponse.Parameter === undefined) {
             throw 'No parameters returned';
         }
 
-        const allowedUrlsResult = ssmResponse.Parameters[0];
-        if (allowedUrlsResult.DataType === undefined) {
+        const allowedUrlsResult = ssmResponse.Parameter;
+        if (allowedUrlsResult.Type === undefined) {
             throw 'Token not valid';
         }
 
-        if (allowedUrlsResult.DataType !== 'StringList') {
-            throw 'Token data is not a string list';
+        if (allowedUrlsResult.Type !== 'StringList') {
+            throw `Token data is not a string list, ${Name} is ${allowedUrlsResult.Type}`;
         }
-        
-        tokens[requestBody.prerenderToken] = allowedUrlsResult.Value?.split(',');
+
+        tokens.set(token, allowedUrlsResult.Value?.split(',') || []);
     }
 
-    const allowedUrls = tokens[requestBody.prerenderToken];
+    const allowedUrls = tokens.get(token) || [];
+
+    console.log(`Allowed urls for ${token}: ${allowedUrls.join(', ')}`)
 
     const isValidUrlForToken = (url: string): boolean => allowedUrls.find(a => url.includes(a)) !== undefined;
 

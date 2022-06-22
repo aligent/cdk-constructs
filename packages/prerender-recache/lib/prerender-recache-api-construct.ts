@@ -1,12 +1,13 @@
 import { Construct } from 'constructs';
 import { LambdaRestApi } from 'aws-cdk-lib/aws-apigateway';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { Bundling } from 'aws-cdk-lib/aws-lambda-nodejs/lib/bundling';
 import { LambdaToSqsToLambda } from "@aws-solutions-constructs/aws-lambda-sqs-lambda";
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 
 export interface PrerenderRecacheApiOptions {
-    prerenderS3Bucket: string
+    prerenderS3Bucket: string,
+    apiKeys: string[]
 }
 
 export class PrerenderRecacheApi extends Construct {
@@ -15,47 +16,43 @@ export class PrerenderRecacheApi extends Construct {
     constructor(scope: Construct, id: string, options: PrerenderRecacheApiOptions) {
         super(scope, id);
 
-        const handler = new lambda.Function(this, 'prerenderRecacheApiHandler', {
-            code: Bundling.bundle({
-                entry: `${__dirname}/handlers/prerender-recache-handler.ts`,
-                runtime: lambda.Runtime.NODEJS_16_X,
-                sourceMap: false,
-                projectRoot: `${__dirname}/handlers/`,
-                depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
-                architecture: lambda.Architecture.X86_64
-            }),
-            runtime: lambda.Runtime.NODEJS_16_X,
-            handler: 'prerender-recache-handler.handler'
-        });
-
-        handler.addEnvironment('PRERENDER_CACHE_BUCKET', options.prerenderS3Bucket);
-
+        const apiHandler = createApiLambdaFunction(this, options);
+        
         this.api = new LambdaRestApi(this, 'prerenderRecacheApi', {
-            handler,
+            handler: apiHandler,
             proxy: false
         });
+
+        options.apiKeys.forEach(k => this.api.addApiKey(k));
 
         const recache = this.api.root.addResource('recache');
         recache.addMethod('POST');
 
-
-        const requestHandlerCode = Bundling.bundle({
-            entry: `${__dirname}/handlers/prerender-recache-request.ts`,
-            runtime: lambda.Runtime.NODEJS_16_X,
-            sourceMap: false,
-            projectRoot: `${__dirname}/handlers/`,
-            depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
-            architecture: lambda.Architecture.X86_64
-        });
-
-        const requestQueueAndHandler = new LambdaToSqsToLambda(this, 'prerenderRequestQueue', {
-            existingProducerLambdaObj: handler,
-            consumerLambdaFunctionProps: {
-                runtime: lambda.Runtime.NODEJS_16_X,
-                handler: 'prerender-recache-request.handler',
-                code: requestHandlerCode
-            },
+        new LambdaToSqsToLambda(this, 'prerenderRequestQueue', {
+            existingProducerLambdaObj: apiHandler,
+            existingConsumerLambdaObj: new NodejsFunction(this, 'consumer'),
             deployDeadLetterQueue: false
         });
     }
+}
+
+const createApiLambdaFunction = (scope: Construct, options: PrerenderRecacheApiOptions): NodejsFunction => {
+    const apiHandler = new NodejsFunction(scope, 'api');
+
+    apiHandler.addEnvironment('PRERENDER_CACHE_BUCKET', options.prerenderS3Bucket);
+
+    const ssmGetParameterPolicy = new iam.PolicyStatement({
+        actions: ['ssm:GetParameter'],
+        resources: ['*']
+    }) // should be arn:aws:ssm:::parameter/prerender/recache/tokens/*, but can't make that work
+
+    const ssmDescribeParameterPolicy = new iam.PolicyStatement({
+        actions: ['ssm:DescribeParameters'],
+        resources: ['*']
+    });
+
+    apiHandler.addToRolePolicy(ssmGetParameterPolicy);
+    apiHandler.addToRolePolicy(ssmDescribeParameterPolicy);
+
+    return apiHandler;
 }

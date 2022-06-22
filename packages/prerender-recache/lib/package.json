@@ -14,5 +14,8 @@
     "@aws-sdk/client-ssm": "^3.112.0",
     "@types/aws-lambda": "^8.10.101",
     "axios": "^0.27.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.14.47"
   }
 }
