@@ -3,10 +3,11 @@ import { LambdaRestApi } from 'aws-cdk-lib/aws-apigateway';
 import { LambdaToSqsToLambda } from "@aws-solutions-constructs/aws-lambda-sqs-lambda";
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
 
 
 export interface PrerenderRecacheApiOptions {
-    prerenderS3Bucket: string,
+    prerenderS3Bucket: Bucket,
     apiKeys: string[]
 }
 
@@ -39,7 +40,7 @@ export class PrerenderRecacheApi extends Construct {
 const createApiLambdaFunction = (scope: Construct, options: PrerenderRecacheApiOptions): NodejsFunction => {
     const apiHandler = new NodejsFunction(scope, 'api');
 
-    apiHandler.addEnvironment('PRERENDER_CACHE_BUCKET', options.prerenderS3Bucket);
+    apiHandler.addEnvironment('PRERENDER_CACHE_BUCKET', options.prerenderS3Bucket.bucketName);
 
     const ssmGetParameterPolicy = new iam.PolicyStatement({
         actions: ['ssm:GetParameter'],
@@ -51,8 +52,14 @@ const createApiLambdaFunction = (scope: Construct, options: PrerenderRecacheApiO
         resources: ['*']
     });
 
+    const s3DeleteObjectPolicy = new iam.PolicyStatement({
+        actions: ['s3:DeleteObject'],
+        resources: [`${options.prerenderS3Bucket.bucketArn}/*`]
+    })
+
     apiHandler.addToRolePolicy(ssmGetParameterPolicy);
     apiHandler.addToRolePolicy(ssmDescribeParameterPolicy);
+    apiHandler.addToRolePolicy(s3DeleteObjectPolicy);
 
     return apiHandler;
 }
