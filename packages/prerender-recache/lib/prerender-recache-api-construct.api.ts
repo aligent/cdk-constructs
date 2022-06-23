@@ -19,7 +19,7 @@ const sqsClient = new SQSClient({});
 const s3Client = new S3Client({});
 const ssmClient = new SSMClient({});
 
-const tokens: Map<string,string[]> = new Map();
+const tokens: Map<string, string[]> = new Map();
 
 export const handler = async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
     let urlsToRecache: string[];
@@ -31,12 +31,12 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
         return {
             statusCode: 403,
             body: JSON.stringify({
-                error,                
+                error,
                 message: `Token does not exist or is misconfigured`,
             }),
-        } 
+        }
     }
-    
+
     if (urlsToRecache.length > MAX_URLS) {
         console.log(`Too many urls, received ${urlsToRecache.length}, maximum is ${MAX_URLS}`)
         return {
