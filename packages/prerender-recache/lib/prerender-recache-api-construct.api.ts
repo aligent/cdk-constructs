@@ -38,6 +38,7 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
     }
     
     if (urlsToRecache.length > MAX_URLS) {
+        console.log(`Too many urls, received ${urlsToRecache.length}, maximum is ${MAX_URLS}`)
         return {
             statusCode: 400,
             body: JSON.stringify({
@@ -47,6 +48,7 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
     }
 
     if (urlsToRecache.length === 0) {
+        console.log('No valid urls to recache');
         return {
             statusCode: 200,
             body: JSON.stringify({
@@ -55,7 +57,7 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
         };
     }
 
-    await deleteCacheContentForUrls(urlsToRecache);
+    console.log(await deleteCacheContentForUrls(urlsToRecache));
     await queueRecachineUrls(urlsToRecache);
 
     return {
@@ -83,7 +85,10 @@ const getUrlsToRecache = async (body: string): Promise<string[]> => {
 
     if (!tokens.has(token)) {
         const Name = `/${PARAM_PREFIX}/${token}`;
+        console.log(`Looking for allowed urls in ssm:${Name}`);
+
         const getAllowedUrls = new GetParameterCommand({ Name });
+        console.log(getAllowedUrls);
 
         const ssmResponse = await ssmClient.send(getAllowedUrls);
 
@@ -117,6 +122,8 @@ const deleteCacheContentForUrls = async (urlsToRecache: string[]): Promise<Delet
         return { Key };
     }
 
+    console.log(`Deleting ${urlsToRecache.length} objects from ${Bucket}`);
+
     const deleteObjects = new DeleteObjectsCommand({
         Bucket,
         Delete: {
@@ -145,6 +152,8 @@ const queueRecachineUrls = async (urlsToRecache: string[]) => {
             Entries: urls.map(generateEntry)
         });
     });
+
+    console.log(`Sending ${messages.length} recaching message batches`);
 
     await Promise.all(messages.map(m => sqsClient.send(m)));
 }
