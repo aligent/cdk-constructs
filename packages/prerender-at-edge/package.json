@@ -1,0 +1,25 @@
+{
+  "name": "@aligent/cdk-prerender-at-edge",
+  "version": "0.1.5",
+  "description": "Defines a CDK construct for hosting Prerender at the edge",
+  "main": "index.ts",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
+  },
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/aligent/cdk-constructs/issues"
+  },
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/prerender-at-edge#readme",
+  "dependencies": {
+    "prerender": "5.20.0",
+    "prerender-aws-s3-cache": "1.0.1",
+    "axios": "0.27.2"
+  },
+  "scripts": {
+    "bundle": "esbuild lib/handlers/prerender-at-edge.lambda.ts --bundle --platform=node --target=node16 --external:aws-sdk --outfile=lib/handlers/build/prerender-at-edge.js --define:S3_BUCKET_NAME=bucket-name --define:AWS_ACCESS_KEY_ID=aaa --define:AWS_SECRET_ACCESS_KEY=aaa --define:AWS_REGION=ap-southeast-2",
+    "prepublish": "npm run bundle"
+  }
+}
