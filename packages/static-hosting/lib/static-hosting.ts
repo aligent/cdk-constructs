@@ -1,5 +1,5 @@
 import { Construct } from 'constructs';
-import { CfnOutput, RemovalPolicy, StackProps, Stack} from 'aws-cdk-lib/core';
+import { CfnOutput, RemovalPolicy, StackProps, Stack} from 'aws-cdk-lib';
 import { Bucket, BucketEncryption, BlockPublicAccess } from 'aws-cdk-lib/aws-s3';
 import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps } from 'aws-cdk-lib/aws-cloudfront';
 import { HostedZone, RecordTarget, ARecord } from 'aws-cdk-lib/aws-route53';
@@ -34,7 +34,12 @@ export interface StaticHostingProps {
      */
     behaviors?: Array<Behavior>;
     enableErrorConfig: boolean;
-    defaultRootObject?: string
+    defaultRootObject?: string;
+
+    /**
+     * Optional override for enforcing SSL
+     */
+    enforceSSL?: boolean;
 }
 
 export class StaticHosting extends Construct {
@@ -48,6 +53,8 @@ export class StaticHosting extends Construct {
         siteNameArray.concat(props.extraDistributionCnames) :
         siteNameArray;
 
+        const enforceSSL = props.enforceSSL === undefined ? true : props.enforceSSL;
+
 
         const s3LoggingBucket = (props.enableS3AccessLogging)
             ? new Bucket(this, 'S3LoggingBucket', {
@@ -55,7 +62,7 @@ export class StaticHosting extends Construct {
                 encryption: BucketEncryption.S3_MANAGED,
                 blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
                 removalPolicy: RemovalPolicy.RETAIN,
-                enforceSSL: true
+                enforceSSL: enforceSSL
             })
             : undefined;
 
@@ -71,7 +78,7 @@ export class StaticHosting extends Construct {
             encryption: BucketEncryption.S3_MANAGED,
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
             serverAccessLogsBucket: s3LoggingBucket,
-            enforceSSL: true
+            enforceSSL: enforceSSL
         });
 
         new CfnOutput(this, 'Bucket', {
@@ -121,7 +128,7 @@ export class StaticHosting extends Construct {
                 encryption: BucketEncryption.S3_MANAGED,
                 blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
                 removalPolicy: RemovalPolicy.RETAIN,
-                enforceSSL: true
+                enforceSSL: enforceSSL
             })
             : undefined;
 
