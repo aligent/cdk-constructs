@@ -55,7 +55,7 @@ export class StaticHosting extends Construct {
     constructor(scope: Construct, id: string, props: StaticHostingProps) {
         super(scope, id);
         
-        // Should the stackExportPrefix is empty it should StaticHosting as the prefix
+        // Should the stackExportPrefix is empty, 'StaticHosting' should be used as the prefix 
         const exportPrefix =  props.stackExportPrefix ? props.stackExportPrefix :  'StaticHosting'
 
         const siteName = `${props.subDomainName}.${props.domainName}`;
