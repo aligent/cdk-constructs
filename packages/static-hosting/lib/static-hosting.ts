@@ -8,7 +8,7 @@ import { Version } from '@aws-cdk/aws-lambda';
 import { ArbitraryPathRemapFunction } from './arbitrary-path-remap';
 
 export interface StaticHostingProps {
-    stackExportPrefix?: string, 
+    exportPrefix?: string, 
     domainName: string;
     subDomainName: string;
     certificateArn: string;
@@ -56,7 +56,7 @@ export class StaticHosting extends Construct {
         super(scope, id);
         
         // Should the stackExportPrefix is empty, 'StaticHosting' should be used as the prefix 
-        const exportPrefix =  props.stackExportPrefix ? props.stackExportPrefix :  'StaticHosting'
+        const exportPrefix =  props.exportPrefix ? props.exportPrefix :  'StaticHosting'
 
         const siteName = `${props.subDomainName}.${props.domainName}`;
         const siteNameArray: Array<string> = [siteName];
