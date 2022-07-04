@@ -1,6 +1,6 @@
 import { Construct } from 'constructs';
 import { CfnOutput, RemovalPolicy, StackProps, Stack} from 'aws-cdk-lib';
-import { Bucket, BucketEncryption, BlockPublicAccess } from 'aws-cdk-lib/aws-s3';
+import { Bucket, BucketEncryption, BlockPublicAccess, BucketProps } from 'aws-cdk-lib/aws-s3';
 import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps } from 'aws-cdk-lib/aws-cloudfront';
 import { HostedZone, RecordTarget, ARecord } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
@@ -34,7 +34,11 @@ export interface StaticHostingProps {
      */
     behaviors?: Array<Behavior>;
     enableErrorConfig: boolean;
-    defaultRootObject?: string
+    defaultRootObject?: string;
+    /** 
+     * Extend the default props for S3 bucket
+    */
+    s3ExtendedProps?: BucketProps;
 }
 
 export class StaticHosting extends Construct {
@@ -71,7 +75,8 @@ export class StaticHosting extends Construct {
             encryption: BucketEncryption.S3_MANAGED,
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
             serverAccessLogsBucket: s3LoggingBucket,
-            enforceSSL: true
+            enforceSSL: true,
+            ...props.s3ExtendedProps
         });
 
         new CfnOutput(this, 'Bucket', {
