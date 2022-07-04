@@ -5,7 +5,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Bucket, BlockPublicAccess } from 'aws-cdk-lib/aws-s3'
 import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
 import { AccessKey, User } from 'aws-cdk-lib/aws-iam';
-import { StackProps, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
+import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import * as path from 'path';
 
 export interface PrerenderOptions {
@@ -58,11 +58,11 @@ export class PrerenderFargate extends Construct {
                 cluster,
                 serviceName: `${props.prerenderName}-service`,
                 desiredCount: 1,
-                cpu: 512, // 0.5 vCPU
+                cpu: 512, // 0.5 vCPU (this may need to be increased)
                 memoryLimitMiB: 1024, // 1 GB to give Chrome enough memory
                 taskImageOptions: {
                     image: ecs.ContainerImage.fromDockerImageAsset(asset),
-                    enableLogging: true, // default
+                    enableLogging: true, 
                     containerPort: 3000,
                     environment: {
                         S3_BUCKET_NAME: bucket.bucketName,
@@ -71,7 +71,7 @@ export class PrerenderFargate extends Construct {
                         AWS_REGION: Stack.of(this).region
                     }
                 },
-                publicLoadBalancer: false, // default
+                publicLoadBalancer: false,
                 assignPublicIp: true, // requires a public IP to pull from ECR
                 // securityGroups: [securityGroup] // TODO: support for security groups
             }
@@ -95,4 +95,3 @@ export class PrerenderFargate extends Construct {
         });
     }
 }
-
