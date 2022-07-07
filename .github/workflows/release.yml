@@ -1,0 +1,51 @@
+name: Publish to NPM
+
+env:
+  RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
+
+on:
+  push:
+    tags: 
+      - '**-[0-9].[0-9].[0-9]'
+      - '**-[0-9].[0-9].[0-9]-*'
+  release:
+    tags: 
+      - '**-[0-9].[0-9].[0-9]'
+      - '**-[0-9].[0-9].[0-9]-*'
+    types: [published]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+    # Source checkout
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.release.target_commitish }}
+    # Setting Node environment
+    - name: Setting up Node environment
+      uses: actions/setup-node@v1
+      with:
+        node-version: 16
+        registry-url: https://registry.npmjs.org/
+    # Environment configuration
+    - name: Preparing environment for release
+      run: | 
+        CONSTRUCT=$(echo $RELEASE_TAG_NAME | sed 's/^.*[A-Za-z]-//g)
+        VERSION=$(echo $RELEASE_TAG_NAME | sed "s/${CONSTRUCT}-//g");
+    # Release process
+    - name: Release
+      working-directory: $CONSTRUCT
+      run: | 
+        npm ci
+        git config --global user.name "Automated NPM Release"
+        git config --global user.email "sysadmin+npm-deploy@aligent.com.au"
+        npm version $VERSION --allow-same-version --workspace "@aligent/cdk-${package}"
+        npm run build --workspace "@aligent/cdk-${package}"
+        npm test --workspace "@aligent/cdk-${package}" --if-present
+    #     npm publish --access public --workspace "@aligent/cdk-${package}"
+    #   env:
+    #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    # - run: git push
+    #   env:
+    #     github-token: ${{ secrets.GITHUB_TOKEN }}
