@@ -30,19 +30,18 @@ jobs:
       run: | 
         VERSION=$(echo $GITHUB_REF_NAME | sed 's/^.*[A-Za-z]-//g')
         echo "VERSION=$VERSION" >> $GITHUB_ENV
-        echo "CONSTRUCT=$(echo $GITHUB_REF_NAME | sed "s/-${VERSION}//g")" >> $GITHUB_ENV
+        echo "PACKAGE=$(echo $GITHUB_REF_NAME | sed "s/-${VERSION}//g")" >> $GITHUB_ENV
     # Release process
     - name: Release
-      working-directory: packages/${{env.CONSTRUCT}}
       run: | 
-        echo ${{env.CONSTRUCT}}
+        echo ${{env.PACKAGE}}
         npm ci
         git config --global user.name "Automated NPM Release"
         git config --global user.email "sysadmin+npm-deploy@aligent.com.au"
-        npm version $VERSION --allow-same-version --workspace "@aligent/cdk-${package}"
-        npm run build --workspace "@aligent/cdk-${package}"
-        npm test --workspace "@aligent/cdk-${package}" --if-present
-    #     npm publish --access public --workspace "@aligent/cdk-${package}"
+        npm version $VERSION --allow-same-version --workspace "@aligent/cdk-${{env.PACKAGE}}"
+        npm run build --workspace "@aligent/cdk-${{env.PACKAGE}}"
+        npm test --workspace "@aligent/cdk-${{env.PACKAGE}}" --if-present
+    #     npm publish --access public --workspace "@aligent/cdk-${{env.PACKAGE}}"
     #   env:
     #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     # - run: git push
