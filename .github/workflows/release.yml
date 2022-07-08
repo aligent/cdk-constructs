@@ -1,10 +1,6 @@
 name: Publish to NPM
 
 on:
-  push:
-    tags: 
-      - '**-[0-9].[0-9].[0-9]'
-      - '**-[0-9].[0-9].[0-9]-*'
   release:
     tags: 
       - '**-[0-9].[0-9].[0-9]'
@@ -34,16 +30,15 @@ jobs:
     # Release process
     - name: Release
       run: | 
-        echo ${{env.PACKAGE}}
         npm ci
         git config --global user.name "Automated NPM Release"
         git config --global user.email "sysadmin+npm-deploy@aligent.com.au"
         npm version $VERSION --allow-same-version --workspace "@aligent/cdk-${{env.PACKAGE}}"
         npm run build --workspace "@aligent/cdk-${{env.PACKAGE}}"
         npm test --workspace "@aligent/cdk-${{env.PACKAGE}}" --if-present
-    #     npm publish --access public --workspace "@aligent/cdk-${{env.PACKAGE}}"
-    #   env:
-    #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-    # - run: git push
-    #   env:
-    #     github-token: ${{ secrets.GITHUB_TOKEN }}
+        npm publish --access public --workspace "@aligent/cdk-${{env.PACKAGE}}"
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    - run: git push
+      env:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
