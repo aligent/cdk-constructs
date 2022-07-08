@@ -30,6 +30,9 @@ jobs:
       run: | 
         VERSION=$(echo $GITHUB_REF_NAME | sed 's/^.*[A-Za-z]-//g')
         CONSTRUCT=$(echo $GITHUB_REF_NAME | sed "s/-${VERSION}//g")
+        env
+        pwd
+        ls
     # Release process
     - name: Release
       working-directory: packages/$CONSTRUCT
