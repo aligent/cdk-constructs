@@ -33,6 +33,7 @@ jobs:
         env
         pwd
         ls
+        echo $CONSTRUCT
     # Release process
     - name: Release
       working-directory: packages/$CONSTRUCT
