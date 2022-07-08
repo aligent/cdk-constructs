@@ -1,8 +1,5 @@
 name: Publish to NPM
 
-env:
-  RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
-
 on:
   push:
     tags: 
@@ -31,8 +28,8 @@ jobs:
     # Environment configuration
     - name: Preparing environment for release
       run: | 
-        CONSTRUCT=$(echo $RELEASE_TAG_NAME | sed 's/^.*[A-Za-z]-//g)
-        VERSION=$(echo $RELEASE_TAG_NAME | sed "s/${CONSTRUCT}-//g");
+        CONSTRUCT=$(echo $GITHUB_REF_NAME | sed 's/^.*[A-Za-z]-//g)
+        VERSION=$(echo $GITHUB_REF_NAME | sed "s/${CONSTRUCT}-//g");
     # Release process
     - name: Release
       working-directory: $CONSTRUCT
