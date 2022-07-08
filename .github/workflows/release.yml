@@ -29,14 +29,13 @@ jobs:
     - name: Preparing environment for release
       run: | 
         VERSION=$(echo $GITHUB_REF_NAME | sed 's/^.*[A-Za-z]-//g')
-        CONSTRUCT=$(echo $GITHUB_REF_NAME | sed "s/-${VERSION}//g")
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "CONSTRUCT=$(echo $GITHUB_REF_NAME | sed "s/-${VERSION}//g")" >> $GITHUB_ENV
         env
-        pwd
-        ls
-        echo $CONSTRUCT
+        echo ${{env.CONSTRUCT}}
     # Release process
     - name: Release
-      working-directory: packages/$CONSTRUCT
+      working-directory: packages/${{env.CONSTRUCT}}
       run: | 
         npm ci
         git config --global user.name "Automated NPM Release"
