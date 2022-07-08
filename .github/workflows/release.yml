@@ -28,8 +28,8 @@ jobs:
     # Environment configuration
     - name: Preparing environment for release
       run: | 
-        CONSTRUCT=$(echo $GITHUB_REF_NAME | sed 's/^.*[A-Za-z]-//g')
-        VERSION=$(echo $GITHUB_REF_NAME | sed "s/${CONSTRUCT}-//g");
+        VERSION=$(echo $GITHUB_REF_NAME | sed 's/^.*[A-Za-z]-//g')
+        CONSTRUCT=$(echo $GITHUB_REF_NAME | sed "s/-${VERSION}//g")
     # Release process
     - name: Release
       working-directory: packages/$CONSTRUCT
