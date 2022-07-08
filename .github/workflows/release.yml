@@ -32,7 +32,7 @@ jobs:
         VERSION=$(echo $GITHUB_REF_NAME | sed "s/${CONSTRUCT}-//g");
     # Release process
     - name: Release
-      working-directory: ./packages/$CONSTRUCT
+      working-directory: packages/$CONSTRUCT
       run: | 
         npm ci
         git config --global user.name "Automated NPM Release"
