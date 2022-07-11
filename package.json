@@ -8,17 +8,33 @@
             "packages/*"
         ]
     },
+    "devDependencies": {
+        "@types/jest": "^26.0.10",
+        "@types/node": "16.9.4",
+        "jest": "^26.4.2",
+        "source-map-support": "^0.5.19",
+        "ts-jest": "^26.5.6",
+        "ts-node": "^10.2.1",
+        "typescript": "^4.3.5"
+    },
+    "peerDependencies": {
+        "esbuild": "^0.12.15"
+    },
+    "dependencies": {
+        "aws-cdk-lib": "^2.26.0"
+    },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
+        "url": "git+https://github.com/aligent/cdk-constructs.git"
     },
     "license": "GPL-3.0-only",
     "bugs": {
-        "url": "https://github.com/aligent/aws-cdk-constructs/issues"
+        "url": "https://github.com/aligent/cdk-constructs/issues"
     },
-    "homepage": "https://github.com/aligent/aws-cdk-constructs#readme",
+    "homepage": "https://github.com/aligent/cdk-constructs#readme",
     "scripts": {
         "build": "tsc",
-        "prepublish": "tsc"
+        "prepublish": "tsc",
+        "test": "jest"
     }
 }

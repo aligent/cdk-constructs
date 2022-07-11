@@ -1,36 +1,16 @@
 {
   "name": "@aligent/cdk-rabbitmq",
   "version": "0.1.0",
-  "private": true,
+  "description": "Defines a CDK construct for hosting a RabbitMQ cluster within AWS",
   "main": "index.js",
-  "license": "GPL-3.0-only",
-  "homepage": "https://github.com/aligent/aws-rabbitmq-waf-stack#readme",
-  "repository": {
+  "private": true,
+   "repository": {
     "type": "git",
-    "url": "https://github.com/aligent/aws-rabbitmq-waf-stack"
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
   },
-  "types": "index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "prepublish": "tsc"
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/aligent/cdk-constructs/issues"
   },
-  "devDependencies": {
-    "@aws-cdk/assert": "^1.111.0",
-    "@types/jest": "^26.0.24",
-    "@types/node": "16.0.0",
-    "jest": "^26.4.2",
-    "ts-jest": "^26.5.6",
-    "ts-node": "^10.0.0",
-    "typescript": "~4.4.3"
-  },
-  "dependencies": {
-    "@aws-cdk/aws-amazonmq": "^1.111.0",
-    "@aws-cdk/aws-ec2": "^1.111.0",
-    "@aws-cdk/aws-iam": "^1.111.0",
-    "@aws-cdk/aws-kms": "^1.111.0",
-    "@aws-cdk/aws-s3": "^1.111.0",
-    "@aws-cdk/core": "^1.111.0",
-    "aws-cdk": "^1.111.0",
-    "source-map-support": "^0.5.16"
-  }
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/rabbitmq#readme"
 }

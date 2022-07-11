@@ -1,5 +1,5 @@
 import 'source-map-support/register';
-import { CloudFrontRequest, CloudFrontRequestEvent, CloudFrontResponse } from '@aws-cdk/aws-lambda';
+import { CloudFrontRequest, CloudFrontRequestEvent, CloudFrontResponse } from 'aws-cdk-lib/aws-lambda';
 
 const PRERENDER_TOKEN = process.env.PRERENDER_TOKEN;
 const PATH_PREFIX = process.env.PATH_PREFIX;

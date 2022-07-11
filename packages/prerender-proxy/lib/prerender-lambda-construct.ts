@@ -1,4 +1,4 @@
-import { Construct, CfnOutput } from '@aws-cdk/core';
+import { Construct } from 'constructs';
 import { PrerenderFunction } from './prerender-construct';
 import { PrerenderCheckFunction } from './prerender-check-construct';
 import { ErrorResponseFunction } from './error-response-construct';

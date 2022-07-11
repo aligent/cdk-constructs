@@ -22,11 +22,11 @@
       "node",
       "jest"
     ],
+    "composite": true
   },
   "exclude": [
     "**/node_modules",
     "cdk.out",
-    "**/handlers/**",
-    "packages/geoip-redirect/**"
+    "**/handlers/**"
   ]
 }

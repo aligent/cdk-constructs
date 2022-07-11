@@ -1,11 +1,13 @@
-import { Construct, CfnOutput, RemovalPolicy, StackProps, Stack} from '@aws-cdk/core';
-import { Bucket, BucketEncryption, BlockPublicAccess } from '@aws-cdk/aws-s3';
-import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps } from '@aws-cdk/aws-cloudfront';
-import { HostedZone, RecordTarget, ARecord } from '@aws-cdk/aws-route53';
-import { CloudFrontTarget } from '@aws-cdk/aws-route53-targets';
-import { User, Group, Policy, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
+import { Construct } from 'constructs';
+import { CfnOutput, RemovalPolicy, StackProps, Stack} from 'aws-cdk-lib';
+import { Bucket, BucketEncryption, BlockPublicAccess, BucketProps } from 'aws-cdk-lib/aws-s3';
+import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps } from 'aws-cdk-lib/aws-cloudfront';
+import { HostedZone, RecordTarget, ARecord } from 'aws-cdk-lib/aws-route53';
+import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
+import { User, Group, Policy, PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
 
 export interface StaticHostingProps {
+    exportPrefix?: string, 
     domainName: string;
     subDomainName: string;
     certificateArn: string;
@@ -29,16 +31,23 @@ export interface StaticHostingProps {
     prependCustomOriginBehaviours?: boolean;
 
     /**
-     * Optional set of behaviors to override the default behvior defined in this construct
+     * Optional set of behaviors to override the default behavior defined in this construct
      */
     behaviors?: Array<Behavior>;
     enableErrorConfig: boolean;
-    defaultRootObject?: string
+    defaultRootObject?: string;
+    /** 
+     * Extend the default props for S3 bucket
+    */
+    s3ExtendedProps?: BucketProps;
 }
 
 export class StaticHosting extends Construct {
     constructor(scope: Construct, id: string, props: StaticHostingProps) {
         super(scope, id);
+        
+        // Should the stackExportPrefix is empty, 'StaticHosting' should be used as the prefix 
+        const exportPrefix =  props.exportPrefix ? props.exportPrefix :  'StaticHosting'
 
         const siteName = `${props.subDomainName}.${props.domainName}`;
         const siteNameArray: Array<string> = [siteName];
@@ -62,6 +71,7 @@ export class StaticHosting extends Construct {
             new CfnOutput(this, 'S3LoggingBucketName', {
                 description: "S3 Logs",
                 value: s3LoggingBucket.bucketName,
+                exportName: `${exportPrefix}S3LoggingBucketName` 
             });
         }
 
@@ -70,12 +80,14 @@ export class StaticHosting extends Construct {
             encryption: BucketEncryption.S3_MANAGED,
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
             serverAccessLogsBucket: s3LoggingBucket,
-            enforceSSL: true
+            enforceSSL: true,
+            ...props.s3ExtendedProps
         });
 
         new CfnOutput(this, 'Bucket', {
             description: 'BucketName',
             value: bucket.bucketName,
+            exportName: `${exportPrefix}BucketName`
         });
 
         const oai = new OriginAccessIdentity(this, 'OriginAccessIdentity', {
@@ -94,6 +106,7 @@ export class StaticHosting extends Construct {
             new CfnOutput(this, 'PublisherUserName', {
                 description: 'PublisherUser',
                 value: publisherUser.userName,
+                exportName: `${exportPrefix}PublisherUser`
             });
         };
 
@@ -107,6 +120,7 @@ export class StaticHosting extends Construct {
             new CfnOutput(this, 'PublisherGroupName', {
                 description: 'PublisherGroup',
                 value: publisherGroup.groupName,
+                exportName: `${exportPrefix}PublisherGroup`
             });
 
             if (publisherUser) {
@@ -130,6 +144,7 @@ export class StaticHosting extends Construct {
             new CfnOutput(this, 'LoggingBucketName', {
                 description: "CloudFront Logs",
                 value: loggingBucket.bucketName,
+                exportName: `${exportPrefix}LoggingBucketName`
             });
         }
 
@@ -161,11 +176,13 @@ export class StaticHosting extends Construct {
 
 
         let distributionProps: CloudFrontWebDistributionProps = {
-          aliasConfiguration: {
-            acmCertRef: props.certificateArn,
-            names: distributionCnames,
-            securityPolicy: SecurityPolicyProtocol.TLS_V1_2_2018,
-            sslMethod: SSLMethod.SNI,
+          viewerCertificate: {
+            aliases: distributionCnames,
+            props: {
+                acmCertificateArn: props.certificateArn,
+                minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2018,
+                sslSupportMethod: SSLMethod.SNI,
+            }
           },
           originConfigs,
           defaultRootObject: props.defaultRootObject,
@@ -205,10 +222,12 @@ export class StaticHosting extends Construct {
         new CfnOutput(this, 'DistributionId', {
             description: 'DistributionId',
             value: distribution.distributionId,
+            exportName: `${exportPrefix}DistributionID`
         });
         new CfnOutput(this, 'DistributionDomainName', {
             description: 'DistributionDomainName',
-            value: distribution.domainName,
+            value: distribution.distributionDomainName,
+            exportName: `${exportPrefix}DistributionName`
         });
 
         if (props.createDnsRecord && props.zoneName) {

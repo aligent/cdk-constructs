@@ -1,8 +1,8 @@
-import { Construct } from "@aws-cdk/core";
-import { Bundling } from '@aws-cdk/aws-lambda-nodejs/lib/bundling';
-import { Runtime } from '@aws-cdk/aws-lambda';
-import { experimental } from '@aws-cdk/aws-cloudfront';
-import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
+import { Construct } from 'constructs';
+import { Bundling } from 'aws-cdk-lib/aws-lambda-nodejs/lib/bundling';
+import { Runtime, Architecture } from 'aws-cdk-lib/aws-lambda';
+import { experimental } from 'aws-cdk-lib/aws-cloudfront';
+import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
 
 export interface PrerenderFunctionOptions {
     prerenderToken: string,
@@ -31,7 +31,8 @@ export class PrerenderFunction extends Construct {
                 define: {
                   'process.env.PRERENDER_TOKEN': JSON.stringify(options.prerenderToken),
                   'process.env.PATH_PREFIX': JSON.stringify(options.pathPrefix ?? ''),
-                }
+                },
+                architecture: Architecture.X86_64
               }),
               runtime: Runtime.NODEJS_12_X,
               handler: 'index.handler',

@@ -48,11 +48,11 @@ Thumbs.db
 *.mov
 *.wmv
 
-!jest.config.js
-
 # CDK asset staging directory
 .cdk.staging
 cdk.out
 
 *.d.ts
 *.js
+
+!jest.config.js

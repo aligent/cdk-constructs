@@ -1,6 +1,7 @@
-import * as mq from '@aws-cdk/aws-amazonmq'; 
-import { Construct, CfnOutput } from '@aws-cdk/core';
-import * as ec2 from '@aws-cdk/aws-ec2';
+import * as mq from 'aws-cdk-lib/aws-amazonmq'; 
+import { Construct } from 'constructs';
+import { CfnOutput } from 'aws-cdk-lib/core';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
 
 export interface RabbitMQProps {
   rabbitMQProps: mq.CfnBrokerProps;
@@ -12,7 +13,7 @@ export class RabbitMQ extends Construct {
   constructor(scope: Construct, id: string, props: RabbitMQProps) {
     super(scope, id);
 
-    const sourceSecurityGroup = ec2.SecurityGroup.fromLookup(this, id + '-sourceSecurityGroup', props.applicationSecurityGroupId)
+    const sourceSecurityGroup = ec2.SecurityGroup.fromLookupById(this, id + '-sourceSecurityGroup', props.applicationSecurityGroupId)
     const applicationVpc = ec2.Vpc.fromLookup(this, id + '-applicationVpc', {vpcId: props.applicationVpcId} )
     const securityGroup = new ec2.SecurityGroup(this, id + '-securityGroup', {
       vpc: applicationVpc,
