@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "description": "A Cloudfront Lambda@Edge stack for performing basic auth protection",
   "main": "index.js",
-  "private": true,
   "scripts": {
     "build": "tsc && cd ./lib/handlers && npm ci",
     "prepublish": "tsc && cd ./lib/handlers && npm ci"
