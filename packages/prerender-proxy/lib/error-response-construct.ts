@@ -20,7 +20,7 @@ export class ErrorResponseFunction extends Construct {
             {
               code: Bundling.bundle({
                 entry: `${__dirname}/handlers/error-response.ts`,
-                runtime: Runtime.NODEJS_12_X,
+                runtime: Runtime.NODEJS_14_X,
                 sourceMap: true,
                 projectRoot: `${__dirname}/handlers/`,
                 depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
@@ -31,7 +31,7 @@ export class ErrorResponseFunction extends Construct {
                   'process.env.PATH_PREFIX': JSON.stringify(options.pathPrefix ?? ''),
                 }
               }),
-              runtime: Runtime.NODEJS_12_X,
+              runtime: Runtime.NODEJS_14_X,
               handler: 'index.handler',
             }
           );

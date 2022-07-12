@@ -4,8 +4,9 @@ import { PrerenderCheckFunction } from './prerender-check-construct';
 import { ErrorResponseFunction } from './error-response-construct';
 
 export interface PrerenderLambdaProps {
-    prerenderToken: string
-    exclusionExpression?: string
+  prerenderUrl: string
+  prerenderAuthUser: string
+  prerenderAuthPass: string
 }
 
 export class PrerenderLambda extends Construct {

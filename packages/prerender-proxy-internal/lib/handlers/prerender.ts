@@ -27,8 +27,8 @@ export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFront
           request.origin = {
                custom: {
                     domainName: PRERENDER_URL,
-                    port: 80,
-                    protocol: 'http',
+                    port: 443,
+                    protocol: 'https',
                     readTimeout: 20,
                     keepaliveTimeout: 5,
                     sslProtocols: ['TLSv1', 'TLSv1.1', 'TLSv1.2'],
