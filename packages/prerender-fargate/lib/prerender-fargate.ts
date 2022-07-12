@@ -2,6 +2,8 @@ import { Construct } from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { HostedZone } from 'aws-cdk-lib/aws-route53';
 import { Bucket, BlockPublicAccess } from 'aws-cdk-lib/aws-s3'
 import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
 import { AccessKey, User } from 'aws-cdk-lib/aws-iam';
@@ -14,7 +16,8 @@ export interface PrerenderOptions {
     vpcId: string,
     bucketName?: string,
     expirationDays?: number,
-    basicAuthList: Array<string[]>
+    basicAuthList: Array<string[]>,
+    certificateArn: string,
 }
 
 export class PrerenderFargate extends Construct {
@@ -77,7 +80,10 @@ export class PrerenderFargate extends Construct {
                 publicLoadBalancer: true,
                 assignPublicIp: true,
                 listenerPort: 443,
-                domainName: props.domainName
+                redirectHTTP: true,
+                domainName: props.domainName,
+                domainZone: new HostedZone(this, 'hosted-zone', { zoneName: props.domainName }),
+                certificate: Certificate.fromCertificateArn(this, 'cert', props.certificateArn)
             }
         );
 
