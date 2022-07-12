@@ -10,10 +10,11 @@ import * as path from 'path';
 
 export interface PrerenderOptions {
     prerenderName: string,
+    domainName: string,
     vpcId: string,
-    healthCheckPath?: string,
     bucketName?: string,
-    expirationDays?: number
+    expirationDays?: number,
+    basicAuthList: Array<string[]>
 }
 
 export class PrerenderFargate extends Construct {
@@ -62,27 +63,23 @@ export class PrerenderFargate extends Construct {
                 memoryLimitMiB: 1024, // 1 GB to give Chrome enough memory
                 taskImageOptions: {
                     image: ecs.ContainerImage.fromDockerImageAsset(asset),
-                    enableLogging: true, 
+                    enableLogging: true,
                     containerPort: 3000,
                     environment: {
                         S3_BUCKET_NAME: bucket.bucketName,
                         AWS_ACCESS_KEY_ID: accessKey.accessKeyId,
                         AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.toString(),
-                        AWS_REGION: Stack.of(this).region
+                        AWS_REGION: Stack.of(this).region,
+                        BASIC_AUTH: props.basicAuthList.toString()
                     }
                 },
-                publicLoadBalancer: false,
-                assignPublicIp: true, // requires a public IP to pull from ECR
-                // securityGroups: [securityGroup] // TODO: support for security groups
+                healthCheckGracePeriod: Duration.seconds(20),
+                publicLoadBalancer: true,
+                assignPublicIp: true,
+                listenerPort: 443,
+                domainName: props.domainName
             }
         );
-
-        if (props.healthCheckPath) {
-            // Confirm that Prerender is returning a 200
-            fargateService.targetGroup.configureHealthCheck({
-                path: `/${props.healthCheckPath}`,
-            });
-        }
 
         // Setup AutoScaling policy
         const scaling = fargateService.service.autoScaleTaskCount({

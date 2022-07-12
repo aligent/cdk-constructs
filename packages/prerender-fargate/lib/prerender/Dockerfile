@@ -19,5 +19,7 @@ RUN npm install --no-package-lock
 
 EXPOSE 3000
 
+HEALTHCHECK CMD netstat -ltn | grep -c 3000 
+
 ENTRYPOINT ["tini", "--"]
 CMD ["node", "server.js"]
