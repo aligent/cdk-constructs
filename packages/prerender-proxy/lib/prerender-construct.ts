@@ -5,10 +5,8 @@ import { experimental } from '@aws-cdk/aws-cloudfront';
 import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
 
 export interface PrerenderFunctionOptions {
-  pathPrefix?: string
-  prerenderUrl: string
-  prerenderAuthUser: string
-  prerenderAuthPass: string
+    prerenderToken: string,
+    pathPrefix?: string,
 }
 
 export class PrerenderFunction extends Construct {
@@ -31,10 +29,8 @@ export class PrerenderFunction extends Construct {
                 // and replace during build/deploy with static values. This gets around the lambda@edge limitation
                 // of no environment variables at runtime.
                 define: {
-                  'process.env.PATH_PREFIX': JSON.stringify(options.pathPrefix || ''),
-                  'process.env.PRERENDER_URL': JSON.stringify(options.prerenderUrl),
-                  'process.env.PRERENDER_USER': JSON.stringify(options.prerenderAuthUser),
-                  'process.env.PRERENDER_PASS': JSON.stringify(options.prerenderAuthPass),
+                  'process.env.PRERENDER_TOKEN': JSON.stringify(options.prerenderToken),
+                  'process.env.PATH_PREFIX': JSON.stringify(options.pathPrefix ?? ''),
                 }
               }),
               runtime: Runtime.NODEJS_14_X,
