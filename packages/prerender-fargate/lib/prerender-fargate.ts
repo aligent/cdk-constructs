@@ -18,6 +18,10 @@ export interface PrerenderOptions {
     expirationDays?: number,
     basicAuthList: Array<string[]>,
     certificateArn: string,
+    desiredInstanceCount?: number,
+    maxInstanceCount?: number,
+    instanceCPU?: number,
+    instanceMemory?: number
 }
 
 export class PrerenderFargate extends Construct {
@@ -61,9 +65,9 @@ export class PrerenderFargate extends Construct {
             {
                 cluster,
                 serviceName: `${props.prerenderName}-service`,
-                desiredCount: 1,
-                cpu: 512, // 0.5 vCPU (this may need to be increased)
-                memoryLimitMiB: 1024, // 1 GB to give Chrome enough memory
+                desiredCount: props.desiredInstanceCount || 1,
+                cpu: props.instanceCPU || 512, // 0.5 vCPU default
+                memoryLimitMiB: props.instanceMemory || 1024, // 1 GB default to give Chrome enough memory
                 taskImageOptions: {
                     image: ecs.ContainerImage.fromDockerImageAsset(asset),
                     enableLogging: true,
@@ -89,7 +93,7 @@ export class PrerenderFargate extends Construct {
 
         // Setup AutoScaling policy
         const scaling = fargateService.service.autoScaleTaskCount({
-            maxCapacity: 2,
+            maxCapacity: props.maxInstanceCount || 2,
         });
         scaling.scaleOnCpuUtilization(`${props.prerenderName}-scaling`, {
             targetUtilizationPercent: 50,
