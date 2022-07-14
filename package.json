@@ -21,7 +21,8 @@
         "esbuild": "^0.12.15"
     },
     "dependencies": {
-        "aws-cdk-lib": "^2.26.0"
+        "aws-cdk-lib": "^2.26.0",
+        "constructs": "^10.0.0"
     },
     "repository": {
         "type": "git",
