@@ -1,0 +1,15 @@
+# Prerender Proxy Internal
+This library provides two function constructs and a construct that creates two Lambda@Edge functions to use prerender.io as a Cloudfront Origin for site indexers (Google, Bing, etc). 
+
+The `prerender-check` is a `viewer-request` function that will check if a requester is from a indexer and if it is adds a header so that the second function `prerender` (`origin-request`) will alter the origin to prerender.
+
+The `prerender` will function also make a HEAD request to a nominated backend to detect 301 and 302 redirects and if so forward them on to the frontend. This ensures that your SEO rankings are not penalized by having multiple pages at the same URL.
+
+These functions are intended to be added to an existing Cloudfront distribution.
+
+## Props
+`redirectBackendOrigin`: The backend origin to make the HEAD request to.
+`redirectFrontendHost`: This hostname is used to replace the backend host for any redirects that contain the backend host.
+`prerenderUrl`: The URL of your Prerender service
+`prerenderAuthUser`: The basic auth user to access Prerender
+`prerenderAuthPass`: The basic auth password to access Prerender
