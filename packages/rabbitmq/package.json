@@ -14,7 +14,7 @@
     "prepublish": "tsc"
   },
   "devDependencies": {
-    "@aws-cdk/assert": "^1.111.0",
+    "@aws-cdk/assert": "^2.32.1",
     "@types/jest": "^26.0.24",
     "@types/node": "16.0.0",
     "jest": "^26.4.2",
