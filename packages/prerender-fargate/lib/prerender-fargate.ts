@@ -16,7 +16,7 @@ export interface PrerenderOptions {
     vpcId: string,
     bucketName?: string,
     expirationDays?: number,
-    basicAuthList: Array<string[]>,
+    tokenList: Array<string>,
     certificateArn: string,
     desiredInstanceCount?: number,
     maxInstanceCount?: number,
@@ -77,7 +77,7 @@ export class PrerenderFargate extends Construct {
                         AWS_ACCESS_KEY_ID: accessKey.accessKeyId,
                         AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.toString(),
                         AWS_REGION: Stack.of(this).region,
-                        BASIC_AUTH: props.basicAuthList.toString()
+                        TOKEN_LIST: props.tokenList.toString()
                     }
                 },
                 healthCheckGracePeriod: Duration.seconds(20),
