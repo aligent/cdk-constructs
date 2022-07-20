@@ -19,12 +19,6 @@ server.use({
         let auth = req.headers['x-prerender-token'];
         if (!auth) return res.send(401);
 
-        // malformed
-        let parts = auth.split(' ');
-        if ('basic' != parts[0].toLowerCase()) return res.send(401);
-        if (!parts[1]) return res.send(401);
-        auth = parts[1].toString();
-
         // check credentials exist
         if (!auth) return res.send(401);
 
