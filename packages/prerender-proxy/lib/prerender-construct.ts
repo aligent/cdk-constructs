@@ -6,6 +6,7 @@ import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
 
 export interface PrerenderFunctionOptions {
     prerenderToken: string,
+    prerenderUrl?: string,
     pathPrefix?: string,
 }
 
@@ -31,6 +32,7 @@ export class PrerenderFunction extends Construct {
                 define: {
                   'process.env.PRERENDER_TOKEN': JSON.stringify(options.prerenderToken),
                   'process.env.PATH_PREFIX': JSON.stringify(options.pathPrefix ?? ''),
+                  'process.env.PRERENDER_URL': JSON.stringify(options.prerenderUrl ?? 'service.prerender.io'),
                 }
               }),
               runtime: Runtime.NODEJS_14_X,

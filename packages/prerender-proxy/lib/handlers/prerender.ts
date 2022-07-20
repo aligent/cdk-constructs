@@ -3,6 +3,7 @@ import { CloudFrontRequest, CloudFrontRequestEvent, CloudFrontResponse } from '@
 
 const PRERENDER_TOKEN = process.env.PRERENDER_TOKEN;
 const PATH_PREFIX = process.env.PATH_PREFIX;
+const PRERENDER_URL = process.env.PRERENDER_URL;
 
 export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFrontResponse|CloudFrontRequest> => {
   let request = event.Records[0].cf.request;
@@ -19,7 +20,7 @@ export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFront
 
        request.origin = {
             custom: {
-                 domainName: 'service.prerender.io',
+                 domainName: PRERENDER_URL,
                  port: 443,
                  protocol: 'https',
                  readTimeout: 20,
