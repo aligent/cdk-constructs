@@ -1,9 +1,11 @@
-import { Construct, CfnOutput, RemovalPolicy, StackProps, Stack} from '@aws-cdk/core';
+import { Construct, CfnOutput, RemovalPolicy, StackProps, Stack } from '@aws-cdk/core';
 import { Bucket, BucketEncryption, BlockPublicAccess } from '@aws-cdk/aws-s3';
-import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps } from '@aws-cdk/aws-cloudfront';
+import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps, LambdaFunctionAssociation, LambdaEdgeEventType } from '@aws-cdk/aws-cloudfront';
 import { HostedZone, RecordTarget, ARecord } from '@aws-cdk/aws-route53';
 import { CloudFrontTarget } from '@aws-cdk/aws-route53-targets';
 import { User, Group, Policy, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
+import { Version } from '@aws-cdk/aws-lambda';
+import { RemoteOutputs } from 'cdk-remote-stack';
 
 export interface StaticHostingProps {
     domainName: string;
@@ -33,19 +35,22 @@ export interface StaticHostingProps {
      */
     behaviors?: Array<Behavior>;
     enableErrorConfig: boolean;
+    backendHost: string;
+    robotsBackendPath: string;
+    sitemapBackendPaths: string[];
     defaultRootObject?: string
 }
 
 export class StaticHosting extends Construct {
-    constructor(scope: Construct, id: string, props: StaticHostingProps) {
+    constructor(scope: Construct, id: string, props: StaticHostingProps, lambdaAtEdgeStack?: Stack) {
         super(scope, id);
 
         const siteName = `${props.subDomainName}.${props.domainName}`;
         const siteNameArray: Array<string> = [siteName];
 
         let distributionCnames: Array<string> = (props.extraDistributionCnames) ?
-        siteNameArray.concat(props.extraDistributionCnames) :
-        siteNameArray;
+            siteNameArray.concat(props.extraDistributionCnames) :
+            siteNameArray;
 
 
         const s3LoggingBucket = (props.enableS3AccessLogging)
@@ -113,7 +118,7 @@ export class StaticHosting extends Construct {
                 publisherGroup.addUser(publisherUser);
             };
         };
- 
+
         const loggingBucket = (props.enableCloudFrontAccessLogging)
             ? new Bucket(this, 'LoggingBucket', {
                 bucketName: `${siteName}-access-logs`,
@@ -137,8 +142,52 @@ export class StaticHosting extends Construct {
             ? { bucket: loggingBucket }
             : undefined
 
-        // Create default origin
+
         let originConfigs = new Array<SourceConfiguration>();
+
+        if (lambdaAtEdgeStack) {
+            const outputs = new RemoteOutputs(this, 'Outputs', { stack: lambdaAtEdgeStack });
+
+            // Add the backend host as an origin
+            if (props.backendHost) {
+                originConfigs.push({
+                    customOriginSource: {
+                        domainName: props.backendHost
+                    },
+                    behaviors: [] // Behaviors will be added below
+                });
+
+                // Redirect robots
+                if (props.robotsBackendPath) {
+                    originConfigs[0].behaviors.push(
+                        {
+                            pathPattern: props.robotsBackendPath,
+                            lambdaFunctionAssociations: [{
+                                eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
+                                lambdaFunction: Version.fromVersionArn(this, 'robots-remap-function', outputs.get(`robots-remap`))
+                            }]
+                        }
+                    );
+                }
+
+                // Redirect sitemap(s)
+                if (props.sitemapBackendPaths) {
+                    for (const path of props.sitemapBackendPaths) {
+                        originConfigs[0].behaviors.push(
+                            {
+                                pathPattern: path,
+                                lambdaFunctionAssociations: [{
+                                    eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
+                                    lambdaFunction: Version.fromVersionArn(this, `sitemap-remap-function-${path}`, outputs.get(`sitemap-remap-${path}`))
+                                }]
+                            }
+                        );
+                    }
+                }
+            }
+        }
+
+        // Create default origin
         originConfigs.push({
             s3OriginSource: {
                 s3BucketSource: bucket,
@@ -159,37 +208,36 @@ export class StaticHosting extends Construct {
             }
         }
 
-
         let distributionProps: CloudFrontWebDistributionProps = {
-          aliasConfiguration: {
-            acmCertRef: props.certificateArn,
-            names: distributionCnames,
-            securityPolicy: SecurityPolicyProtocol.TLS_V1_2_2018,
-            sslMethod: SSLMethod.SNI,
-          },
-          originConfigs,
-          defaultRootObject: props.defaultRootObject,
-          priceClass: PriceClass.PRICE_CLASS_ALL,
-          viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          loggingConfig: loggingConfig,
+            aliasConfiguration: {
+                acmCertRef: props.certificateArn,
+                names: distributionCnames,
+                securityPolicy: SecurityPolicyProtocol.TLS_V1_2_2018,
+                sslMethod: SSLMethod.SNI,
+            },
+            originConfigs,
+            defaultRootObject: props.defaultRootObject,
+            priceClass: PriceClass.PRICE_CLASS_ALL,
+            viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            loggingConfig: loggingConfig,
         };
 
         if (props.enableErrorConfig) {
-          distributionProps = {
-            ...distributionProps, ...{
-              errorConfigurations: [{
-                errorCode: 404,
-                errorCachingMinTtl: 0,
-                responseCode: 200,
-                responsePagePath: '/index.html',
-              }]
+            distributionProps = {
+                ...distributionProps, ...{
+                    errorConfigurations: [{
+                        errorCode: 404,
+                        errorCachingMinTtl: 0,
+                        responseCode: 200,
+                        responsePagePath: '/index.html',
+                    }]
+                }
             }
-          }
         }
 
         const distribution = new CloudFrontWebDistribution(this, 'BucketCdn', distributionProps)
 
-        if(publisherGroup) {
+        if (publisherGroup) {
             const cloudFrontInvalidationPolicyStatement = new PolicyStatement({
                 effect: Effect.ALLOW,
                 actions: ['cloudfront:CreateInvalidation', 'cloudfront:GetInvalidation', 'cloudfront:ListInvalidations'],
