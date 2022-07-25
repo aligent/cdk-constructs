@@ -2,7 +2,7 @@ import { Construct, CfnOutput } from '@aws-cdk/core';
 import { PrerenderFunction } from './prerender-construct';
 import { PrerenderCheckFunction } from './prerender-check-construct';
 import { ErrorResponseFunction } from './error-response-construct';
-import { CloudFrontCacheControl, CloudFrontCacheControlOptions } from "./prerender-cf-cache-control-consctruct";
+import { CloudFrontCacheControl, CloudFrontCacheControlOptions } from "./prerender-cf-cache-control-construct";
 
 export interface PrerenderLambdaProps {
     prerenderToken: string
