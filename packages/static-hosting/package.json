@@ -17,6 +17,7 @@
     "@aligent/cdk-geoip-redirect": "0.1.0",
     "@aligent/cdk-prerender-proxy": "0.1.7",
     "@aligent/cdk-static-hosting": "0.1.4",
+    "@aws-cdk/aws-route53-targets": "1.111.0",
     "@aws-cdk/assert": "1.11.0",
     "@aws-cdk/assets": "1.111.0",
     "@aws-cdk/aws-cloudfront": "1.111.0",
