@@ -17,6 +17,5 @@ export const handler = async (event: CloudFrontResponseEvent): Promise<CloudFron
             }
         ]
     }
-    console.log(JSON.stringify(response.headers));
     return response;
 }
