@@ -5,7 +5,7 @@ import { HostedZone, RecordTarget, ARecord } from '@aws-cdk/aws-route53';
 import { CloudFrontTarget } from '@aws-cdk/aws-route53-targets';
 import { User, Group, Policy, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
 import { Version } from '@aws-cdk/aws-lambda';
-import { RemoteOutputs } from 'cdk-remote-stack';
+import { ArbitraryPathRemapFunction } from './arbitrary-path-remap';
 
 export interface StaticHostingProps {
     domainName: string;
@@ -35,18 +35,25 @@ export interface StaticHostingProps {
      */
     behaviors?: Array<Behavior>;
     enableErrorConfig: boolean;
-    backendHost: string;
-    robotsBackendPath: string;
-    sitemapBackendPaths: string[];
-    defaultRootObject?: string
+    remapPaths?: remapPath[];
+    backendHost?: string;
+    remapBackendPaths?: remapPath[];
+    defaultRootObject?: string;
+    enforceSSL?: boolean;
+}
+
+interface remapPath {
+    from: string,
+    to: string
 }
 
 export class StaticHosting extends Construct {
-    constructor(scope: Construct, id: string, props: StaticHostingProps, lambdaAtEdgeStack?: Stack) {
+    constructor(scope: Construct, id: string, props: StaticHostingProps) {
         super(scope, id);
 
         const siteName = `${props.subDomainName}.${props.domainName}`;
         const siteNameArray: Array<string> = [siteName];
+        const enforceSSL = props.enforceSSL !== false;
 
         let distributionCnames: Array<string> = (props.extraDistributionCnames) ?
             siteNameArray.concat(props.extraDistributionCnames) :
@@ -59,7 +66,7 @@ export class StaticHosting extends Construct {
                 encryption: BucketEncryption.S3_MANAGED,
                 blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
                 removalPolicy: RemovalPolicy.RETAIN,
-                enforceSSL: true
+                enforceSSL: enforceSSL
             })
             : undefined;
 
@@ -75,7 +82,7 @@ export class StaticHosting extends Construct {
             encryption: BucketEncryption.S3_MANAGED,
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
             serverAccessLogsBucket: s3LoggingBucket,
-            enforceSSL: true
+            enforceSSL: enforceSSL
         });
 
         new CfnOutput(this, 'Bucket', {
@@ -125,7 +132,7 @@ export class StaticHosting extends Construct {
                 encryption: BucketEncryption.S3_MANAGED,
                 blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
                 removalPolicy: RemovalPolicy.RETAIN,
-                enforceSSL: true
+                enforceSSL: enforceSSL
             })
             : undefined;
 
@@ -145,44 +152,28 @@ export class StaticHosting extends Construct {
 
         let originConfigs = new Array<SourceConfiguration>();
 
-        if (lambdaAtEdgeStack) {
-            const outputs = new RemoteOutputs(this, 'Outputs', { stack: lambdaAtEdgeStack });
+        // Add the backend host as an origin
+        if (props.backendHost) {
+            originConfigs.push({
+                customOriginSource: {
+                    domainName: props.backendHost
+                },
+                behaviors: [] // Behaviors will be added below
+            });
 
-            // Add the backend host as an origin
-            if (props.backendHost) {
-                originConfigs.push({
-                    customOriginSource: {
-                        domainName: props.backendHost
-                    },
-                    behaviors: [] // Behaviors will be added below
-                });
-
-                // Redirect robots
-                if (props.robotsBackendPath) {
+            // Redirect paths
+            if (props.remapBackendPaths) {
+                for (const path of props.remapBackendPaths) {
+                    const remapFunction = new ArbitraryPathRemapFunction(scope, `remap-function-${path.from}`, {path: path.to});
                     originConfigs[0].behaviors.push(
                         {
-                            pathPattern: props.robotsBackendPath,
+                            pathPattern: path.from,
                             lambdaFunctionAssociations: [{
                                 eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
-                                lambdaFunction: Version.fromVersionArn(this, 'robots-remap-function', outputs.get(`robots-remap`))
+                                lambdaFunction: Version.fromVersionArn(this, `remap-function-${path.from}`, remapFunction.edgeFunction.currentVersion.functionArn)
                             }]
                         }
                     );
-                }
-
-                // Redirect sitemap(s)
-                if (props.sitemapBackendPaths) {
-                    for (const path of props.sitemapBackendPaths) {
-                        originConfigs[0].behaviors.push(
-                            {
-                                pathPattern: path,
-                                lambdaFunctionAssociations: [{
-                                    eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
-                                    lambdaFunction: Version.fromVersionArn(this, `sitemap-remap-function-${path}`, outputs.get(`sitemap-remap-${path}`))
-                                }]
-                            }
-                        );
-                    }
                 }
             }
         }
@@ -198,6 +189,22 @@ export class StaticHosting extends Construct {
                 isDefaultBehavior: true
             }]
         });
+
+        // Redirect paths
+        if (props.remapPaths) {
+            for (const path of props.remapPaths) {
+                const remapFunction = new ArbitraryPathRemapFunction(scope, `remap-function-${path.from}`, {path: path.to});
+                originConfigs[originConfigs.length-1].behaviors.push(
+                    {
+                        pathPattern: path.from,
+                        lambdaFunctionAssociations: [{
+                            eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
+                            lambdaFunction: Version.fromVersionArn(this, `remap-function-${path.from}`, remapFunction.edgeFunction.currentVersion.functionArn)
+                        }]
+                    }
+                );
+            }
+        }
 
         // Add any custom origins passed to the construct
         if (props.customOriginConfigs) {

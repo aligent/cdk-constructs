@@ -14,29 +14,24 @@
     "prepublish": "tsc"
   },
   "devDependencies": {
-    "@aws-cdk/assert": "^1.111.0",
-    "@aws-cdk/aws-cloudfront": "^1.111.0",
-    "@aws-cdk/aws-iam": "^1.111.0",
-    "@aws-cdk/aws-route53": "^1.111.0",
-    "@aws-cdk/aws-route53-targets": "^1.111.0",
-    "@aws-cdk/aws-s3": "^1.111.0",
-    "@aws-cdk/core": "^1.111.0",
-    "@types/jest": "^26.0.24",
-    "@types/node": "16.4.13",
-    "aws-cdk": "^1.111.0",
+    "@aligent/cdk-geoip-redirect": "0.1.0",
+    "@aligent/cdk-prerender-proxy": "0.1.7",
+    "@aligent/cdk-static-hosting": "0.1.4",
+    "@aws-cdk/assert": "1.11.0",
+    "@aws-cdk/assets": "1.111.0",
+    "@aws-cdk/aws-cloudfront": "1.111.0",
+    "@aws-cdk/aws-lambda": "1.111.0",
+    "@aws-cdk/aws-lambda-nodejs": "1.111.0",
+    "@aws-cdk/core": "1.111.0",
+    "@aws-cdk/region-info": "1.111.0",
+    "@types/jest": "^26.0.10",
+    "@types/node": "10.17.27",
+    "aws-cdk": "1.111.0",
+    "constructs": "3.3.69",
     "jest": "^26.4.2",
     "source-map-support": "^0.5.16",
-    "ts-jest": "^26.5.4",
-    "ts-node": "^10.2.1",
-    "typescript": "~4.3.5"
-  },
-  "peerDependencies": {
-    "@aws-cdk/aws-cloudfront": "^1.111.0",
-    "@aws-cdk/aws-iam": "^1.111.0",
-    "@aws-cdk/aws-route53": "^1.111.0",
-    "@aws-cdk/aws-route53-targets": "^1.111.0",
-    "@aws-cdk/aws-s3": "^1.111.0",
-    "@aws-cdk/core": "^1.111.0",
-    "aws-cdk": "^1.111.0"
+    "ts-jest": "^26.5.3",
+    "ts-node": "^9.0.0",
+    "typescript": "~3.8.0"
   }
 }

@@ -16,7 +16,7 @@ export class ArbitraryPathRemapFunction extends Construct {
 
         this.edgeFunction = new experimental.EdgeFunction(
             this,
-            'ArbitraryPathRemapFunction',
+            `${id}-edge-function`,
             {
               code: Bundling.bundle({
                 entry: `${__dirname}/handlers/remap.ts`,
