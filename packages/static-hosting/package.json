@@ -22,7 +22,7 @@
     "@aws-cdk/aws-s3": "^1.111.0",
     "@aws-cdk/core": "^1.111.0",
     "@types/jest": "^26.0.24",
-    "@types/node": "16.4.13",
+    "@types/node": "18.6.0",
     "aws-cdk": "^1.111.0",
     "jest": "^26.4.2",
     "source-map-support": "^0.5.16",
