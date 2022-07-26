@@ -164,16 +164,7 @@ export class StaticHosting extends Construct {
             // Redirect paths
             if (props.remapBackendPaths) {
                 for (const path of props.remapBackendPaths) {
-                    const remapFunction = new ArbitraryPathRemapFunction(scope, `remap-function-${path.from}`, {path: path.to});
-                    originConfigs[0].behaviors.push(
-                        {
-                            pathPattern: path.from,
-                            lambdaFunctionAssociations: [{
-                                eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
-                                lambdaFunction: Version.fromVersionArn(this, `remap-function-${path.from}`, remapFunction.edgeFunction.currentVersion.functionArn)
-                            }]
-                        }
-                    );
+                    originConfigs[0].behaviors.push(this.CreateRemapBehavior(path.from, path.to));
                 }
             }
         }
@@ -193,16 +184,7 @@ export class StaticHosting extends Construct {
         // Redirect paths
         if (props.remapPaths) {
             for (const path of props.remapPaths) {
-                const remapFunction = new ArbitraryPathRemapFunction(scope, `remap-function-${path.from}`, {path: path.to});
-                originConfigs[originConfigs.length-1].behaviors.push(
-                    {
-                        pathPattern: path.from,
-                        lambdaFunctionAssociations: [{
-                            eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
-                            lambdaFunction: Version.fromVersionArn(this, `remap-function-${path.from}`, remapFunction.edgeFunction.currentVersion.functionArn)
-                        }]
-                    }
-                );
+                originConfigs[originConfigs.length - 1].behaviors.push(this.CreateRemapBehavior(path.from, path.to));
             }
         }
 
@@ -276,4 +258,23 @@ export class StaticHosting extends Construct {
             });
         };
     };
+
+    private CreateRemapBehavior(from: string, to: string): Behavior {
+        const behavior = {
+            pathPattern: from,
+            lambdaFunctionAssociations: []
+        } as Behavior;
+
+        // If the remap is to a different path, create a Lambda@Edge function to handle this
+        if (from !== to) {
+            const remapFunction = new ArbitraryPathRemapFunction(this, `remap-function-${from}`, { path: to });
+            behavior.lambdaFunctionAssociations?.push({
+                eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
+                lambdaFunction: Version.fromVersionArn(this, `remap-function-association-${from}`,
+                    remapFunction.edgeFunction.currentVersion.functionArn)
+            });
+        }
+
+        return behavior;
+    }
 };
