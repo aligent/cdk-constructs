@@ -34,7 +34,8 @@ export interface StaticHostingProps {
      * Optional set of behaviors to override the default behvior defined in this construct
      */
     behaviors?: Array<Behavior>;
-    enableErrorConfig: boolean;
+    enableErrorConfig?: boolean;
+    enableStaticFileRemap?: boolean;
     remapPaths?: remapPath[];
     backendHost?: string;
     remapBackendPaths?: remapPath[];
@@ -48,12 +49,15 @@ interface remapPath {
 }
 
 export class StaticHosting extends Construct {
+    private staticFiles = ["js", "css", "json", "svg", "jpg", "jpeg", "png"];
+
     constructor(scope: Construct, id: string, props: StaticHostingProps) {
         super(scope, id);
 
         const siteName = `${props.subDomainName}.${props.domainName}`;
         const siteNameArray: Array<string> = [siteName];
         const enforceSSL = props.enforceSSL !== false;
+        const enableStaticFileRemap = props.enableStaticFileRemap !== false;
 
         let distributionCnames: Array<string> = (props.extraDistributionCnames) ?
             siteNameArray.concat(props.extraDistributionCnames) :
@@ -180,6 +184,13 @@ export class StaticHosting extends Construct {
                 isDefaultBehavior: true
             }]
         });
+
+        // Create behaviors to map static content to bucket
+        if (enableStaticFileRemap) {
+            for (const path of this.staticFiles) {
+                originConfigs[originConfigs.length - 1].behaviors.push(this.createRemapBehavior(`*.${path}`, `*.${path}`));
+            }
+        }
 
         // Redirect paths
         if (props.remapPaths) {
