@@ -164,7 +164,7 @@ export class StaticHosting extends Construct {
             // Redirect paths
             if (props.remapBackendPaths) {
                 for (const path of props.remapBackendPaths) {
-                    originConfigs[0].behaviors.push(this.CreateRemapBehavior(path.from, path.to));
+                    originConfigs[0].behaviors.push(this.createRemapBehavior(path.from, path.to));
                 }
             }
         }
@@ -184,7 +184,7 @@ export class StaticHosting extends Construct {
         // Redirect paths
         if (props.remapPaths) {
             for (const path of props.remapPaths) {
-                originConfigs[originConfigs.length - 1].behaviors.push(this.CreateRemapBehavior(path.from, path.to));
+                originConfigs[originConfigs.length - 1].behaviors.push(this.createRemapBehavior(path.from, path.to));
             }
         }
 
