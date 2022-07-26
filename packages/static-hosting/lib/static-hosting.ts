@@ -1,9 +1,11 @@
-import { Construct, CfnOutput, RemovalPolicy, StackProps, Stack} from '@aws-cdk/core';
+import { Construct, CfnOutput, RemovalPolicy, StackProps, Stack } from '@aws-cdk/core';
 import { Bucket, BucketEncryption, BlockPublicAccess } from '@aws-cdk/aws-s3';
-import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps } from '@aws-cdk/aws-cloudfront';
+import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps, LambdaFunctionAssociation, LambdaEdgeEventType } from '@aws-cdk/aws-cloudfront';
 import { HostedZone, RecordTarget, ARecord } from '@aws-cdk/aws-route53';
 import { CloudFrontTarget } from '@aws-cdk/aws-route53-targets';
 import { User, Group, Policy, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
+import { Version } from '@aws-cdk/aws-lambda';
+import { ArbitraryPathRemapFunction } from './arbitrary-path-remap';
 
 export interface StaticHostingProps {
     domainName: string;
@@ -33,7 +35,16 @@ export interface StaticHostingProps {
      */
     behaviors?: Array<Behavior>;
     enableErrorConfig: boolean;
-    defaultRootObject?: string
+    remapPaths?: remapPath[];
+    backendHost?: string;
+    remapBackendPaths?: remapPath[];
+    defaultRootObject?: string;
+    enforceSSL?: boolean;
+}
+
+interface remapPath {
+    from: string,
+    to: string
 }
 
 export class StaticHosting extends Construct {
@@ -42,10 +53,11 @@ export class StaticHosting extends Construct {
 
         const siteName = `${props.subDomainName}.${props.domainName}`;
         const siteNameArray: Array<string> = [siteName];
+        const enforceSSL = props.enforceSSL !== false;
 
         let distributionCnames: Array<string> = (props.extraDistributionCnames) ?
-        siteNameArray.concat(props.extraDistributionCnames) :
-        siteNameArray;
+            siteNameArray.concat(props.extraDistributionCnames) :
+            siteNameArray;
 
 
         const s3LoggingBucket = (props.enableS3AccessLogging)
@@ -54,7 +66,7 @@ export class StaticHosting extends Construct {
                 encryption: BucketEncryption.S3_MANAGED,
                 blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
                 removalPolicy: RemovalPolicy.RETAIN,
-                enforceSSL: true
+                enforceSSL: enforceSSL
             })
             : undefined;
 
@@ -70,7 +82,7 @@ export class StaticHosting extends Construct {
             encryption: BucketEncryption.S3_MANAGED,
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
             serverAccessLogsBucket: s3LoggingBucket,
-            enforceSSL: true
+            enforceSSL: enforceSSL
         });
 
         new CfnOutput(this, 'Bucket', {
@@ -113,14 +125,14 @@ export class StaticHosting extends Construct {
                 publisherGroup.addUser(publisherUser);
             };
         };
- 
+
         const loggingBucket = (props.enableCloudFrontAccessLogging)
             ? new Bucket(this, 'LoggingBucket', {
                 bucketName: `${siteName}-access-logs`,
                 encryption: BucketEncryption.S3_MANAGED,
                 blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
                 removalPolicy: RemovalPolicy.RETAIN,
-                enforceSSL: true
+                enforceSSL: enforceSSL
             })
             : undefined;
 
@@ -137,8 +149,27 @@ export class StaticHosting extends Construct {
             ? { bucket: loggingBucket }
             : undefined
 
-        // Create default origin
+
         let originConfigs = new Array<SourceConfiguration>();
+
+        // Add the backend host as an origin
+        if (props.backendHost) {
+            originConfigs.push({
+                customOriginSource: {
+                    domainName: props.backendHost
+                },
+                behaviors: [] // Behaviors will be added below
+            });
+
+            // Redirect paths
+            if (props.remapBackendPaths) {
+                for (const path of props.remapBackendPaths) {
+                    originConfigs[0].behaviors.push(this.createRemapBehavior(path.from, path.to));
+                }
+            }
+        }
+
+        // Create default origin
         originConfigs.push({
             s3OriginSource: {
                 s3BucketSource: bucket,
@@ -150,6 +181,13 @@ export class StaticHosting extends Construct {
             }]
         });
 
+        // Redirect paths
+        if (props.remapPaths) {
+            for (const path of props.remapPaths) {
+                originConfigs[originConfigs.length - 1].behaviors.push(this.createRemapBehavior(path.from, path.to));
+            }
+        }
+
         // Add any custom origins passed to the construct
         if (props.customOriginConfigs) {
             if (props.prependCustomOriginBehaviours) {
@@ -159,37 +197,36 @@ export class StaticHosting extends Construct {
             }
         }
 
-
         let distributionProps: CloudFrontWebDistributionProps = {
-          aliasConfiguration: {
-            acmCertRef: props.certificateArn,
-            names: distributionCnames,
-            securityPolicy: SecurityPolicyProtocol.TLS_V1_2_2018,
-            sslMethod: SSLMethod.SNI,
-          },
-          originConfigs,
-          defaultRootObject: props.defaultRootObject,
-          priceClass: PriceClass.PRICE_CLASS_ALL,
-          viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          loggingConfig: loggingConfig,
+            aliasConfiguration: {
+                acmCertRef: props.certificateArn,
+                names: distributionCnames,
+                securityPolicy: SecurityPolicyProtocol.TLS_V1_2_2018,
+                sslMethod: SSLMethod.SNI,
+            },
+            originConfigs,
+            defaultRootObject: props.defaultRootObject,
+            priceClass: PriceClass.PRICE_CLASS_ALL,
+            viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            loggingConfig: loggingConfig,
         };
 
         if (props.enableErrorConfig) {
-          distributionProps = {
-            ...distributionProps, ...{
-              errorConfigurations: [{
-                errorCode: 404,
-                errorCachingMinTtl: 0,
-                responseCode: 200,
-                responsePagePath: '/index.html',
-              }]
+            distributionProps = {
+                ...distributionProps, ...{
+                    errorConfigurations: [{
+                        errorCode: 404,
+                        errorCachingMinTtl: 0,
+                        responseCode: 200,
+                        responsePagePath: '/index.html',
+                    }]
+                }
             }
-          }
         }
 
         const distribution = new CloudFrontWebDistribution(this, 'BucketCdn', distributionProps)
 
-        if(publisherGroup) {
+        if (publisherGroup) {
             const cloudFrontInvalidationPolicyStatement = new PolicyStatement({
                 effect: Effect.ALLOW,
                 actions: ['cloudfront:CreateInvalidation', 'cloudfront:GetInvalidation', 'cloudfront:ListInvalidations'],
@@ -221,4 +258,23 @@ export class StaticHosting extends Construct {
             });
         };
     };
+
+    private createRemapBehavior(from: string, to: string): Behavior {
+        const behavior = {
+            pathPattern: from,
+            lambdaFunctionAssociations: []
+        } as Behavior;
+
+        // If the remap is to a different path, create a Lambda@Edge function to handle this
+        if (from !== to) {
+            const remapFunction = new ArbitraryPathRemapFunction(this, `remap-function-${from}`, { path: to });
+            behavior.lambdaFunctionAssociations?.push({
+                eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
+                lambdaFunction: Version.fromVersionArn(this, `remap-function-association-${from}`,
+                    remapFunction.edgeFunction.currentVersion.functionArn)
+            });
+        }
+
+        return behavior;
+    }
 };
