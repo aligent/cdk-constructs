@@ -259,7 +259,7 @@ export class StaticHosting extends Construct {
         };
     };
 
-    private CreateRemapBehavior(from: string, to: string): Behavior {
+    private createRemapBehavior(from: string, to: string): Behavior {
         const behavior = {
             pathPattern: from,
             lambdaFunctionAssociations: []
