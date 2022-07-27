@@ -8,7 +8,7 @@ import { Bucket } from 'aws-cdk-lib/aws-s3';
 
 export interface PrerenderRecacheApiOptions {
     prerenderS3Bucket: Bucket,
-    apiKeys: string[]
+    tokenList: string[]
 }
 
 export class PrerenderRecacheApi extends Construct {
@@ -24,7 +24,7 @@ export class PrerenderRecacheApi extends Construct {
             proxy: false
         });
 
-        options.apiKeys.forEach(k => this.api.addApiKey(k));
+        options.tokenList.forEach(k => this.api.addApiKey(k));
 
         const recache = this.api.root.addResource('recache');
         recache.addMethod('POST');

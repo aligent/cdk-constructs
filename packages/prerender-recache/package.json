@@ -6,12 +6,12 @@
   "directories": {
     "lib": "lib"
   },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.113.0",
+    "@aws-sdk/client-sqs": "^3.112.0",
+    "@aws-sdk/client-ssm": "^3.112.0",
     "@aws-solutions-constructs/aws-lambda-sqs-lambda": "^2.9.0"
   }
 }
