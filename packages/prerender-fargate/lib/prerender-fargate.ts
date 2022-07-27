@@ -25,11 +25,13 @@ export interface PrerenderOptions {
 }
 
 export class PrerenderFargate extends Construct {
+    readonly bucket: Bucket;
+
     constructor(scope: Construct, id: string, props: PrerenderOptions) {
         super(scope, id);
 
         // Create bucket for prerender storage
-        const bucket = new Bucket(this, `${props.prerenderName}-bucket`, {
+        this.bucket = new Bucket(this, `${props.prerenderName}-bucket`, {
             bucketName: props.bucketName,
             lifecycleRules: [{
                 enabled: true,
@@ -42,7 +44,7 @@ export class PrerenderFargate extends Construct {
 
         // Configure access to the bucket for the container
         const user = new User(this, 'PrerenderAccess');
-        bucket.grantReadWrite(user);
+        this.bucket.grantReadWrite(user);
 
         const accessKey = new AccessKey(this, 'PrerenderAccessKey', {
             user: user,
@@ -73,7 +75,7 @@ export class PrerenderFargate extends Construct {
                     enableLogging: true,
                     containerPort: 3000,
                     environment: {
-                        S3_BUCKET_NAME: bucket.bucketName,
+                        S3_BUCKET_NAME: this.bucket.bucketName,
                         AWS_ACCESS_KEY_ID: accessKey.accessKeyId,
                         AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.toString(),
                         AWS_REGION: Stack.of(this).region,
