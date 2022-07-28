@@ -2,7 +2,7 @@
   "name": "@aligent/cdk-static-hosting",
   "version": "0.2.0-beta",
   "description": "Defines a CDK construct for hosting a static website on AWS using S3 and CloudFront",
-  "main": "index.ts",
+  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/aligent/cdk-constructs.git"
