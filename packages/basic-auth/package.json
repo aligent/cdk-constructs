@@ -30,7 +30,7 @@
     "@aws-cdk/aws-lambda": "1.111.0",
     "@aws-cdk/aws-lambda-nodejs": "1.111.0",
     "@aws-cdk/core": "1.111.0",
-    "aws-cdk": "1.111.0",
+    "aws-cdk": "2.37.1",
     "esbuild": "0.12.15",
     "source-map-support": "^0.5.16"
   },
@@ -39,7 +39,7 @@
     "@aws-cdk/aws-lambda": "1.111.0",
     "@aws-cdk/aws-lambda-nodejs": "1.111.0",
     "@aws-cdk/core": "1.111.0",
-    "aws-cdk": "1.111.0",
+    "aws-cdk": "2.37.1",
     "esbuild": "0.12.15"
   }
 }
