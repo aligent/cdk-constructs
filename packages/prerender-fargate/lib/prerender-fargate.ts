@@ -13,7 +13,7 @@ import * as path from 'path';
 export interface PrerenderOptions {
     prerenderName: string,
     domainName: string,
-    vpcId: string,
+    vpcId?: string,
     bucketName?: string,
     expirationDays?: number,
     tokenList: Array<string>,
@@ -51,7 +51,8 @@ export class PrerenderFargate extends Construct {
             serial: 1
         });
 
-        const vpc = ec2.Vpc.fromLookup(this, "vpc", { vpcId: props.vpcId });
+        const vpcLookup = props.vpcId ? { vpcId: props.vpcId } : { isDefault: true };
+        const vpc = ec2.Vpc.fromLookup(this, "vpc", vpcLookup); 
 
         const cluster = new ecs.Cluster(this, `${props.prerenderName}-cluster`, { vpc: vpc });
 
