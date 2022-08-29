@@ -7,7 +7,7 @@ import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
 export class PrerenderCheckFunction extends Construct {
     readonly edgeFunction: EdgeFunction;
 
-    constructor(scope: Construct, id: string) {
+    constructor(scope: Construct, id: string, botCheck?: boolean) {
       super(scope, id);
       this.edgeFunction = new experimental.EdgeFunction(
         this,
@@ -18,7 +18,10 @@ export class PrerenderCheckFunction extends Construct {
             runtime: Runtime.NODEJS_14_X,
             sourceMap: true,
             projectRoot: `${__dirname}/handlers/`,
-            depsLockFilePath: `${__dirname}/handlers/package-lock.json`
+            depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
+            define: {
+              'process.env.BOT_CHECK': JSON.stringify(botCheck ?? true), // Default to checking for bots
+            }
           }),
           runtime: Runtime.NODEJS_14_X,
           handler: 'index.handler',

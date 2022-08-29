@@ -8,6 +8,7 @@ export interface PrerenderLambdaProps {
     prerenderToken: string
     exclusionExpression?: string
     cacheControlProps?: CloudFrontCacheControlOptions
+    botCheck?: boolean
 }
 
 export class PrerenderLambda extends Construct {
@@ -20,7 +21,7 @@ export class PrerenderLambda extends Construct {
   constructor(scope: Construct, id: string, props: PrerenderLambdaProps) {
     super(scope, id);
 
-    this.prerenderCheckFunction = new PrerenderCheckFunction(this, 'PrerenderViewerRequest');
+    this.prerenderCheckFunction = new PrerenderCheckFunction(this, 'PrerenderViewerRequest', props.botCheck);
    
     this.prerenderFunction = new PrerenderFunction(this, 'PrerenderOriginRequest', props);
     
