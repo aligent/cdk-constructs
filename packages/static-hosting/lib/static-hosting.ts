@@ -295,10 +295,13 @@ export class StaticHosting extends Construct {
 
         // If the remap is to a different path, create a Lambda@Edge function to handle this
         if (from !== to) {
-            const remapFunction = new ArbitraryPathRemapFunction(this, `remap-function-${from}`, { path: to });
+            // Remove special characters from path
+            const id = from.replace(/[&\/\\#,+()$~%'":*?<>{}]/g, '-');
+
+            const remapFunction = new ArbitraryPathRemapFunction(this, `remap-function-${id}`, { path: to });
             behavior.lambdaFunctionAssociations?.push({
                 eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
-                lambdaFunction: Version.fromVersionArn(this, `remap-function-association-${from}`,
+                lambdaFunction: Version.fromVersionArn(this, `remap-function-association-${id}`,
                     remapFunction.edgeFunction.currentVersion.functionArn)
             });
         }
