@@ -6,9 +6,10 @@ import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 import { Bucket, BlockPublicAccess } from 'aws-cdk-lib/aws-s3'
 import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
-import { AccessKey, User } from 'aws-cdk-lib/aws-iam';
 import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as iam from 'aws-cdk-lib/aws-iam';
+
 import * as path from 'path';
 
 export interface PrerenderOptions {
@@ -43,15 +44,6 @@ export class PrerenderFargate extends Construct {
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
         });
 
-        // Configure access to the bucket for the container
-        const user = new User(this, 'PrerenderAccess');
-        this.bucket.grantReadWrite(user);
-
-        const accessKey = new AccessKey(this, 'PrerenderAccessKey', {
-            user: user,
-            serial: 1
-        });
-
         const vpcLookup = props.vpcId ? { vpcId: props.vpcId } : { isDefault: true };
         const vpc = ec2.Vpc.fromLookup(this, "vpc", vpcLookup); 
 
@@ -78,8 +70,6 @@ export class PrerenderFargate extends Construct {
                     containerPort: 3000,
                     environment: {
                         S3_BUCKET_NAME: this.bucket.bucketName,
-                        AWS_ACCESS_KEY_ID: accessKey.accessKeyId,
-                        AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.toString(),
                         AWS_REGION: Stack.of(this).region,
                         TOKEN_LIST: secretsmanager.Secret.fromSecretNameV2(this, 'Token', props.tokenSecretName).secretValue.unsafeUnwrap()
                     },
@@ -93,6 +83,28 @@ export class PrerenderFargate extends Construct {
                 domainZone: new HostedZone(this, 'hosted-zone', { zoneName: props.domainName }),
                 certificate: Certificate.fromCertificateArn(this, 'cert', props.certificateArn)
             }
+        );
+
+        fargateService.taskDefinition.taskRole.addToPrincipalPolicy(
+            new iam.PolicyStatement({
+                actions: [
+                    "s3:Abort*",
+                    "s3:DeleteObject*",
+                    "s3:GetBucket*",
+                    "s3:GetObject*",
+                    "s3:List*",
+                    "s3:PutObject",
+                    "s3:PutObjectLegalHold",
+                    "s3:PutObjectRetention",
+                    "s3:PutObjectTagging",
+                    "s3:PutObjectVersionTagging"
+                ],
+                resources: [
+                    this.bucket.bucketArn,
+                    this.bucket.bucketArn + "/*"
+                ],
+                effect: iam.Effect.ALLOW
+            })
         );
 
         // Setup AutoScaling policy
