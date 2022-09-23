@@ -8,6 +8,7 @@ import { Bucket, BlockPublicAccess } from 'aws-cdk-lib/aws-s3'
 import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
 import { AccessKey, User } from 'aws-cdk-lib/aws-iam';
 import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as path from 'path';
 
 export interface PrerenderOptions {
@@ -16,7 +17,7 @@ export interface PrerenderOptions {
     vpcId?: string,
     bucketName?: string,
     expirationDays?: number,
-    tokenList: Array<string>,
+    tokenSecretName: string, // Store secrets in a comma-separated string if multiple values need to be allowed
     certificateArn: string,
     desiredInstanceCount?: number,
     maxInstanceCount?: number,
@@ -80,8 +81,8 @@ export class PrerenderFargate extends Construct {
                         AWS_ACCESS_KEY_ID: accessKey.accessKeyId,
                         AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.toString(),
                         AWS_REGION: Stack.of(this).region,
-                        TOKEN_LIST: props.tokenList.toString()
-                    }
+                        TOKEN_LIST: secretsmanager.Secret.fromSecretNameV2(this, 'Token', props.tokenSecretName).secretValue.unsafeUnwrap()
+                    },
                 },
                 healthCheckGracePeriod: Duration.seconds(20),
                 publicLoadBalancer: true,
