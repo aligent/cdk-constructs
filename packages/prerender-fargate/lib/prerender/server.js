@@ -41,7 +41,7 @@ server.use({
     tabCreated: (req, res, next) => {
         req.prerender.tab.Network.setExtraHTTPHeaders({
             headers: {
-                'x-prerender': 'true'
+                'x-prerender': '1'
             }
         });
 
