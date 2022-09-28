@@ -11,6 +11,7 @@ const server = prerender({
 
 server.use(prerender.blacklist());
 server.use(prerender.httpHeaders());
+server.use(prerender.sendPrerenderHeader());
 server.use(s3Cache);
 
 server.use({
@@ -33,19 +34,6 @@ server.use({
         if (!authenticated) return res.send(401);
 
         return next();
-    }
-});
-
-// Add x-prerender header
-server.use({
-    tabCreated: (req, res, next) => {
-        req.prerender.tab.Network.setExtraHTTPHeaders({
-            headers: {
-                'x-prerender': '1'
-            }
-        });
-
-        next();
     }
 });
 
