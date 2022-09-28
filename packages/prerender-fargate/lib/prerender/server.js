@@ -11,13 +11,11 @@ const server = prerender({
 
 server.use(prerender.blacklist());
 server.use(prerender.httpHeaders());
-server.use(prerender.removeScriptTags());
 server.use(s3Cache);
 
 server.use({
     requestReceived: (req, res, next) => {
         let auth = req.headers['x-prerender-token'];
-        if (!auth) return res.send(401);
 
         // check credentials exist
         if (!auth) return res.send(401);
