@@ -19,6 +19,7 @@ const server = prerender({
 
 server.use(prerender.blacklist());
 server.use(prerender.httpHeaders());
+server.use(prerender.sendPrerenderHeader());
 server.use(s3Cache);
 
 server.use({
