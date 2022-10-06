@@ -1,14 +1,15 @@
 import { Construct, CfnOutput, RemovalPolicy, StackProps, Stack } from '@aws-cdk/core';
 import { Bucket, BucketEncryption, BlockPublicAccess, BucketProps } from '@aws-cdk/aws-s3';
-import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps, LambdaFunctionAssociation, LambdaEdgeEventType } from '@aws-cdk/aws-cloudfront';
+import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps, LambdaFunctionAssociation, LambdaEdgeEventType, CfnDistribution } from '@aws-cdk/aws-cloudfront';
 import { HostedZone, RecordTarget, ARecord } from '@aws-cdk/aws-route53';
 import { CloudFrontTarget } from '@aws-cdk/aws-route53-targets';
 import { User, Group, Policy, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
 import { Version } from '@aws-cdk/aws-lambda';
 import { ArbitraryPathRemapFunction } from './arbitrary-path-remap';
+import { CSP } from '../types/csp';
 
 export interface StaticHostingProps {
-    exportPrefix?: string, 
+    exportPrefix?: string,
     domainName: string;
     subDomainName: string;
     certificateArn: string;
@@ -42,11 +43,13 @@ export interface StaticHostingProps {
     remapBackendPaths?: remapPath[];
     defaultRootObject?: string;
     enforceSSL?: boolean;
+    disableCSP?: boolean;
+    csp?: CSP;
 
     /** 
      * Extend the default props for S3 bucket
     */
-     s3ExtendedProps?: BucketProps;
+    s3ExtendedProps?: BucketProps;
 }
 
 interface remapPath {
@@ -59,9 +62,9 @@ export class StaticHosting extends Construct {
 
     constructor(scope: Construct, id: string, props: StaticHostingProps) {
         super(scope, id);
-        
+
         // Should the stackExportPrefix is empty, 'StaticHosting' should be used as the prefix 
-        const exportPrefix =  props.exportPrefix ? props.exportPrefix :  'StaticHosting'
+        const exportPrefix = props.exportPrefix ? props.exportPrefix : 'StaticHosting'
 
         const siteName = `${props.subDomainName}.${props.domainName}`;
         const siteNameArray: Array<string> = [siteName];
@@ -72,6 +75,8 @@ export class StaticHosting extends Construct {
             siteNameArray.concat(props.extraDistributionCnames) :
             siteNameArray;
 
+        const csp = props.csp ? props.csp : {'default-src': []};
+        csp['default-src'] = csp['default-src'] ? csp['default-src'] : [];
 
         const s3LoggingBucket = (props.enableS3AccessLogging)
             ? new Bucket(this, 'S3LoggingBucket', {
@@ -87,7 +92,7 @@ export class StaticHosting extends Construct {
             new CfnOutput(this, 'S3LoggingBucketName', {
                 description: "S3 Logs",
                 value: s3LoggingBucket.bucketName,
-                exportName: `${exportPrefix}S3LoggingBucketName` 
+                exportName: `${exportPrefix}S3LoggingBucketName`
             });
         }
 
@@ -251,6 +256,31 @@ export class StaticHosting extends Construct {
         }
 
         const distribution = new CloudFrontWebDistribution(this, 'BucketCdn', distributionProps)
+
+        // Enable CSP headers
+        if (!props.disableCSP) {
+            let cspHeader = '';
+            // By default, include self and the backend origin as default-src
+            csp['default-src']?.push('\'self\'');
+            csp['default-src']?.push(props.backendHost || '');
+
+            for (const cspType in csp) {
+                const domains = csp[cspType as keyof CSP] || [];
+
+                cspHeader += `${cspType} ${domains.join(' ')}; `;
+            }
+            cspHeader = cspHeader.trim();
+
+            // Add the CSP header manually
+            // When upgrading the CDK 2 we should be using this method instead
+            // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_cloudfront.CfnResponseHeadersPolicy.ContentSecurityPolicyProperty.html
+
+            new CfnOutput(this, 'CSP Header', {
+                description: 'CSP Header',
+                value: cspHeader,
+                exportName: `${exportPrefix}CSPHeader`
+            });
+        }
 
         if (publisherGroup) {
             const cloudFrontInvalidationPolicyStatement = new PolicyStatement({

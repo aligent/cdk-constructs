@@ -1,3 +1,4 @@
-import { StaticHosting, StaticHostingProps } from "./lib/static-hosting"
+import { StaticHosting, StaticHostingProps } from "./lib/static-hosting";
+import { CSP } from "./types/csp";
 
-export { StaticHosting, StaticHostingProps };
+export { StaticHosting, StaticHostingProps, CSP };
