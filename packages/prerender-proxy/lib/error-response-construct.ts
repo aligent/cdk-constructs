@@ -30,7 +30,7 @@ export class ErrorResponseFunction extends Construct {
                 define: {
                   'process.env.PATH_PREFIX': JSON.stringify(options.pathPrefix ?? ''),
                 }
-              }),
+              } as any),
               runtime: Runtime.NODEJS_14_X,
               handler: 'index.handler',
             }
