@@ -32,7 +32,7 @@ export class CloudFrontCacheControl extends Construct {
                   'process.env.PRERENDER_CACHE_KEY': JSON.stringify(options?.cacheKey ?? 'x-prerender-requestid'),
                   'process.env.PRERENDER_CACHE_MAX_AGE': JSON.stringify(String(options?.maxAge) ?? '0'),
                 }
-              }),
+              } as any),
               runtime: Runtime.NODEJS_14_X,
               handler: 'index.handler',
             }

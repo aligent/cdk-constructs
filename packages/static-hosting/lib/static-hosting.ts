@@ -279,11 +279,11 @@ export class StaticHosting extends Construct {
         if (props.createDnsRecord && props.zoneName) {
             const zone = HostedZone.fromLookup(this, 'Zone', { domainName: props.zoneName });
 
-            new ARecord(this, 'SiteAliasRecord', {
+            /*new ARecord(this, 'SiteAliasRecord', {
                 recordName: siteName,
                 target: RecordTarget.fromAlias(new CloudFrontTarget(distribution)),
                 zone: zone,
-            });
+            });*/
         };
     };
 

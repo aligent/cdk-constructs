@@ -14,7 +14,7 @@
     "prepublish": "tsc"
   },
   "devDependencies": {
-    "@aws-cdk/assert": "^1.111.0",
+    "@aws-cdk/assert": "^1.175.0",
     "@types/jest": "^26.0.24",
     "@types/node": "16.0.0",
     "jest": "^26.4.2",
@@ -23,13 +23,13 @@
     "typescript": "~4.4.3"
   },
   "dependencies": {
-    "@aws-cdk/aws-amazonmq": "^1.111.0",
-    "@aws-cdk/aws-ec2": "^1.111.0",
-    "@aws-cdk/aws-iam": "^1.111.0",
-    "@aws-cdk/aws-kms": "^1.111.0",
-    "@aws-cdk/aws-s3": "^1.111.0",
-    "@aws-cdk/core": "^1.111.0",
-    "aws-cdk": "^1.111.0",
+    "@aws-cdk/aws-amazonmq": "^1.175.0",
+    "@aws-cdk/aws-ec2": "^1.175.0",
+    "@aws-cdk/aws-iam": "^1.175.0",
+    "@aws-cdk/aws-kms": "^1.175.0",
+    "@aws-cdk/aws-s3": "^1.175.0",
+    "@aws-cdk/core": "^1.175.0",
+    "aws-cdk": "^1.175.0",
     "source-map-support": "^0.5.16"
   }
 }
