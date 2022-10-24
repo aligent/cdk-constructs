@@ -1,8 +1,7 @@
-import { Construct, CfnOutput, RemovalPolicy, StackProps, Stack } from '@aws-cdk/core';
+import { Construct, CfnOutput, RemovalPolicy } from '@aws-cdk/core';
 import { Bucket, BucketEncryption, BlockPublicAccess, BucketProps } from '@aws-cdk/aws-s3';
-import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps, LambdaFunctionAssociation, LambdaEdgeEventType, CfnDistribution } from '@aws-cdk/aws-cloudfront';
-import { HostedZone, RecordTarget, ARecord } from '@aws-cdk/aws-route53';
-import { CloudFrontTarget } from '@aws-cdk/aws-route53-targets';
+import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps, LambdaFunctionAssociation, LambdaEdgeEventType, CfnDistribution, CfnResponseHeadersPolicy, ResponseHeadersPolicy } from '@aws-cdk/aws-cloudfront';
+import { HostedZone } from '@aws-cdk/aws-route53';
 import { User, Group, Policy, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
 import { Version } from '@aws-cdk/aws-lambda';
 import { ArbitraryPathRemapFunction } from './arbitrary-path-remap';
@@ -43,8 +42,20 @@ export interface StaticHostingProps {
     remapBackendPaths?: remapPath[];
     defaultRootObject?: string;
     enforceSSL?: boolean;
+    /**
+     * Disable the use of the CSP header. Default value is false.
+     */
     disableCSP?: boolean;
+    /**
+     * AWS limits the max header size to 1kb, this is too small for complex csp headers.
+     * The main purpose of this csp header is to provide a method of setting a report-uri.
+     */
     csp?: CSP;
+    /**
+     * This will generate a csp based *purely* on the provided csp object.
+     * Therefore disabling the automatic adding of common use-case properties.
+     */
+    explicitCSP?: boolean;
 
     /** 
      * Extend the default props for S3 bucket
@@ -70,13 +81,12 @@ export class StaticHosting extends Construct {
         const siteNameArray: Array<string> = [siteName];
         const enforceSSL = props.enforceSSL !== false;
         const enableStaticFileRemap = props.enableStaticFileRemap !== false;
+        const disableCSP = props.disableCSP === true;
 
         let distributionCnames: Array<string> = (props.extraDistributionCnames) ?
             siteNameArray.concat(props.extraDistributionCnames) :
             siteNameArray;
 
-        const csp = props.csp ? props.csp : {'default-src': []};
-        csp['default-src'] = csp['default-src'] ? csp['default-src'] : [];
 
         const s3LoggingBucket = (props.enableS3AccessLogging)
             ? new Bucket(this, 'S3LoggingBucket', {
@@ -255,25 +265,52 @@ export class StaticHosting extends Construct {
             }
         }
 
-        const distribution = new CloudFrontWebDistribution(this, 'BucketCdn', distributionProps)
+        const distribution = new CloudFrontWebDistribution(this, 'BucketCdn', distributionProps);
 
-        // Enable CSP headers
-        if (!props.disableCSP) {
-            let cspHeader = '';
-            // By default, include self and the backend origin as default-src
-            csp['default-src']?.push('\'self\'');
-            csp['default-src']?.push(props.backendHost || '');
+        if (!disableCSP) {
+            const csp = props.csp ? props.csp : { 'default-src': [] };
 
-            for (const cspType in csp) {
-                const domains = csp[cspType as keyof CSP] || [];
-
-                cspHeader += `${cspType} ${domains.join(' ')}; `;
+            if (!props.explicitCSP) {
+                // Ensure that default-src is always set
+                csp['default-src'] = csp['default-src'] ? csp['default-src'] : [];
             }
-            cspHeader = cspHeader.trim();
 
-            // Add the CSP header manually
-            // When upgrading the CDK 2 we should be using this method instead
-            // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_cloudfront.CfnResponseHeadersPolicy.ContentSecurityPolicyProperty.html
+            const cspHeader = Object.entries(csp)
+                .reduce((prevCspHeader, [cspType, cspHeaders]) => {
+                    if (!props.explicitCSP || cspType === 'report-uri')
+                        return `${prevCspHeader} ${cspType} ${cspHeaders.join(' ')};`;
+
+                    const typeOptions = ["'self'", "'unsafe-inline'"];
+                    if (['font-src', 'img-src'].includes(cspType)) {
+                        typeOptions.push("'data:'");
+                    }
+
+                    if (process.env.MAGENTO_BACKEND_URL) {
+                        typeOptions.push(process.env.MAGENTO_BACKEND_URL);
+                    }
+
+                    const cspContent = `${cspHeaders.join(' ')} ${typeOptions.join(' ')}`.trim();
+
+                    return `${prevCspHeader} ${cspType} ${cspContent};`;
+                }, '')
+                .trim();
+
+            const headersPolicy = new ResponseHeadersPolicy(this, 'ResponseHeaders', {
+                securityHeadersBehavior: {
+                    contentSecurityPolicy: {
+                        contentSecurityPolicy: cspHeader,
+                        override: true,
+                    },
+                }
+            });
+
+            const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
+            // In the current version of CDK there's no nice way to do this...
+            // Instead just override the CloudFormation property directly
+            cfnDistribution.addOverride(
+                'Properties.DistributionConfig.DefaultCacheBehavior.ResponseHeadersPolicyId',
+                headersPolicy.responseHeadersPolicyId
+            );
 
             new CfnOutput(this, 'CSP Header', {
                 description: 'CSP Header',
