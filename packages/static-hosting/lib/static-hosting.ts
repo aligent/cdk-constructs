@@ -268,32 +268,7 @@ export class StaticHosting extends Construct {
         const distribution = new CloudFrontWebDistribution(this, 'BucketCdn', distributionProps);
 
         if (!disableCSP) {
-            const csp = props.csp ? props.csp : { 'default-src': [] };
-
-            if (!props.explicitCSP) {
-                // Ensure that default-src is always set
-                csp['default-src'] = csp['default-src'] ? csp['default-src'] : [];
-            }
-
-            const cspHeader = Object.entries(csp)
-                .reduce((prevCspHeader, [cspType, cspHeaders]) => {
-                    if (!props.explicitCSP || cspType === 'report-uri')
-                        return `${prevCspHeader} ${cspType} ${cspHeaders.join(' ')};`;
-
-                    const typeOptions = ["'self'", "'unsafe-inline'"];
-                    if (['font-src', 'img-src'].includes(cspType)) {
-                        typeOptions.push("'data:'");
-                    }
-
-                    if (process.env.MAGENTO_BACKEND_URL) {
-                        typeOptions.push(process.env.MAGENTO_BACKEND_URL);
-                    }
-
-                    const cspContent = `${cspHeaders.join(' ')} ${typeOptions.join(' ')}`.trim();
-
-                    return `${prevCspHeader} ${cspType} ${cspContent};`;
-                }, '')
-                .trim();
+            const cspHeader = this.generateCSPString(props.csp, props.explicitCSP);
 
             const headersPolicy = new ResponseHeadersPolicy(this, 'ResponseHeaders', {
                 securityHeadersBehavior: {
@@ -331,7 +306,6 @@ export class StaticHosting extends Construct {
                 statements: [cloudFrontInvalidationPolicyStatement],
             });
         };
-
         new CfnOutput(this, 'DistributionId', {
             description: 'DistributionId',
             value: distribution.distributionId,
@@ -374,5 +348,36 @@ export class StaticHosting extends Construct {
         }
 
         return behavior;
+    }
+
+    private generateCSPString(csp?: CSP, explicit?: boolean) {
+        // Ensure that default-src is always set
+        if (!csp) 
+            return "";
+
+        const cspEntries = explicit ? csp: {
+            'default-src': [],
+            ...csp
+        };
+
+        return Object.entries(cspEntries)
+            .reduce((prevCspHeader, [cspType, cspHeaders]) => {
+                if (explicit || cspType === 'report-uri')
+                    return `${prevCspHeader} ${cspType} ${cspHeaders.join(' ')};`;
+
+                const typeOptions = ["'self'", "'unsafe-inline'"];
+                if (['font-src', 'img-src'].includes(cspType)) 
+                    typeOptions.push("'data:'");
+
+                if (process.env.MAGENTO_BACKEND_URL) 
+                    typeOptions.push(process.env.MAGENTO_BACKEND_URL);
+
+                const cspContent = `${cspHeaders.join(' ')} ${typeOptions.join(
+                    ' '
+                )}`.trim();
+
+                return `${prevCspHeader} ${cspType} ${cspContent};`;
+            }, '')
+            .trim();
     }
 };
