@@ -1,5 +1,5 @@
 import { Construct } from '@aws-cdk/core';
-import * as wafv2 from '@aws-cdk/aws-wafv2';1
+import * as wafv2 from '@aws-cdk/aws-wafv2';
 
 export interface WebApplicationFirewallProps {
   /**
