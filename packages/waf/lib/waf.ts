@@ -1,34 +1,112 @@
 import { Construct } from '@aws-cdk/core';
-import * as wafv2 from '@aws-cdk/aws-wafv2';
+import * as wafv2 from '@aws-cdk/aws-wafv2';1
 
 export interface WebApplicationFirewallProps {
+  /**
+   * true for blocking mode, false for Count-only mode
+   */
   activate?: boolean;
-  allowedIPs: string[];
+  
+  /**
+   * List of Allowed IP addresses, if none are set allow_xff_ip_rule and allow_src_ip_rule rules
+   * are not added
+   */
+  allowedIPs?: string[];
+  
+  /**
+   * Explicit paths to allow through the waf
+   */
   allowedPaths?: string[];
-  rateLimit: number;
+  
+  /**
+   * Default Rate limit count, if not set the rate limit rule will not be added
+   */
+  rateLimit?: number;
+  
+  /**
+   * Explicit allow of user agents, if not set rule will not be added
+   */
   allowedUserAgents?: string[];
+  
+  /**
+   * A list of AWS Rules to ignore
+   */
   excludedAwsRules?: string[];
-  associatedLoadBalancerArn: string;
+  
+  /**
+   * A list of ARNs to associate with the WAF
+   */
+  associations?: string[];
+  
+  /**
+   * Name of the WAF
+   */
   wafName: string;
+
+  /**
+   * Whether to block by default
+   */
   blockByDefault?: boolean;
 }
 
 export class WebApplicationFirewall extends Construct {
+
+  readonly web_acl: wafv2.CfnWebACL;
+
   constructor(scope: Construct, id: string, props: WebApplicationFirewallProps) {
     super(scope, id);
 
     const finalRules: wafv2.CfnWebACL.RuleProperty[] = [];
 
-    // IP Allowlist
-    const allowed_ips = new wafv2.CfnIPSet(this, 'IPSet', {
-      addresses: props.allowedIPs,
-      ipAddressVersion: 'IPV4',
-      scope: 'REGIONAL',
-      description: props.wafName
-    })
+    if (props.allowedIPs) {
+      // IP Allowlist
+      const allowed_ips = new wafv2.CfnIPSet(this, 'IPSet', {
+        addresses: props.allowedIPs,
+        ipAddressVersion: 'IPV4',
+        scope: 'REGIONAL',
+        description: props.wafName
+      })
+
+      finalRules.push({
+        name: 'allow_xff_ip_rule',
+        priority: 2,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: allowed_ips.attrArn,
+            ipSetForwardedIpConfig: {
+              fallbackBehavior : 'NO_MATCH',
+              headerName : 'X-Forwarded-For',
+              position : 'ANY'
+            }
+          }
+        },
+        action: { allow: {} },
+        visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: 'AllowXFFIPRule',
+            sampledRequestsEnabled: true
+        }
+      });
+
+      finalRules.push({
+        name: 'allow_src_ip_rule',
+        priority: 3,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: allowed_ips.attrArn
+          }
+        },
+        action: { allow: {} },
+        visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: 'allow_src_ip_rule',
+            sampledRequestsEnabled: true
+        }
+      });
+    }
 
     // Implement AWSManagedRulesKnownBadInputsRuleSet
-    const bad_actors_rule_set = {
+    finalRules.push({
       name: 'bad_actors_rule',
       priority: 0,
       overrideAction: { none: {} },
@@ -48,91 +126,47 @@ export class WebApplicationFirewall extends Construct {
           metricName: 'bad_actors_rule',
           sampledRequestsEnabled: true
       }
-    }
-    finalRules.push(bad_actors_rule_set)
+    });
 
     if (props.allowedPaths) {
          // Path Allowlist
          const allowed_paths = new wafv2.CfnRegexPatternSet(this, 'PathSet', {
            regularExpressionList: props.allowedPaths,
            scope: 'REGIONAL'
-         })
+         });
 
-         const allow_path_rule = {
-           name: 'allow_path_rule',
-           priority: 1,
-           statement: {
-             regexPatternSetReferenceStatement: {
-               arn: allowed_paths.attrArn,
-               fieldToMatch: {
-                    uriPath: {}
-               },
-               textTransformations: [{
-                    priority: 0,
-                    type: 'NONE'
-               }]
-             }
-           },
-           action: { allow: {} },
-           visibilityConfig: {
-               cloudWatchMetricsEnabled: true,
-               metricName: 'AllowPathRule',
-               sampledRequestsEnabled: true
-           }
-         }
-         finalRules.push(allow_path_rule)
-    }
-
-
-    const allow_xff_ip_rule = {
-      name: 'allow_xff_ip_rule',
-      priority: 2,
-      statement: {
-        ipSetReferenceStatement: {
-          arn: allowed_ips.attrArn,
-          ipSetForwardedIpConfig: {
-            fallbackBehavior : 'NO_MATCH',
-            headerName : 'X-Forwarded-For',
-            position : 'ANY'
+         finalRules.push({
+          name: 'allow_path_rule',
+          priority: 1,
+          statement: {
+            regexPatternSetReferenceStatement: {
+              arn: allowed_paths.attrArn,
+              fieldToMatch: {
+                   uriPath: {}
+              },
+              textTransformations: [{
+                   priority: 0,
+                   type: 'NONE'
+              }]
+            }
+          },
+          action: { allow: {} },
+          visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: 'AllowPathRule',
+              sampledRequestsEnabled: true
           }
-        }
-      },
-      action: { allow: {} },
-      visibilityConfig: {
-          cloudWatchMetricsEnabled: true,
-          metricName: 'AllowXFFIPRule',
-          sampledRequestsEnabled: true
-      }
+        });
     }
-
-    finalRules.push(allow_xff_ip_rule)
-
-    const allow_src_ip_rule = {
-      name: 'allow_src_ip_rule',
-      priority: 3,
-      statement: {
-        ipSetReferenceStatement: {
-          arn: allowed_ips.attrArn
-        }
-      },
-      action: { allow: {} },
-      visibilityConfig: {
-          cloudWatchMetricsEnabled: true,
-          metricName: 'allow_src_ip_rule',
-          sampledRequestsEnabled: true
-      }
-    }
-
-    finalRules.push(allow_src_ip_rule)
 
     // UserAgent Allowlist - only when the parameter is present
     if (props.allowedUserAgents){
       const allowed_user_agent = new wafv2.CfnRegexPatternSet(this, 'UserAgent', {
         regularExpressionList: props.allowedUserAgents,
         scope: 'REGIONAL'
-      })
+      });
 
-      const allow_user_agent_rule = {
+      finalRules.push({
         name: 'allow_user_agent_rule',
         priority: 4,
         statement: {
@@ -150,9 +184,7 @@ export class WebApplicationFirewall extends Construct {
             cloudWatchMetricsEnabled: true,
             metricName: 'allow_user_agent_rule',
             sampledRequestsEnabled: true
-      }}
-
-      finalRules.push(allow_user_agent_rule)
+      }});
     }
 
     // Activate the rules or not
@@ -174,7 +206,7 @@ export class WebApplicationFirewall extends Construct {
     }
 
     // Implement AWSManagedRulesCommonRuleSet
-    const common_rule_set = {
+    finalRules.push({
       name: 'common_rule_set',
       priority: 10,
       statement: {
@@ -190,13 +222,11 @@ export class WebApplicationFirewall extends Construct {
           metricName: 'common_rule_set',
           sampledRequestsEnabled: true
       }
-    }
-
-    finalRules.push(common_rule_set)
+    });
 
 
     // Implement AWSManagedRulesPHPRuleSet
-    const php_rule_set = {
+    finalRules.push({
       name: 'php_rule_set',
       priority: 11,
       statement: {
@@ -211,34 +241,34 @@ export class WebApplicationFirewall extends Construct {
           metricName: 'php_rule_set',
           sampledRequestsEnabled: true
       }
-    }
-    finalRules.push(php_rule_set)
+    });
 
     // Implement rate-based limit
-    const rate_limit_rule = {
-      name: 'rate_limit_rule',
-      priority: 20,
-      statement: {
-        rateBasedStatement: {
-          aggregateKeyType: 'FORWARDED_IP',
-          forwardedIpConfig: {
-            fallbackBehavior : 'MATCH',
-            headerName : 'X-Forwarded-For'},
-            limit: props.rateLimit
-          }
-      },
-      action: action,
-      visibilityConfig: {
-        cloudWatchMetricsEnabled: true,
-        metricName: 'rate_limit_rule',
-        sampledRequestsEnabled: true
-      }
+    if (props.rateLimit) {
+      finalRules.push({
+        name: 'rate_limit_rule',
+        priority: 20,
+        statement: {
+          rateBasedStatement: {
+            aggregateKeyType: 'FORWARDED_IP',
+            forwardedIpConfig: {
+              fallbackBehavior : 'MATCH',
+              headerName : 'X-Forwarded-For'},
+              limit: props.rateLimit
+            }
+        },
+        action: action,
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: 'rate_limit_rule',
+          sampledRequestsEnabled: true
+        }
+      });
     }
-    finalRules.push(rate_limit_rule)
 
     const defaultAction = props.blockByDefault ? { block: {} }  : { allow: {} };
 
-    const web_acl = new wafv2.CfnWebACL(this, 'WebAcl', {
+    this.web_acl = new wafv2.CfnWebACL(this, 'WebAcl', {
       name: props.wafName,
       defaultAction: defaultAction,
       scope: 'REGIONAL',
@@ -248,13 +278,18 @@ export class WebApplicationFirewall extends Construct {
         sampledRequestsEnabled: true,
       },
       rules: finalRules
-    })
+    });
 
-    new wafv2.CfnWebACLAssociation(this, 'ALBAssociation', {
-      // If the application stack has had the ALB ARN exported, importValue could be used as below:
-      // resourceArn: cdk.Fn.importValue("WAFTestALB"),
-      resourceArn: props.associatedLoadBalancerArn,
-      webAclArn: web_acl.attrArn
-    })
+    // If any resources associations have been passed loop through them and add an association with WebACL
+    if (props.associations) {
+      props.associations.forEach((association, index) => {
+        new wafv2.CfnWebACLAssociation(this, 'WebACLAssociation' + index, {
+          // If the application stack has had the ARN exported, importValue could be used as below:
+          // resourceArn: cdk.Fn.importValue("WAFTestALB"),
+          resourceArn: association,
+          webAclArn: this.web_acl.attrArn
+        })
+      });
+    }
   }
 }
