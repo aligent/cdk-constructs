@@ -1,7 +1,6 @@
 {
   "name": "@aligent/cdk-waf",
   "version": "0.2.0",
-  "private": true,
   "main": "index.ts",
   "license": "GPL-3.0-only",
   "homepage": "https://github.com/aligent/aws-cdk-waf-stack#readme",
