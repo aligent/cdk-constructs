@@ -25,12 +25,16 @@
     "typescript": "^4.4.3"
   },
   "dependencies": {
+    "@aws-cdk/aws-ec2": "1.111.0",
+    "@aws-cdk/aws-wafv2": "1.111.0",
+    "@aws-cdk/core": "1.111.0",
+    "aws-cdk": "1.111.0",
     "source-map-support": "^0.5.16"
   },
   "peerDependencies": {
-    "@aws-cdk/aws-ec2": "^1.111.0",
-    "@aws-cdk/aws-wafv2": "^1.111.0",
-    "@aws-cdk/core": "^1.111.0",
-    "aws-cdk": "^1.111.0"
+    "@aws-cdk/aws-ec2": "1.111.0",
+    "@aws-cdk/aws-wafv2": "1.111.0",
+    "@aws-cdk/core": "1.111.0",
+    "aws-cdk": "1.111.0"
   }
 }
