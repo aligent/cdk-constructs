@@ -1,11 +1,13 @@
 import { Construct, CfnOutput, RemovalPolicy } from '@aws-cdk/core';
 import { Bucket, BucketEncryption, BlockPublicAccess, BucketProps } from '@aws-cdk/aws-s3';
-import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps, LambdaFunctionAssociation, LambdaEdgeEventType, CfnDistribution, CfnResponseHeadersPolicy, ResponseHeadersPolicy } from '@aws-cdk/aws-cloudfront';
-import { HostedZone } from '@aws-cdk/aws-route53';
+import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps, LambdaEdgeEventType, CfnDistribution, ResponseHeadersPolicy, HttpVersion } from '@aws-cdk/aws-cloudfront';
+import { HostedZone, ARecord } from '@aws-cdk/aws-route53';
 import { User, Group, Policy, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
 import { Version } from '@aws-cdk/aws-lambda';
 import { ArbitraryPathRemapFunction } from './arbitrary-path-remap';
 import { CSP } from '../types/csp';
+import { RecordTarget } from '@aws-cdk/aws-route53';
+import { CloudFrontTarget } from '@aws-cdk/aws-route53-targets';
 
 export interface StaticHostingProps {
     exportPrefix?: string,
@@ -255,6 +257,7 @@ export class StaticHosting extends Construct {
         if (props.enableErrorConfig) {
             distributionProps = {
                 ...distributionProps, ...{
+                    httpVersion: 'http3' as HttpVersion.HTTP2,
                     errorConfigurations: [{
                         errorCode: 404,
                         errorCachingMinTtl: 0,
@@ -320,11 +323,11 @@ export class StaticHosting extends Construct {
         if (props.createDnsRecord && props.zoneName) {
             const zone = HostedZone.fromLookup(this, 'Zone', { domainName: props.zoneName });
 
-            /*new ARecord(this, 'SiteAliasRecord', {
+            new ARecord(this, 'SiteAliasRecord', {
                 recordName: siteName,
                 target: RecordTarget.fromAlias(new CloudFrontTarget(distribution)),
                 zone: zone,
-            });*/
+            });
         };
     };
 

@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/aligent/aws-cdk-prerender-proxy-stack#readme",
   "devDependencies": {
-    "@aws-cdk/assert": "^1.175.0",
+    "@aws-cdk/assert": "1.180.0",
     "@types/jest": "^26.0.21",
     "@types/node": "^10.17.60",
     "jest": "^26.4.2",
@@ -26,20 +26,20 @@
     "typescript": "^4.3.5"
   },
   "dependencies": {
-    "@aws-cdk/aws-cloudfront": "1.175.0",
-    "@aws-cdk/aws-lambda": "1.175.0",
-    "@aws-cdk/aws-lambda-nodejs": "1.175.0",
-    "@aws-cdk/core": "1.175.0",
-    "aws-cdk": "1.175.0",
+    "@aws-cdk/aws-cloudfront": "1.180.0",
+    "@aws-cdk/aws-lambda": "1.180.0",
+    "@aws-cdk/aws-lambda-nodejs": "1.180.0",
+    "@aws-cdk/core": "1.180.0",
+    "aws-cdk": "1.180.0",
     "esbuild": "0.12.15",
     "source-map-support": "^0.5.16"
   },
   "peerDependencies": {
-    "@aws-cdk/aws-cloudfront": "1.175.0",
-    "@aws-cdk/aws-lambda": "1.175.0",
-    "@aws-cdk/aws-lambda-nodejs": "1.175.0",
-    "@aws-cdk/core": "1.175.0",
-    "aws-cdk": "1.175.0",
+    "@aws-cdk/aws-cloudfront": "1.180.0",
+    "@aws-cdk/aws-lambda": "1.180.0",
+    "@aws-cdk/aws-lambda-nodejs": "1.180.0",
+    "@aws-cdk/core": "1.180.0",
+    "aws-cdk": "1.180.0",
     "esbuild": "0.12.15"
   }
 }

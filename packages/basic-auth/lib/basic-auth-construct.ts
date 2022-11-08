@@ -15,7 +15,7 @@ export class BasicAuthFunction extends Construct {
     constructor(scope: Construct, id: string, options: BasicAuthFunctionOptions) {
         super(scope, id);
 
-        /*this.edgeFunction = new experimental.EdgeFunction(
+        this.edgeFunction = new experimental.EdgeFunction(
             this,
             'BasicAuthFunction',
             {
@@ -36,6 +36,6 @@ export class BasicAuthFunction extends Construct {
               runtime: Runtime.NODEJS_14_X,
               handler: 'index.handler',
             }
-          );*/
+          );
     }
 }
