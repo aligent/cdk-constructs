@@ -19,7 +19,7 @@ export class PrerenderCheckFunction extends Construct {
             sourceMap: true,
             projectRoot: `${__dirname}/handlers/`,
             depsLockFilePath: `${__dirname}/handlers/package-lock.json`
-          }),
+          } as any),
           runtime: Runtime.NODEJS_14_X,
           handler: 'index.handler',
         }

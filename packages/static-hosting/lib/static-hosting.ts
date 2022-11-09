@@ -1,14 +1,16 @@
-import { Construct, CfnOutput, RemovalPolicy, StackProps, Stack } from '@aws-cdk/core';
+import { Construct, CfnOutput, RemovalPolicy } from '@aws-cdk/core';
 import { Bucket, BucketEncryption, BlockPublicAccess, BucketProps } from '@aws-cdk/aws-s3';
-import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps, LambdaFunctionAssociation, LambdaEdgeEventType } from '@aws-cdk/aws-cloudfront';
-import { HostedZone, RecordTarget, ARecord } from '@aws-cdk/aws-route53';
-import { CloudFrontTarget } from '@aws-cdk/aws-route53-targets';
+import { OriginAccessIdentity, CloudFrontWebDistribution, PriceClass, ViewerProtocolPolicy, SecurityPolicyProtocol, SSLMethod, Behavior, SourceConfiguration, CloudFrontWebDistributionProps, LambdaEdgeEventType, CfnDistribution, ResponseHeadersPolicy, HttpVersion } from '@aws-cdk/aws-cloudfront';
+import { HostedZone, ARecord } from '@aws-cdk/aws-route53';
 import { User, Group, Policy, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
 import { Version } from '@aws-cdk/aws-lambda';
 import { ArbitraryPathRemapFunction } from './arbitrary-path-remap';
+import { CSP } from '../types/csp';
+import { RecordTarget } from '@aws-cdk/aws-route53';
+import { CloudFrontTarget } from '@aws-cdk/aws-route53-targets';
 
 export interface StaticHostingProps {
-    exportPrefix?: string, 
+    exportPrefix?: string,
     domainName: string;
     subDomainName: string;
     certificateArn: string;
@@ -42,11 +44,25 @@ export interface StaticHostingProps {
     remapBackendPaths?: remapPath[];
     defaultRootObject?: string;
     enforceSSL?: boolean;
+    /**
+     * Disable the use of the CSP header. Default value is false.
+     */
+    disableCSP?: boolean;
+    /**
+     * AWS limits the max header size to 1kb, this is too small for complex csp headers.
+     * The main purpose of this csp header is to provide a method of setting a report-uri.
+     */
+    csp?: CSP;
+    /**
+     * This will generate a csp based *purely* on the provided csp object.
+     * Therefore disabling the automatic adding of common use-case properties.
+     */
+    explicitCSP?: boolean;
 
     /** 
      * Extend the default props for S3 bucket
     */
-     s3ExtendedProps?: BucketProps;
+    s3ExtendedProps?: BucketProps;
 }
 
 interface remapPath {
@@ -59,14 +75,15 @@ export class StaticHosting extends Construct {
 
     constructor(scope: Construct, id: string, props: StaticHostingProps) {
         super(scope, id);
-        
+
         // Should the stackExportPrefix is empty, 'StaticHosting' should be used as the prefix 
-        const exportPrefix =  props.exportPrefix ? props.exportPrefix :  'StaticHosting'
+        const exportPrefix = props.exportPrefix ? props.exportPrefix : 'StaticHosting'
 
         const siteName = `${props.subDomainName}.${props.domainName}`;
         const siteNameArray: Array<string> = [siteName];
         const enforceSSL = props.enforceSSL !== false;
         const enableStaticFileRemap = props.enableStaticFileRemap !== false;
+        const disableCSP = props.disableCSP === true;
 
         let distributionCnames: Array<string> = (props.extraDistributionCnames) ?
             siteNameArray.concat(props.extraDistributionCnames) :
@@ -87,7 +104,7 @@ export class StaticHosting extends Construct {
             new CfnOutput(this, 'S3LoggingBucketName', {
                 description: "S3 Logs",
                 value: s3LoggingBucket.bucketName,
-                exportName: `${exportPrefix}S3LoggingBucketName` 
+                exportName: `${exportPrefix}S3LoggingBucketName`
             });
         }
 
@@ -240,6 +257,7 @@ export class StaticHosting extends Construct {
         if (props.enableErrorConfig) {
             distributionProps = {
                 ...distributionProps, ...{
+                    httpVersion: 'http3' as HttpVersion.HTTP2,
                     errorConfigurations: [{
                         errorCode: 404,
                         errorCachingMinTtl: 0,
@@ -250,7 +268,34 @@ export class StaticHosting extends Construct {
             }
         }
 
-        const distribution = new CloudFrontWebDistribution(this, 'BucketCdn', distributionProps)
+        const distribution = new CloudFrontWebDistribution(this, 'BucketCdn', distributionProps);
+
+        if (!disableCSP) {
+            const cspHeader = this.generateCSPString(props.csp, props.explicitCSP);
+
+            const headersPolicy = new ResponseHeadersPolicy(this, 'ResponseHeaders', {
+                securityHeadersBehavior: {
+                    contentSecurityPolicy: {
+                        contentSecurityPolicy: cspHeader,
+                        override: true,
+                    },
+                }
+            });
+
+            const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
+            // In the current version of CDK there's no nice way to do this...
+            // Instead just override the CloudFormation property directly
+            cfnDistribution.addOverride(
+                'Properties.DistributionConfig.DefaultCacheBehavior.ResponseHeadersPolicyId',
+                headersPolicy.responseHeadersPolicyId
+            );
+
+            new CfnOutput(this, 'CSP Header', {
+                description: 'CSP Header',
+                value: cspHeader,
+                exportName: `${exportPrefix}CSPHeader`
+            });
+        }
 
         if (publisherGroup) {
             const cloudFrontInvalidationPolicyStatement = new PolicyStatement({
@@ -264,7 +309,6 @@ export class StaticHosting extends Construct {
                 statements: [cloudFrontInvalidationPolicyStatement],
             });
         };
-
         new CfnOutput(this, 'DistributionId', {
             description: 'DistributionId',
             value: distribution.distributionId,
@@ -307,5 +351,36 @@ export class StaticHosting extends Construct {
         }
 
         return behavior;
+    }
+
+    private generateCSPString(csp?: CSP, explicit?: boolean) {
+        // Ensure that default-src is always set
+        if (!csp) 
+            return "";
+
+        const cspEntries = explicit ? csp: {
+            'default-src': [],
+            ...csp
+        };
+
+        return Object.entries(cspEntries)
+            .reduce((prevCspHeader, [cspType, cspHeaders]) => {
+                if (explicit || cspType === 'report-uri')
+                    return `${prevCspHeader} ${cspType} ${cspHeaders.join(' ')};`;
+
+                const typeOptions = ["'self'", "'unsafe-inline'"];
+                if (['font-src', 'img-src'].includes(cspType)) 
+                    typeOptions.push("data:");
+
+                if (process.env.MAGENTO_BACKEND_URL) 
+                    typeOptions.push(process.env.MAGENTO_BACKEND_URL);
+
+                const cspContent = `${cspHeaders.join(' ')} ${typeOptions.join(
+                    ' '
+                )}`.trim();
+
+                return `${prevCspHeader} ${cspType} ${cspContent};`;
+            }, '')
+            .trim();
     }
 };

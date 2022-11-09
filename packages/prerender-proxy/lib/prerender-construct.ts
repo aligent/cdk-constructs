@@ -34,7 +34,7 @@ export class PrerenderFunction extends Construct {
                   'process.env.PATH_PREFIX': JSON.stringify(options.pathPrefix ?? ''),
                   'process.env.PRERENDER_URL': JSON.stringify(options.prerenderUrl ?? 'service.prerender.io'),
                 }
-              }),
+              } as any),
               runtime: Runtime.NODEJS_14_X,
               handler: 'index.handler',
             }
