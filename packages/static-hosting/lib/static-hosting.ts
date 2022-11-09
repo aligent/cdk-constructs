@@ -370,7 +370,7 @@ export class StaticHosting extends Construct {
 
                 const typeOptions = ["'self'", "'unsafe-inline'"];
                 if (['font-src', 'img-src'].includes(cspType)) 
-                    typeOptions.push("'data:'");
+                    typeOptions.push("data:");
 
                 if (process.env.MAGENTO_BACKEND_URL) 
                     typeOptions.push(process.env.MAGENTO_BACKEND_URL);
