@@ -1,7 +1,19 @@
 import { Construct } from '@aws-cdk/core';
 import * as wafv2 from '@aws-cdk/aws-wafv2';
 
+export const REGIONAL = 'REGIONAL';
+export type REGIONAL = typeof REGIONAL;
+
+export const CLOUDFRONT = 'CLOUDFRONT';
+export type CLOUDFRONT = typeof CLOUDFRONT;
+
 export interface WebApplicationFirewallProps {
+
+  /**
+   * Whether this WAF is global or regional 
+   */
+  scope?: REGIONAL | CLOUDFRONT; 
+
   /**
    * true for blocking mode, false for Count-only mode
    */
@@ -57,13 +69,14 @@ export class WebApplicationFirewall extends Construct {
     super(scope, id);
 
     const finalRules: wafv2.CfnWebACL.RuleProperty[] = [];
+    const wafScope = props.scope ?? REGIONAL;
 
     if (props.allowedIPs) {
       // IP Allowlist
       const allowed_ips = new wafv2.CfnIPSet(this, 'IPSet', {
         addresses: props.allowedIPs,
         ipAddressVersion: 'IPV4',
-        scope: 'REGIONAL',
+        scope: wafScope,
         description: props.wafName
       })
 
@@ -132,7 +145,7 @@ export class WebApplicationFirewall extends Construct {
          // Path Allowlist
          const allowed_paths = new wafv2.CfnRegexPatternSet(this, 'PathSet', {
            regularExpressionList: props.allowedPaths,
-           scope: 'REGIONAL'
+           scope: wafScope
          });
 
          finalRules.push({
@@ -163,7 +176,7 @@ export class WebApplicationFirewall extends Construct {
     if (props.allowedUserAgents){
       const allowed_user_agent = new wafv2.CfnRegexPatternSet(this, 'UserAgent', {
         regularExpressionList: props.allowedUserAgents,
-        scope: 'REGIONAL'
+        scope: wafScope
       });
 
       finalRules.push({
@@ -271,7 +284,7 @@ export class WebApplicationFirewall extends Construct {
     this.web_acl = new wafv2.CfnWebACL(this, 'WebAcl', {
       name: props.wafName,
       defaultAction: defaultAction,
-      scope: 'REGIONAL',
+      scope: wafScope,
       visibilityConfig: {
         cloudWatchMetricsEnabled: true,
         metricName: 'WebAcl',
