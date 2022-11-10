@@ -63,6 +63,11 @@ export interface StaticHostingProps {
      * Extend the default props for S3 bucket
     */
     s3ExtendedProps?: BucketProps;
+
+    /**
+     * Optional WAF ARN 
+     */
+    webAclArn?: string;
 }
 
 interface remapPath {
@@ -241,6 +246,7 @@ export class StaticHosting extends Construct {
         }
 
         let distributionProps: CloudFrontWebDistributionProps = {
+            ...(props.webAclArn && {webACLId: props.webAclArn}), // Add the WAF if it has been added via props, must be added like this as distributionProps.webACLId is a readonly property
             aliasConfiguration: {
                 acmCertRef: props.certificateArn,
                 names: distributionCnames,
