@@ -3,12 +3,13 @@ import { PrerenderFunction } from "./lib/prerender-construct";
 import { PrerenderCheckFunction } from "./lib/prerender-check-construct";
 import { ErrorResponseFunction } from "./lib/error-response-construct";
 import { CloudFrontCacheControl, CloudFrontCacheControlOptions } from "./lib/prerender-cf-cache-control-construct"
-
+import { handler as PrerenderCheckFunctionHandler} from "./lib/handlers/prerender-check"
 export {    
             PrerenderLambda, 
             PrerenderFunction, 
             PrerenderCheckFunction, 
             ErrorResponseFunction, 
             CloudFrontCacheControl, 
-            CloudFrontCacheControlOptions 
+            CloudFrontCacheControlOptions,
+            PrerenderCheckFunctionHandler
         };
