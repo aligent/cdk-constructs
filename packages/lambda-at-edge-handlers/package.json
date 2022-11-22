@@ -1,0 +1,24 @@
+{
+  "name": "@aligent/lambda-at-edge-handlers",
+  "version": "0.1.0",
+  "description": "A Cloudfront Lambda@Edge handlers powered by Middy",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && cd ./lib && npm ci",
+    "prepublish": "tsc && cd ./lib && npm ci"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
+  },
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/aligent/cdk-constructs/issues"
+  },
+  "homepage": "https://github.com/aligent/cdk-constructs#readme",
+  "dependencies": {
+    "@types/aws-lambda": "^8.10.77",
+    "esbuild": "0.12.15",
+    "source-map-support": "^0.5.16"
+  }
+}
