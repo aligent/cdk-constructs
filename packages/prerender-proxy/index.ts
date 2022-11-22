@@ -6,7 +6,7 @@ import {
   CloudFrontCacheControl,
   CloudFrontCacheControlOptions,
 } from "./lib/prerender-cf-cache-control-construct";
-import { handler as PrerenderCheckFunctionHandler } from "./lib/handlers/prerender-check";
+import { sendToPrerender } from './lib/sendToPrerender';
 export {
   PrerenderLambda,
   PrerenderFunction,
@@ -14,5 +14,5 @@ export {
   ErrorResponseFunction,
   CloudFrontCacheControl,
   CloudFrontCacheControlOptions,
-  PrerenderCheckFunctionHandler,
+  sendToPrerender 
 };
