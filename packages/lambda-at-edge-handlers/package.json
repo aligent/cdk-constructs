@@ -1,5 +1,5 @@
 {
-  "name": "@aligent/lambda-at-edge-handlers",
+  "name": "@aligent/cdk-lambda-at-edge-handlers",
   "version": "0.1.0",
   "description": "A Cloudfront Lambda@Edge handlers powered by Middy",
   "main": "index.js",
