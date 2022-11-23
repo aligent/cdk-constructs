@@ -4,8 +4,10 @@
   "description": "A Cloudfront Lambda@Edge handlers powered by Middy",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && cd ./lib && npm ci",
-    "prepublish": "tsc && cd ./lib && npm ci"
+    "build": "tsc",
+    "prepublish": "tsc",
+    "watch": "tsc -w",
+    "test": "No test specified\" && exit 0"
   },
   "repository": {
     "type": "git",
@@ -19,7 +21,6 @@
   "dependencies": {
     "@types/aws-lambda": "^8.10.77",
     "esbuild": "0.12.15",
-    "@types/jest": "^26.0.21",
     "source-map-support": "^0.5.16"
   }
 }
