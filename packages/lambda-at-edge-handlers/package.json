@@ -7,7 +7,7 @@
     "build": "tsc",
     "prepublish": "tsc",
     "watch": "tsc -w",
-    "test": "No test specified\" && exit 0"
+    "test": "echo \"No test specified\" && exit 0"
   },
   "repository": {
     "type": "git",
