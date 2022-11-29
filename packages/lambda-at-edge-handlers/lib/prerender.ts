@@ -4,15 +4,16 @@ import {
   CloudFrontRequestEvent,
   CloudFrontResponse,
 } from "aws-lambda";
+
 const PRERENDER_TOKEN = process.env.PRERENDER_TOKEN
   ? process.env.PRERENDER_TOKEN
-  : "undef";
+  : "undefined";
 const PATH_PREFIX = process.env.PATH_PREFIX;
 const PRERENDER_URL = process.env.PRERENDER_URL
   ? process.env.PRERENDER_URL
   : "service.prerender.io";
 
-export const prerenderHandler = async (
+export const handler = async (
   event: CloudFrontRequestEvent
 ): Promise<CloudFrontResponse | CloudFrontRequest> => {
   let request = event.Records[0].cf.request;
