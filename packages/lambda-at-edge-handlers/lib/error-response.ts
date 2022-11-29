@@ -38,7 +38,8 @@ export const handler = (
     return instance
       .get(`https://${FRONTEND_HOST}${PATH_PREFIX}/index.html`)
       .then((res) => {
-        response.body = res.data;
+        // Commenting this as there is body is not defined in the CloudFrontResponse type
+        // response.body = res.data;
 
         response.headers["content-type"] = [
           {

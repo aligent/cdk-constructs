@@ -1,9 +1,9 @@
 import 'source-map-support/register';
 import { CloudFrontRequestEvent, CloudFrontResponse, CloudFrontRequest } from 'aws-lambda';
 
-const REDIRECT_HOST = process.env.REDIRECT_HOST;
-const SUPPORTED_REGIONS = new RegExp(process.env.SUPPORTED_REGIONS);
-const DEFAULT_REGION = process.env.DEFAULT_REGION;
+const REDIRECT_HOST = process.env.REDIRECT_HOST || '';
+const SUPPORTED_REGIONS = new RegExp( process.env.SUPPORTED_REGIONS || '')
+const DEFAULT_REGION = process.env.DEFAULT_REGION || '';
 
 export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFrontResponse|CloudFrontRequest> => {
      let request = event.Records[0].cf.request;
