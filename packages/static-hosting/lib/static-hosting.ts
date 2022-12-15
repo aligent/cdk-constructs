@@ -68,11 +68,21 @@ export interface StaticHostingProps {
      * Optional WAF ARN 
      */
     webAclArn?: string;
+
+    /**
+     * Response Header policies
+     */
+    responseHeaders?: ResponseHeaderMappings[];
 }
 
 interface remapPath {
     from: string,
     to: string
+}
+
+export interface ResponseHeaderMappings {
+    header: ResponseHeadersPolicy,
+    behaviors: string[]
 }
 
 export class StaticHosting extends Construct {
@@ -300,6 +310,21 @@ export class StaticHosting extends Construct {
                 description: 'CSP Header',
                 value: cspHeader,
                 exportName: `${exportPrefix}CSPHeader`
+            });
+        }
+        
+        /**
+         * Response Header policies
+         */
+        if (props.responseHeaders) {
+            const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
+            props.responseHeaders.forEach( (policyMapping) => {
+                policyMapping.behaviors.forEach(behavior => {
+                    cfnDistribution.addOverride(
+                        `Properties.DistributionConfig.CacheBehaviors[${props.behaviors?.findIndex(behavior => behavior.pathPattern == behavior)}].ResponseHeadersPolicyId`,
+                        policyMapping.header.responseHeadersPolicyId
+                    );
+                });
             });
         }
 
