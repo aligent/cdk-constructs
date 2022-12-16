@@ -82,7 +82,7 @@ interface remapPath {
 
 export interface ResponseHeaderMappings {
     header: ResponseHeadersPolicy,
-    behaviors: string[]
+    pathPatterns: string[]
 }
 
 export class StaticHosting extends Construct {
@@ -312,19 +312,17 @@ export class StaticHosting extends Construct {
                 exportName: `${exportPrefix}CSPHeader`
             });
         }
-        
+
         /**
          * Response Header policies
          */
         if (props.responseHeaders) {
             const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
             props.responseHeaders.forEach( (policyMapping) => {
-                policyMapping.behaviors.forEach(behavior => {
-                    cfnDistribution.addOverride(
-                        `Properties.DistributionConfig.CacheBehaviors[${props.behaviors?.findIndex(behavior => behavior.pathPattern == behavior)}].ResponseHeadersPolicyId`,
-                        policyMapping.header.responseHeadersPolicyId
-                    );
-                });
+                policyMapping.pathPatterns.forEach(path => cfnDistribution.addOverride(
+                    `Properties.DistributionConfig.CacheBehaviors[${props.behaviors?.findIndex(behavior => {return behavior.pathPattern === path})}].ResponseHeadersPolicyId`,
+                    policyMapping.header.responseHeadersPolicyId
+                ));
             });
         }
 
