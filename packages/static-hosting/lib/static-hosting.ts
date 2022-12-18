@@ -320,7 +320,7 @@ export class StaticHosting extends Construct {
             const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
             props.responseHeaders.forEach( (policyMapping) => {
                 policyMapping.pathPatterns.forEach(path => cfnDistribution.addOverride(
-                    `Properties.DistributionConfig.CacheBehaviors[${props.behaviors?.findIndex(behavior => {return behavior.pathPattern === path})}].ResponseHeadersPolicyId`,
+                    `Properties.DistributionConfig.CacheBehaviors.${props.behaviors?.findIndex(behavior => {return behavior.pathPattern === path})}.ResponseHeadersPolicyId`,
                     policyMapping.header.responseHeadersPolicyId
                 ));
             });
