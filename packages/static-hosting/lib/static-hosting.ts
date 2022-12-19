@@ -342,7 +342,7 @@ export class StaticHosting extends Construct {
                             `ResponseHeadersPolicyId`,
                     policyMapping.header.responseHeadersPolicyId
                     );
-                    new CfnOutput(this, `response header policies${policyMapping.header.responseHeadersPolicyId}`, {
+                    new CfnOutput(this, `response header policies${policyMapping.header.node.id}`, {
                         description: `response header policy mappings: ${policyMapping.header.responseHeadersPolicyId} `,
                         value: `{
                             path: "default", 
@@ -370,7 +370,7 @@ export class StaticHosting extends Construct {
                                 `.ResponseHeadersPolicyId`,
                         policyMapping.header.responseHeadersPolicyId
                         );
-                        new CfnOutput(this, `response header policies${policyMapping.header.responseHeadersPolicyId}`, {
+                        new CfnOutput(this, `response header policies${policyMapping.header.node.id}`, {
                             description: `response header policy mappings: ${policyMapping.header.responseHeadersPolicyId} `,
                             value: `{
                                 path: "${path}", 
