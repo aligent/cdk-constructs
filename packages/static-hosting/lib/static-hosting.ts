@@ -342,12 +342,9 @@ export class StaticHosting extends Construct {
                             `ResponseHeadersPolicyId`,
                     policyMapping.header.responseHeadersPolicyId
                     );
-                    new CfnOutput(this, `response header policies${policyMapping.header.node.id}`, {
-                        description: `response header policy mappings: ${policyMapping.header.responseHeadersPolicyId} `,
-                        value: `{
-                            path: "default", 
-                            policy: "${policyMapping.header.responseHeadersPolicyId}"
-                        }`,
+                    new CfnOutput(this, `response header policies ${policyMapping.header.node.id} default`, {
+                        description: `response header policy mappings`,
+                        value: `{ path: "default", policy: "${policyMapping.header.responseHeadersPolicyId}" }`,
                         exportName: `${exportPrefix}_header_policy_default`
                     });
                 };
@@ -370,12 +367,9 @@ export class StaticHosting extends Construct {
                                 `.ResponseHeadersPolicyId`,
                         policyMapping.header.responseHeadersPolicyId
                         );
-                        new CfnOutput(this, `response header policies${policyMapping.header.node.id}`, {
-                            description: `response header policy mappings: ${policyMapping.header.responseHeadersPolicyId} `,
-                            value: `{
-                                path: "${path}", 
-                                policy: "${policyMapping.header.responseHeadersPolicyId}"
-                            }`,
+                        new CfnOutput(this, `response header policies ${policyMapping.header.node.id} ${path.replace(/\W/g, '')}`, {
+                            description: `response header policy mappings`,
+                            value: `{ path: "${path}", policy: "${policyMapping.header.responseHeadersPolicyId}"}`,
                             exportName: `${exportPrefix}_header_policy_${path.replace(/\W/g, '')}`
                         });
                     };
