@@ -341,7 +341,16 @@ export class StaticHosting extends Construct {
                             `DefaultCacheBehavior.` +
                             `ResponseHeadersPolicyId`,
                     policyMapping.header.responseHeadersPolicyId
-                )};
+                    );
+                    new CfnOutput(this, `response header policies${policyMapping.header.responseHeadersPolicyId}`, {
+                        description: `response header policy mappings: ${policyMapping.header.responseHeadersPolicyId} `,
+                        value: `{
+                            path: "default", 
+                            policy: "${policyMapping.header.responseHeadersPolicyId}"
+                        }`,
+                        exportName: `${exportPrefix}_header_policy_default`
+                    });
+                };
                 /**
                  * If the policy should be attached to
                  *  specified path patterns
@@ -360,14 +369,17 @@ export class StaticHosting extends Construct {
                                 `${behaviorIndex}` +
                                 `.ResponseHeadersPolicyId`,
                         policyMapping.header.responseHeadersPolicyId
-                    )};
+                        );
+                        new CfnOutput(this, `response header policies${policyMapping.header.responseHeadersPolicyId}`, {
+                            description: `response header policy mappings: ${policyMapping.header.responseHeadersPolicyId} `,
+                            value: `{
+                                path: "${path}", 
+                                policy: "${policyMapping.header.responseHeadersPolicyId}"
+                            }`,
+                            exportName: `${exportPrefix}_header_policy_${path.replace(/\W/g, '')}`
+                        });
+                    };
                 });
-            });
-            
-            new CfnOutput(this, 'Response Header Policies', {
-                description: 'Response Header Policies',
-                value: JSON.stringify(props.responseHeadersPolicies),
-                exportName: `${exportPrefix}CSPHeader`
             });
         }
             
