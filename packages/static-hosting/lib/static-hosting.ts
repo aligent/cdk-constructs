@@ -320,7 +320,7 @@ export class StaticHosting extends Construct {
             const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
 
             /**
-             * If we prepend the custom origin config,
+             * If we prepend custom origin configs,
              *  it would change the array indexes.
              */
             let numberOfCustomBehaviors = 0;
