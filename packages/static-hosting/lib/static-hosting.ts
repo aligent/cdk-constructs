@@ -72,7 +72,7 @@ export interface StaticHostingProps {
     /**
      * Response Header policies
      */
-    responseHeaders?: ResponseHeaderMappings[];
+    responseHeadersPolicies?: ResponseHeaderMappings[];
 }
 
 interface remapPath {
@@ -83,7 +83,7 @@ interface remapPath {
 export interface ResponseHeaderMappings {
     header: ResponseHeadersPolicy,
     pathPatterns: string[],
-    attachedToDefault?: boolean
+    attachToDefault?: boolean
 }
 
 export class StaticHosting extends Construct {
@@ -319,7 +319,7 @@ export class StaticHosting extends Construct {
          * This feature helps to attached custom ResponseHeadersPolicies to 
          *  the cache behaviors
          */
-        if (props.responseHeaders) {
+        if (props.responseHeadersPolicies) {
             const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
 
             /**
@@ -331,15 +331,15 @@ export class StaticHosting extends Construct {
                 numberOfCustomBehaviors = props.customOriginConfigs?.reduce((acc, current) => acc + current.behaviors.length, 0)!;
             }
             
-            props.responseHeaders.forEach( (policyMapping) => {
+            props.responseHeadersPolicies.forEach( (policyMapping) => {
                 /**
                  * If the policy should be attached to default behavior
                  */
-                if (policyMapping.attachedToDefault) {
+                if (policyMapping.attachToDefault) {
                     cfnDistribution.addOverride(
-                        `Properties.DistributionConfig.CacheBehaviors.` +
-                            `DefaultCacheBehavior` +
-                            `.ResponseHeadersPolicyId`,
+                        `Properties.DistributionConfig.` +
+                            `DefaultCacheBehavior.` +
+                            `ResponseHeadersPolicyId`,
                     policyMapping.header.responseHeadersPolicyId
                 )};
                 /**
@@ -362,6 +362,12 @@ export class StaticHosting extends Construct {
                         policyMapping.header.responseHeadersPolicyId
                     )};
                 });
+            });
+            
+            new CfnOutput(this, 'Response Header Policies', {
+                description: 'Response Header Policies',
+                value: JSON.stringify(props.responseHeadersPolicies),
+                exportName: `${exportPrefix}CSPHeader`
             });
         }
             
