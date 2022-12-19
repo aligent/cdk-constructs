@@ -318,9 +318,20 @@ export class StaticHosting extends Construct {
          */
         if (props.responseHeaders) {
             const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
+
+            /**
+             * If we prepend the custom origin config,
+             *  it would change the array indexes.
+             */
+            let numberOfCustomBehaviors = 0;
+            if (props.prependCustomOriginBehaviours) {
+                numberOfCustomBehaviors = props.customOriginConfigs?.reduce((acc, current) => acc + current.behaviors.length, 0)!;
+            }
             props.responseHeaders.forEach( (policyMapping) => {
                 policyMapping.pathPatterns.forEach(path => cfnDistribution.addOverride(
-                    `Properties.DistributionConfig.CacheBehaviors.${props.behaviors?.findIndex(behavior => {return behavior.pathPattern === path})}.ResponseHeadersPolicyId`,
+                    `Properties.DistributionConfig.CacheBehaviors.` +
+                    `${props.behaviors?.findIndex(behavior => {return behavior.pathPattern === path})! + numberOfCustomBehaviors}` +
+                    `.ResponseHeadersPolicyId`,
                     policyMapping.header.responseHeadersPolicyId
                 ));
             });
