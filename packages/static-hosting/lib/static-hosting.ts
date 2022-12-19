@@ -82,7 +82,8 @@ interface remapPath {
 
 export interface ResponseHeaderMappings {
     header: ResponseHeadersPolicy,
-    pathPatterns: string[]
+    pathPatterns: string[],
+    attachedToDefault?: boolean
 }
 
 export class StaticHosting extends Construct {
@@ -315,6 +316,8 @@ export class StaticHosting extends Construct {
 
         /**
          * Response Header policies
+         * This feature helps to attached custom ResponseHeadersPolicies to 
+         *  the cache behaviors
          */
         if (props.responseHeaders) {
             const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
@@ -327,16 +330,40 @@ export class StaticHosting extends Construct {
             if (props.prependCustomOriginBehaviours) {
                 numberOfCustomBehaviors = props.customOriginConfigs?.reduce((acc, current) => acc + current.behaviors.length, 0)!;
             }
+            
             props.responseHeaders.forEach( (policyMapping) => {
-                policyMapping.pathPatterns.forEach(path => cfnDistribution.addOverride(
-                    `Properties.DistributionConfig.CacheBehaviors.` +
-                    `${props.behaviors?.findIndex(behavior => {return behavior.pathPattern === path})! + numberOfCustomBehaviors}` +
-                    `.ResponseHeadersPolicyId`,
+                /**
+                 * If the policy should be attached to default behavior
+                 */
+                if (policyMapping.attachedToDefault) {
+                    cfnDistribution.addOverride(
+                        `Properties.DistributionConfig.CacheBehaviors.` +
+                            `DefaultCacheBehavior` +
+                            `.ResponseHeadersPolicyId`,
                     policyMapping.header.responseHeadersPolicyId
-                ));
-            });
-        }
+                )};
+                /**
+                 * If the policy should be attached to
+                 *  specified path patterns
+                 */
+                policyMapping.pathPatterns.forEach(path => { 
+                    /**
+                     * Looking for the index of the behavior
+                     *  according to the path pattern
+                     * If the path patter is not found, it would be ignored
+                     */
+                    let behaviorIndex = props.behaviors?.findIndex(behavior => {return behavior.pathPattern === path})! + numberOfCustomBehaviors;
 
+                    if (behaviorIndex >= numberOfCustomBehaviors){
+                        cfnDistribution.addOverride(
+                            `Properties.DistributionConfig.CacheBehaviors.` +
+                                `${behaviorIndex}` +
+                                `.ResponseHeadersPolicyId`,
+                        policyMapping.header.responseHeadersPolicyId
+                    )};
+                });
+            });
+            
         if (publisherGroup) {
             const cloudFrontInvalidationPolicyStatement = new PolicyStatement({
                 effect: Effect.ALLOW,
