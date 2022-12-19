@@ -363,6 +363,7 @@ export class StaticHosting extends Construct {
                     )};
                 });
             });
+        }
             
         if (publisherGroup) {
             const cloudFrontInvalidationPolicyStatement = new PolicyStatement({
