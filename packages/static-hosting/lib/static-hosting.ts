@@ -345,7 +345,7 @@ export class StaticHosting extends Construct {
                     new CfnOutput(this, `response header policies ${policyMapping.header.node.id} default`, {
                         description: `response header policy mappings`,
                         value: `{ path: "default", policy: "${policyMapping.header.responseHeadersPolicyId}" }`,
-                        exportName: `${exportPrefix}_header_policy_default`
+                        exportName: `${exportPrefix}HeaderPolicy-default`
                     });
                 };
                 /**
@@ -370,7 +370,7 @@ export class StaticHosting extends Construct {
                         new CfnOutput(this, `response header policies ${policyMapping.header.node.id} ${path.replace(/\W/g, '')}`, {
                             description: `response header policy mappings`,
                             value: `{ path: "${path}", policy: "${policyMapping.header.responseHeadersPolicyId}"}`,
-                            exportName: `${exportPrefix}_header_policy_${path.replace(/\W/g, '')}`
+                            exportName: `${exportPrefix}HeaderPolicy-${path.replace(/\W/g, '')}`
                         });
                     };
                 });
