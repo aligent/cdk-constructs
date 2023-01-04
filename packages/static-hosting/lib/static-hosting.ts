@@ -68,11 +68,22 @@ export interface StaticHostingProps {
      * Optional WAF ARN 
      */
     webAclArn?: string;
+
+    /**
+     * Response Header policies
+     */
+    responseHeadersPolicies?: ResponseHeaderMappings[];
 }
 
 interface remapPath {
     from: string,
     to: string
+}
+
+export interface ResponseHeaderMappings {
+    header: ResponseHeadersPolicy,
+    pathPatterns: string[],
+    attachToDefault?: boolean
 }
 
 export class StaticHosting extends Construct {
@@ -303,6 +314,69 @@ export class StaticHosting extends Construct {
             });
         }
 
+        /**
+         * Response Header policies
+         * This feature helps to attached custom ResponseHeadersPolicies to 
+         *  the cache behaviors
+         */
+        if (props.responseHeadersPolicies) {
+            const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
+
+            /**
+             * If we prepend custom origin configs,
+             *  it would change the array indexes.
+             */
+            let numberOfCustomBehaviors = 0;
+            if (props.prependCustomOriginBehaviours) {
+                numberOfCustomBehaviors = props.customOriginConfigs?.reduce((acc, current) => acc + current.behaviors.length, 0)!;
+            }
+            
+            props.responseHeadersPolicies.forEach( (policyMapping) => {
+                /**
+                 * If the policy should be attached to default behavior
+                 */
+                if (policyMapping.attachToDefault) {
+                    cfnDistribution.addOverride(
+                        `Properties.DistributionConfig.` +
+                            `DefaultCacheBehavior.` +
+                            `ResponseHeadersPolicyId`,
+                    policyMapping.header.responseHeadersPolicyId
+                    );
+                    new CfnOutput(this, `response header policies ${policyMapping.header.node.id} default`, {
+                        description: `response header policy mappings`,
+                        value: `{ path: "default", policy: "${policyMapping.header.responseHeadersPolicyId}" }`,
+                        exportName: `${exportPrefix}HeaderPolicy-default`
+                    });
+                };
+                /**
+                 * If the policy should be attached to
+                 *  specified path patterns
+                 */
+                policyMapping.pathPatterns.forEach(path => { 
+                    /**
+                     * Looking for the index of the behavior
+                     *  according to the path pattern
+                     * If the path patter is not found, it would be ignored
+                     */
+                    let behaviorIndex = props.behaviors?.findIndex(behavior => {return behavior.pathPattern === path})! + numberOfCustomBehaviors;
+
+                    if (behaviorIndex >= numberOfCustomBehaviors){
+                        cfnDistribution.addOverride(
+                            `Properties.DistributionConfig.CacheBehaviors.` +
+                                `${behaviorIndex}` +
+                                `.ResponseHeadersPolicyId`,
+                        policyMapping.header.responseHeadersPolicyId
+                        );
+                        new CfnOutput(this, `response header policies ${policyMapping.header.node.id} ${path.replace(/\W/g, '')}`, {
+                            description: `response header policy mappings`,
+                            value: `{ path: "${path}", policy: "${policyMapping.header.responseHeadersPolicyId}"}`,
+                            exportName: `${exportPrefix}HeaderPolicy-${path.replace(/\W/g, '')}`
+                        });
+                    };
+                });
+            });
+        }
+            
         if (publisherGroup) {
             const cloudFrontInvalidationPolicyStatement = new PolicyStatement({
                 effect: Effect.ALLOW,

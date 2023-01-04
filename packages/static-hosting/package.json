@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-static-hosting",
-  "version": "0.1.5",
+  "version": "0.1.13",
   "main": "index.js",
   "license": "GPL-3.0-only",
   "homepage": "https://github.com/aligent/aws-cdk-static-hosting-stack#readme",

@@ -2,10 +2,11 @@
 
 ## Overview
 
-This repository defines a CDK construct for hosting a static website on AWS using S3 and CloudFront. 
+This repository defines a CDK construct for hosting a static website on AWS using S3 and CloudFront.
 It can be imported and used within CDK applications.
 
 ## Example
+
 The following CDK snippet can be used to provision a static hosting stack using this construct.
 
 ```
@@ -43,3 +44,46 @@ new HostingStack(app, 'hosting-stack', {
 });
 
 ```
+
+### Response Header Policies
+
+You can initialize [Response Headers Policies], map them and pass to the construct.
+
+1. Create a policy
+
+    ```sh
+    // Creating a custom response headers policy -- all parameters optional
+    const reportUriPolicy = new ResponseHeadersPolicy(this, 'ReportUriPolicy', {
+        responseHeadersPolicyName: 'ReportUriPolicy',
+        comment: 'To enable CSP Reporting',
+        customHeadersBehavior: {
+            customHeaders: [
+                { 
+                    header: 'content-security-policy-report-only', 
+                    value: `default-src 'none'; form-action 'none'; frame-ancestors 'none'; report-uri https://some-report-uri-domain.report-uri.com/r/t/csp/wizard`, 
+                    override: true 
+                },
+            ],
+        },
+    });
+    ```
+
+2. Attached policy to desired cache behavior or path
+
+    ```sh
+    const responseHeaders: ResponseHeaderMappings[] = [{
+        header: reportUriPolicy,
+        pathPatterns: ['/au*', '/nz*']
+        attachToDefault: false
+    }];
+    ```
+
+    If you should attached the policy to the Default Behavior, set `attachToDefault: true`
+
+3. Include the config as props
+
+    ```sh
+    new StaticHosting(this, 'pwa-stack', {...staticProps, ...{behaviors, customOriginConfigs, responseHeaders}});
+    ```
+
+[Response Headers Policies]:https://docs.aws.amazon.com/cdk/api/v1/docs/@aws-cdk_aws-cloudfront.ResponseHeadersPolicy.html
