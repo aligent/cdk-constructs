@@ -9,6 +9,7 @@ Construct | Description
 [geoip-redirect](packages/geoip-redirect) | :warning: Uses CDK 2
 [prerender-proxy](packages/prerender-proxy) |
 [rabbitmq](packages/rabbitmq) |
+[shared-vpc](packages/shared-vpc) |
 [static-hosting](packages/static-hosting) |
 [waf](packages/waf) |
 
