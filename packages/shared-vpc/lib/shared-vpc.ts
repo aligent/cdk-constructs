@@ -4,7 +4,7 @@ import { ARecord, CnameRecord, PrivateHostedZone, RecordTarget } from '@aws-cdk/
 
 const DEFAULT_ZONE_RECORD_SUFFIX = 'root';
 
-type Zone = {
+export type Zone = {
   type: string,
   target: string,
   record?: string

@@ -12,13 +12,16 @@ The following can be used to provision a shared VPC.
 import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
 import { Construct, Stack, StackProps } from '@aws-cdk/core';
-import { SharedVpc, SharedVpcProps } from '@aligent/cdk-shared-vpc';
+import { SharedVpc, SharedVpcProps, Zone } from '@aligent/cdk-shared-vpc';
 
+const hostedZones: Zone[] = [
+    { type: "A", target: "10.6.0.12", record: "subdomain" }
+]
 const sharedVpcProps : SharedVpcProps = {
     vpcName: 'my-vpc-name',
     cidr: '10.0.0.0/16',
     hostedZoneDomain: 'example.com',
-    hostedZoneRecords: "[{ "type": "A", "target": "10.6.0.12", "record": "subdomain" }]"
+    hostedZoneRecords: hostedZones
 };
 
 class MyStack extends Stack {
