@@ -24,10 +24,9 @@ export interface SharedVpcProps {
    */
   hostedZoneDomain?: string,
   /**
-   * The optional zone records as a JSON string
-   * Ex: "[{ "type": "A", "target": "10.6.0.12", "record": "subdomain" }]"
+   * Optional zone records
    */
-  hostedZoneRecords?: string,
+  hostedZoneRecords?: Zone[],
 }
 
 export class SharedVpc extends Construct {
@@ -87,10 +86,8 @@ export class SharedVpc extends Construct {
         vpc: this.vpc
       });
 
-      if (hostedZoneRecords) {
-        const hostedZones: Zone[] = JSON.parse(hostedZoneRecords);
-
-        for (const zone of hostedZones) {
+      if (hostedZoneRecords?.length) {
+        for (const zone of hostedZoneRecords) {
           const recordId = `${vpcName}-hosted-zone-record-${zone.record || DEFAULT_ZONE_RECORD_SUFFIX}`;
           switch (zone.type) {
             case 'A': {
