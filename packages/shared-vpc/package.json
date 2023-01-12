@@ -1,0 +1,25 @@
+{
+  "name": "@aligent/cdk-shared-vpc",
+  "version": "0.1.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "prepublish": "tsc"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.21",
+    "@types/node": "^10.17.60",
+    "jest": "^26.4.2",
+    "ts-jest": "^26.5.4",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "@aws-cdk/aws-route53": "1.180.0",
+    "@aws-cdk/aws-ec2": "1.180.0",
+    "@aws-cdk/core": "1.180.0",
+    "aws-cdk": "1.180.0",
+    "esbuild": "0.12.15",
+    "source-map-support": "^0.5.16"
+  }
+}
