@@ -22,11 +22,11 @@ export class PrerenderFunction extends Construct {
             'PrerenderFunction',
             {
               code: Bundling.bundle({
-                entry: `${__dirname}/node_modules/@aligent/cdk-lambda-at-edge-handlers/lib/prerender.js`,
+                entry: `../cdk-lambda-at-edge-handlers/lib/prerender.js`,
                 runtime: Runtime.NODEJS_14_X,
                 sourceMap: true,
-                projectRoot: `${__dirname}/node_modules/@aligent/cdk-lambda-at-edge-handlers/`,
-                depsLockFilePath: `${__dirname}/node_modules/@aligent/cdk-lambda-at-edge-handlers/package-lock.json`,
+                projectRoot: `../cdk-lambda-at-edge-handlers/`,
+                depsLockFilePath: `../cdk-lambda-at-edge-handlers/package-lock.json`,
                 // Define options replace values at build time so we can use environment variables to test locally
                 // and replace during build/deploy with static values. This gets around the lambda@edge limitation
                 // of no environment variables at runtime.
