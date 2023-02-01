@@ -3,6 +3,7 @@ import { Bundling } from '@aws-cdk/aws-lambda-nodejs/lib/bundling';
 import { Runtime } from '@aws-cdk/aws-lambda';
 import { experimental } from '@aws-cdk/aws-cloudfront';
 import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
+import "@aligent/cdk-lambda-at-edge-handlers"
 
 export interface PrerenderFunctionOptions {
     prerenderToken: string,
@@ -21,10 +22,10 @@ export class PrerenderFunction extends Construct {
             'PrerenderFunction',
             {
               code: Bundling.bundle({
-                entry: `${__dirname}/handlers/prerender.ts`,
+                entry: `${__dirname}/node_modules/@aligent/cdk-lambda-at-edge-handlers/lib/prerender.ts`,
                 runtime: Runtime.NODEJS_14_X,
                 sourceMap: true,
-                projectRoot: `${__dirname}/handlers/`,
+                projectRoot: `${__dirname}/node_modules/@aligent/cdk-lambda-at-edge-handlers/`,
                 depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
                 // Define options replace values at build time so we can use environment variables to test locally
                 // and replace during build/deploy with static values. This gets around the lambda@edge limitation

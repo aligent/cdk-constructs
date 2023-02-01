@@ -3,6 +3,7 @@ import { Bundling } from '@aws-cdk/aws-lambda-nodejs/lib/bundling';
 import { Runtime } from '@aws-cdk/aws-lambda';
 import { experimental } from '@aws-cdk/aws-cloudfront';
 import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
+import "@aligent/cdk-lambda-at-edge-handlers"
 
 export interface CloudFrontCacheControlOptions {
     cacheKey?: string,
@@ -20,11 +21,11 @@ export class CloudFrontCacheControl extends Construct {
             'PrerenderCloudFrontCacheControl',
             {
               code: Bundling.bundle({
-                entry: `${__dirname}/handlers/cache-control.ts`,
+                entry: `${__dirname}/node_modules/@aligent/cdk-lambda-at-edge-handlers/lib/cache-control.js`,
                 runtime: Runtime.NODEJS_14_X,
                 sourceMap: true,
-                projectRoot: `${__dirname}/handlers/`,
-                depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
+                projectRoot: `${__dirname}/node_modules/@aligent/cdk-lambda-at-edge-handlers/`,
+                depsLockFilePath: `${__dirname}/node_modules/@aligent/cdk-lambda-at-edge-handlers/package-lock.json`,
                 // Define options replace values at build time so we can use environment variables to test locally
                 // and replace during build/deploy with static values. This gets around the lambda@edge limitation
                 // of no environment variables at runtime.
