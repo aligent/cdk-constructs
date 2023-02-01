@@ -15,7 +15,7 @@ export class PrerenderCheckFunction extends Construct {
         'PrerenderCheckFunction',
         {
           code: Bundling.bundle({
-            entry: `${__dirname}/node_modules/@aligent/cdk-lambda-at-edge-handlers/lib/prerender-check.ts`,
+            entry: `${__dirname}/node_modules/@aligent/cdk-lambda-at-edge-handlers/lib/prerender-check.js`,
             runtime: Runtime.NODEJS_14_X,
             sourceMap: true,
             projectRoot: `${__dirname}/node_modules/@aligent/cdk-lambda-at-edge-handlers/`,
