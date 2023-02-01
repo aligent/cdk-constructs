@@ -4,8 +4,8 @@
   "description": "A Cloudfront Lambda@Edge stack for integrating with prerender.io",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && cd ./lib/handlers && npm ci",
-    "prepublish": "tsc && cd ./lib/handlers && npm ci"
+    "build": "tsc",
+    "prepublish": "tsc"
   },
   "repository": {
     "type": "git",
