@@ -1,0 +1,17 @@
+{
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-cdk/aws-lambda": "^1.180.0",
+    "@middy/core": "^3.6.2",
+    "@types/aws-lambda": "^8.10.77",
+    "@aligent/cdk-lambda-at-edge-handlers": "^0.1.0",
+    "source-map-support": "^0.5.19"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.9"
+  }
+}

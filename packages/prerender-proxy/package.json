@@ -32,7 +32,9 @@
     "@aws-cdk/core": "1.180.0",
     "aws-cdk": "1.180.0",
     "esbuild": "0.12.15",
-    "source-map-support": "^0.5.16"
+    "@middy/core": "^3.6.2",
+    "source-map-support": "^0.5.16",
+    "@aligent/cdk-lambda-at-edge-handlers": "^0.1.0"
   },
   "peerDependencies": {
     "@aws-cdk/aws-cloudfront": "1.180.0",

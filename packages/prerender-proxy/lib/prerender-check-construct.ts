@@ -3,27 +3,26 @@ import { Bundling } from '@aws-cdk/aws-lambda-nodejs/lib/bundling';
 import { Runtime } from '@aws-cdk/aws-lambda';
 import { experimental } from '@aws-cdk/aws-cloudfront';
 import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
-import "@aligent/cdk-lambda-at-edge-handlers"
 
 export class PrerenderCheckFunction extends Construct {
     readonly edgeFunction: EdgeFunction;
 
     constructor(scope: Construct, id: string) {
-      super(scope, id);
-      this.edgeFunction = new experimental.EdgeFunction(
-        this,
-        'PrerenderCheckFunction',
-        {
-          code: Bundling.bundle({
-            entry: `../cdk-lambda-at-edge-handlers/lib/prerender-check.js`,
-            runtime: Runtime.NODEJS_14_X,
-            sourceMap: true,
-            projectRoot: `../cdk-lambda-at-edge-handlers/`,
-            depsLockFilePath: `../cdk-lambda-at-edge-handlers/package-lock.json`
-          } as any),
-          runtime: Runtime.NODEJS_14_X,
-          handler: 'index.handler',
-        }
-      );
+        super(scope, id);
+        this.edgeFunction = new experimental.EdgeFunction(
+            this,
+            'PrerenderCheckFunction',
+            {
+                code: Bundling.bundle({
+                    entry: `${__dirname}/handlers/prerender-check.ts`,
+                    runtime: Runtime.NODEJS_14_X,
+                    sourceMap: true,
+                    projectRoot: `${__dirname}/handlers/`,
+                    depsLockFilePath: `${__dirname}/handlers/package-lock.json`
+                } as any),
+                runtime: Runtime.NODEJS_14_X,
+                handler: 'index.handler',
+            }
+        );
     }
 }
