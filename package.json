@@ -18,7 +18,5 @@
     },
     "homepage": "https://github.com/aligent/aws-cdk-constructs#readme",
     "scripts": {
-        "build": "tsc",
-        "prepublish": "tsc"
     }
 }
