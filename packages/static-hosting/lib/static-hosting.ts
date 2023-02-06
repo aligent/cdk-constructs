@@ -1,21 +1,24 @@
 import { CfnOutput, Duration, RemovalPolicy } from 'aws-cdk-lib';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import {
-    Behavior,
-    CfnDistribution,
-    SSLMethod,
-    SecurityPolicyProtocol,
-    DistributionProps,
     Distribution,
+    DistributionProps,
     HttpVersion,
-    OriginAccessIdentity,
     PriceClass,
     ResponseHeadersPolicy,
-    SourceConfiguration,
+    SecurityPolicyProtocol,
+    SSLMethod,
     ViewerProtocolPolicy,
-    BehaviorOptions
+    BehaviorOptions,
+    ErrorResponse,
+    EdgeLambda,
+    CfnDistribution,
+    OriginRequestPolicy,
+    CachePolicy,
+    OriginRequestHeaderBehavior,
+    CacheHeaderBehavior
 } from 'aws-cdk-lib/aws-cloudfront';
-import { HttpOrigin, S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
+import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import {
     Effect,
     Group,
@@ -36,75 +39,24 @@ import { CSP } from '../types/csp';
 
 export interface StaticHostingProps {
     exportPrefix?: string;
-    domainName: string;
-    subDomainName: string;
-    certificateArn: string;
-    createDnsRecord?: boolean;
-    createPublisherGroup?: boolean;
-    createPublisherUser?: boolean;
-    extraDistributionCnames?: ReadonlyArray<string>;
-    enableCloudFrontAccessLogging?: boolean;
-    enableS3AccessLogging?: boolean;
-    zoneName?: string;
-    /**
-     * Used to add Custom origins and behaviors
-     */
-    customOriginConfigs?: Array<SourceConfiguration>;
-    /**
-     * Used to prepend the behaviours introduced as part of customOriginConfigs.
-     * This is a work around until this construct is updated to use the new
-     * Distribution API.
-     * https://docs.aws.amazon.com/cdk/api/latest/docs/aws-cloudfront-readme.html#distribution-api
-     */
-    prependCustomOriginBehaviours?: boolean;
-
-    /**
-     * Optional set of behaviors to override the default behavior defined in this construct
-     */
-    behaviors?: Array<Behavior>;
-    enableErrorConfig?: boolean;
-    enableStaticFileRemap?: boolean;
-    remapPaths?: remapPath[];
-    backendHost?: string;
-    remapBackendPaths?: remapPath[];
-    defaultRootObject?: string;
     enforceSSL?: boolean;
-    /**
-     * Disable the use of the CSP header. Default value is false.
-     */
+    domainNames: string[];
     disableCSP?: boolean;
-    /**
-     * AWS limits the max header size to 1kb, this is too small for complex csp headers.
-     * The main purpose of this csp header is to provide a method of setting a report-uri.
-     */
-    csp?: CSP;
-    /**
-     * This will generate a csp based *purely* on the provided csp object.
-     * Therefore disabling the automatic adding of common use-case properties.
-     */
-    explicitCSP?: boolean;
-
-    /**
-     * Extend the default props for S3 bucket
-     */
+    enableS3AccessLogging?: boolean;
     s3ExtendedProps?: BucketProps;
-
-    /**
-     * Optional WAF ARN
-     */
-    webAclArn?: string;
-
-    /**
-     * Response Header policies
-     */
-    responseHeadersPolicies?: ResponseHeaderMappings[];
-
-    additionalBehaviors: Record<string, BehaviorOptions>
-}
-
-interface remapPath {
-    from: string;
-    to: string;
+    createPublisherUser?: boolean;
+    createPublisherGroup?: boolean;
+    enableCloudFrontAccessLogging?: boolean;
+    errorResponsePagePath?: string;
+    webAclId?: string;
+    defaultRootObject?: string;
+    certificateArn: string;
+    defaultBehaviourEdgeLambdas: EdgeLambda[];
+    additionalBehaviors?: Record<string, BehaviorOptions>;
+    enableErrorConfig?: boolean;
+    overrideLogicalId?: string;
+    createDnsRecord?: boolean;
+    zoneName?: string;
 }
 
 export interface ResponseHeaderMappings {
@@ -114,8 +66,6 @@ export interface ResponseHeaderMappings {
 }
 
 export class StaticHosting extends Construct {
-    private staticFiles = ['js', 'css', 'json', 'svg', 'jpg', 'jpeg', 'png'];
-
     constructor(scope: Construct, id: string, props: StaticHostingProps) {
         super(scope, id);
 
@@ -124,15 +74,10 @@ export class StaticHosting extends Construct {
             ? props.exportPrefix
             : 'StaticHosting';
 
-        const siteName = `${props.subDomainName}.${props.domainName}`;
-        const siteNameArray: Array<string> = [siteName];
+        // TODO: What do?
+        const siteName = props.domainNames[0];
         const enforceSSL = props.enforceSSL !== false;
-        const enableStaticFileRemap = props.enableStaticFileRemap !== false;
         const disableCSP = props.disableCSP === true;
-
-        let distributionCnames: Array<string> = props.extraDistributionCnames
-            ? siteNameArray.concat(props.extraDistributionCnames)
-            : siteNameArray;
 
         const s3LoggingBucket = props.enableS3AccessLogging
             ? new Bucket(this, 'S3LoggingBucket', {
@@ -166,14 +111,6 @@ export class StaticHosting extends Construct {
             value: bucket.bucketName,
             exportName: `${exportPrefix}BucketName`
         });
-
-        // OAI is automatically created with S3Origin in CDK 2
-
-        // const oai = new OriginAccessIdentity(this, 'OriginAccessIdentity', {
-        //     comment: 'Allow CloudFront to access S3'
-        // });
-
-        // bucket.grantRead(oai);
 
         const publisherUser = props.createPublisherUser
             ? new User(this, 'PublisherUser', {
@@ -218,8 +155,6 @@ export class StaticHosting extends Construct {
             : undefined;
 
         if (loggingBucket) {
-            // loggingBucket.grantWrite(oai);
-
             new CfnOutput(this, 'LoggingBucketName', {
                 description: 'CloudFront Logs',
                 value: loggingBucket.bucketName,
@@ -231,210 +166,188 @@ export class StaticHosting extends Construct {
             ? { bucket: loggingBucket }
             : undefined;
 
-        let originConfigs = new Array<SourceConfiguration>();
+        const s3Origin = new S3Origin(bucket);
 
-        // Add the backend host as an origin
-        if (props.backendHost) {
-            originConfigs.push({
-                customOriginSource: {
-                    domainName: props.backendHost
-                },
-                behaviors: [] // Behaviors will be added below
-            });
-
-            // Redirect paths
-            // if (props.remapBackendPaths) {
-            //     for (const path of props.remapBackendPaths) {
-            //         originConfigs[0].behaviors.push(
-            //             this.createRemapBehavior(path.from, path.to)
-            //         );
-            //     }
-            // }
-        }
-
-        // Create default origin
-        originConfigs.push();
-
-        // Create behaviors to map static content to bucket
-        // if (enableStaticFileRemap) {
-        //     for (const path of this.staticFiles) {
-        //         originConfigs[originConfigs.length - 1].behaviors.push(
-        //             this.createRemapBehavior(`*.${path}`, `*.${path}`)
-        //         );
-        //     }
-        // }
-
-        // Redirect paths
-        // if (props.remapPaths) {
-        //     for (const path of props.remapPaths) {
-        //         originConfigs[originConfigs.length - 1].behaviors.push(
-        //             this.createRemapBehavior(path.from, path.to)
-        //         );
-        //     }
-        // }
-
-        // Add any custom origins passed to the construct
-        if (props.customOriginConfigs) {
-            if (props.prependCustomOriginBehaviours) {
-                originConfigs = props.customOriginConfigs.concat(originConfigs);
-            } else {
-                originConfigs = originConfigs.concat(props.customOriginConfigs);
+        const originRequestPolicy = new OriginRequestPolicy(
+            this,
+            's3OriginRequestPolicy',
+            {
+                headerBehavior:
+                    OriginRequestHeaderBehavior.allowList('x-forwarded-host')
             }
-        }
+        );
 
-        // optionally add webAclId, it used to be readonly property in CDK v1 
-        
-        if (props.enableErrorConfig) {
-            // optionally configure error props here
-        }
+        const originCachePolicy = new CachePolicy(this, 's3OriginCachePolicy', {
+            headerBehavior: CacheHeaderBehavior.allowList('x-forwarded-host'),
+            enableAcceptEncodingBrotli: true,
+            enableAcceptEncodingGzip: true
+        });
 
-        const newDistributionProps: DistributionProps = {
-            domainNames: [],
+        const errorResponses: ErrorResponse[] = [
+            {
+                httpStatus: 404,
+                responseHttpStatus: 200,
+                responsePagePath: props.errorResponsePagePath ?? '/index.html',
+                ttl: Duration.seconds(0)
+            }
+        ];
+
+        const distributionProps: DistributionProps = {
+            domainNames: props.domainNames,
+            webAclId: props.webAclId,
+            defaultRootObject: props.defaultRootObject,
             httpVersion: HttpVersion.HTTP3,
             sslSupportMethod: SSLMethod.SNI,
             priceClass: PriceClass.PRICE_CLASS_ALL,
+            enableLogging: props.enableCloudFrontAccessLogging,
+            logBucket: loggingConfig?.bucket,
+            minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2018,
+            certificate: Certificate.fromCertificateArn(
+                this,
+                'domain-certificate',
+                props.certificateArn
+            ),
             defaultBehavior: {
-                origin: new S3Origin(bucket),
+                origin: s3Origin,
                 viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                edgeLambdas: props.defaultBehaviourEdgeLambdas,
+                originRequestPolicy: originRequestPolicy,
+                cachePolicy: originCachePolicy
             },
             additionalBehaviors: props.additionalBehaviors,
-            errorResponses: [
-                {
-                    httpStatus: 404,
-                    responseHttpStatus: 200,
-                    ttl: Duration.seconds(0),
-                    responsePagePath: '/index.html'
-                }
-            ],
-            enableLogging: props.enableCloudFrontAccessLogging,
-            logBucket: loggingBucket,
-            minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2018,
-            certificate: Certificate.fromCertificateArn(this, 'domain-certificate', props.certificateArn)
+            errorResponses: props.enableErrorConfig ? errorResponses : []
         };
 
         const distribution = new Distribution(
             this,
             'BucketCdn',
-            newDistributionProps
+            distributionProps
         );
 
-        if (!disableCSP) {
-            const cspHeader = this.generateCSPString(
-                props.csp,
-                props.explicitCSP
-            );
-
-            const headersPolicy = new ResponseHeadersPolicy(
-                this,
-                'ResponseHeaders',
-                {
-                    securityHeadersBehavior: {
-                        contentSecurityPolicy: {
-                            contentSecurityPolicy: cspHeader,
-                            override: true
-                        }
-                    }
-                }
-            );
-
+        if (props.overrideLogicalId) {
             const cfnDistribution = distribution.node
                 .defaultChild as CfnDistribution;
-            // In the current version of CDK there's no nice way to do this...
-            // Instead just override the CloudFormation property directly
-            cfnDistribution.addOverride(
-                'Properties.DistributionConfig.DefaultCacheBehavior.ResponseHeadersPolicyId',
-                headersPolicy.responseHeadersPolicyId
-            );
-
-            new CfnOutput(this, 'CSP Header', {
-                description: 'CSP Header',
-                value: cspHeader,
-                exportName: `${exportPrefix}CSPHeader`
-            });
+            cfnDistribution.overrideLogicalId(props.overrideLogicalId);
         }
+
+        // TODO: CSP
+        // if (!disableCSP) {
+        //     const cspHeader = this.generateCSPString(
+        //         props.csp,
+        //         props.explicitCSP
+        //     );
+
+        //     const headersPolicy = new ResponseHeadersPolicy(
+        //         this,
+        //         'ResponseHeaders',
+        //         {
+        //             securityHeadersBehavior: {
+        //                 contentSecurityPolicy: {
+        //                     contentSecurityPolicy: cspHeader,
+        //                     override: true
+        //                 }
+        //             }
+        //         }
+        //     );
+
+        //     const cfnDistribution = distribution.node
+        //         .defaultChild as CfnDistribution;
+        //     // In the current version of CDK there's no nice way to do this...
+        //     // Instead just override the CloudFormation property directly
+        //     cfnDistribution.addOverride(
+        //         'Properties.DistributionConfig.DefaultCacheBehavior.ResponseHeadersPolicyId',
+        //         headersPolicy.responseHeadersPolicyId
+        //     );
+
+        //     new CfnOutput(this, 'CSP Header', {
+        //         description: 'CSP Header',
+        //         value: cspHeader,
+        //         exportName: `${exportPrefix}CSPHeader`
+        //     });
+        // }
 
         /**
          * Response Header policies
          * This feature helps to attached custom ResponseHeadersPolicies to
          *  the cache behaviors
          */
-        if (props.responseHeadersPolicies) {
-            const cfnDistribution = distribution.node
-                .defaultChild as CfnDistribution;
+        // if (props.responseHeadersPolicies) {
+        //     const cfnDistribution = distribution.node
+        //         .defaultChild as CfnDistribution;
 
-            /**
-             * If we prepend custom origin configs,
-             *  it would change the array indexes.
-             */
-            let numberOfCustomBehaviors = 0;
-            if (props.prependCustomOriginBehaviours) {
-                numberOfCustomBehaviors = props.customOriginConfigs?.reduce(
-                    (acc, current) => acc + current.behaviors.length,
-                    0
-                )!;
-            }
+        //     /**
+        //      * If we prepend custom origin configs,
+        //      *  it would change the array indexes.
+        //      */
+        //     let numberOfCustomBehaviors = 0;
+        //     if (props.prependCustomOriginBehaviours) {
+        //         numberOfCustomBehaviors = props.customOriginConfigs?.reduce(
+        //             (acc, current) => acc + current.behaviors.length,
+        //             0
+        //         )!;
+        //     }
 
-            props.responseHeadersPolicies.forEach((policyMapping) => {
-                /**
-                 * If the policy should be attached to default behavior
-                 */
-                if (policyMapping.attachToDefault) {
-                    cfnDistribution.addOverride(
-                        `Properties.DistributionConfig.` +
-                            `DefaultCacheBehavior.` +
-                            `ResponseHeadersPolicyId`,
-                        policyMapping.header.responseHeadersPolicyId
-                    );
-                    new CfnOutput(
-                        this,
-                        `response header policies ${policyMapping.header.node.id} default`,
-                        {
-                            description: `response header policy mappings`,
-                            value: `{ path: "default", policy: "${policyMapping.header.responseHeadersPolicyId}" }`,
-                            exportName: `${exportPrefix}HeaderPolicy-default`
-                        }
-                    );
-                }
-                /**
-                 * If the policy should be attached to
-                 *  specified path patterns
-                 */
-                policyMapping.pathPatterns.forEach((path) => {
-                    /**
-                     * Looking for the index of the behavior
-                     *  according to the path pattern
-                     * If the path patter is not found, it would be ignored
-                     */
-                    let behaviorIndex =
-                        props.behaviors?.findIndex((behavior) => {
-                            return behavior.pathPattern === path;
-                        })! + numberOfCustomBehaviors;
+        //     props.responseHeadersPolicies.forEach((policyMapping) => {
+        //         /**
+        //          * If the policy should be attached to default behavior
+        //          */
+        //         if (policyMapping.attachToDefault) {
+        //             cfnDistribution.addOverride(
+        //                 `Properties.DistributionConfig.` +
+        //                     `DefaultCacheBehavior.` +
+        //                     `ResponseHeadersPolicyId`,
+        //                 policyMapping.header.responseHeadersPolicyId
+        //             );
+        //             new CfnOutput(
+        //                 this,
+        //                 `response header policies ${policyMapping.header.node.id} default`,
+        //                 {
+        //                     description: `response header policy mappings`,
+        //                     value: `{ path: "default", policy: "${policyMapping.header.responseHeadersPolicyId}" }`,
+        //                     exportName: `${exportPrefix}HeaderPolicy-default`
+        //                 }
+        //             );
+        //         }
+        //         /**
+        //          * If the policy should be attached to
+        //          *  specified path patterns
+        //          */
+        //         policyMapping.pathPatterns.forEach((path) => {
+        //             /**
+        //              * Looking for the index of the behavior
+        //              *  according to the path pattern
+        //              * If the path patter is not found, it would be ignored
+        //              */
+        //             let behaviorIndex =
+        //                 props.behaviors?.findIndex((behavior) => {
+        //                     return behavior.pathPattern === path;
+        //                 })! + numberOfCustomBehaviors;
 
-                    if (behaviorIndex >= numberOfCustomBehaviors) {
-                        cfnDistribution.addOverride(
-                            `Properties.DistributionConfig.CacheBehaviors.` +
-                                `${behaviorIndex}` +
-                                `.ResponseHeadersPolicyId`,
-                            policyMapping.header.responseHeadersPolicyId
-                        );
-                        new CfnOutput(
-                            this,
-                            `response header policies ${
-                                policyMapping.header.node.id
-                            } ${path.replace(/\W/g, '')}`,
-                            {
-                                description: `response header policy mappings`,
-                                value: `{ path: "${path}", policy: "${policyMapping.header.responseHeadersPolicyId}"}`,
-                                exportName: `${exportPrefix}HeaderPolicy-${path.replace(
-                                    /\W/g,
-                                    ''
-                                )}`
-                            }
-                        );
-                    }
-                });
-            });
-        }
+        //             if (behaviorIndex >= numberOfCustomBehaviors) {
+        //                 cfnDistribution.addOverride(
+        //                     `Properties.DistributionConfig.CacheBehaviors.` +
+        //                         `${behaviorIndex}` +
+        //                         `.ResponseHeadersPolicyId`,
+        //                     policyMapping.header.responseHeadersPolicyId
+        //                 );
+        //                 new CfnOutput(
+        //                     this,
+        //                     `response header policies ${
+        //                         policyMapping.header.node.id
+        //                     } ${path.replace(/\W/g, '')}`,
+        //                     {
+        //                         description: `response header policy mappings`,
+        //                         value: `{ path: "${path}", policy: "${policyMapping.header.responseHeadersPolicyId}"}`,
+        //                         exportName: `${exportPrefix}HeaderPolicy-${path.replace(
+        //                             /\W/g,
+        //                             ''
+        //                         )}`
+        //                     }
+        //                 );
+        //             }
+        //         });
+        //     });
+        // }
 
         if (publisherGroup) {
             const cloudFrontInvalidationPolicyStatement = new PolicyStatement({
@@ -483,28 +396,6 @@ export class StaticHosting extends Construct {
             });
         }
     }
-
-    // private createRemapBehavior(from: string, to: string): Behavior {
-    //     const behavior = {
-    //         pathPattern: from,
-    //         lambdaFunctionAssociations: []
-    //     } as Behavior;
-
-    //     // If the remap is to a different path, create a Lambda@Edge function to handle this
-    //     if (from !== to) {
-    //         // Remove special characters from path
-    //         const id = from.replace(/[&\/\\#,+()$~%'":*?<>{}]/g, '-');
-
-    //         const remapFunction = new ArbitraryPathRemapFunction(this, `remap-function-${id}`, { path: to });
-    //         behavior.lambdaFunctionAssociations?.push({
-    //             eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
-    //             lambdaFunction: Version.fromVersionArn(this, `remap-function-association-${id}`,
-    //                 remapFunction.edgeFunction.currentVersion.functionArn)
-    //         });
-    //     }
-
-    //     return behavior;
-    // }
 
     private generateCSPString(csp?: CSP, explicit?: boolean) {
         // Ensure that default-src is always set
