@@ -10,6 +10,8 @@
     },
     "types": "index.d.ts",
     "scripts": {
+        "build": "tsc",
+        "prepublish": "tsc"
     },
     "devDependencies": {
         "aws-cdk-lib": "^2.0.0",
