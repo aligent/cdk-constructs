@@ -1,3 +1,4 @@
+import { Construct } from 'constructs';
 import { CfnOutput, Duration, RemovalPolicy } from 'aws-cdk-lib';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import {
@@ -16,7 +17,8 @@ import {
     OriginRequestPolicy,
     CachePolicy,
     OriginRequestHeaderBehavior,
-    CacheHeaderBehavior
+    CacheHeaderBehavior,
+    IResponseHeadersPolicy
 } from 'aws-cdk-lib/aws-cloudfront';
 import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import {
@@ -34,13 +36,12 @@ import {
     BucketEncryption,
     BucketProps
 } from 'aws-cdk-lib/aws-s3';
-import { Construct } from 'constructs';
 import { CSP } from '../types/csp';
 
 export interface StaticHostingProps {
+    domainNames: string[];
     exportPrefix?: string;
     enforceSSL?: boolean;
-    domainNames: string[];
     disableCSP?: boolean;
     enableS3AccessLogging?: boolean;
     s3ExtendedProps?: BucketProps;
@@ -51,30 +52,44 @@ export interface StaticHostingProps {
     webAclId?: string;
     defaultRootObject?: string;
     certificateArn: string;
-    defaultBehaviourEdgeLambdas: EdgeLambda[];
+    defaultBehaviorEdgeLambdas: EdgeLambda[];
     additionalBehaviors?: Record<string, BehaviorOptions>;
     enableErrorConfig?: boolean;
-    overrideLogicalId?: string;
     createDnsRecord?: boolean;
     zoneName?: string;
+    csp?: CSP;
+    explicitCSP?: boolean;
+    responseHeadersPolicies?: ResponseHeaderMappings;
+
+    /**
+     * After switching constructs, you need to maintain the same logical ID
+     * for the underlying CfnDistribution if you wish to avoid the deletion
+     * and recreation of your distribution.
+     *
+     * To do this, use escape hatches to override the logical ID created by
+     * the new Distribution construct with the logical ID created by the
+     * old construct
+     *
+     * https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_cloudfront-readme.html#migrating-from-the-original-cloudfrontwebdistribution-to-the-newer-distribution-construct.
+     */
+    overrideLogicalId?: string;
 }
 
 export interface ResponseHeaderMappings {
-    header: ResponseHeadersPolicy;
-    pathPatterns: string[];
-    attachToDefault?: boolean;
+    defaultBehaviorResponseHeaderPolicy?: ResponseHeadersPolicy;
+    additionalBehaviorResponsePolicy?: Record<string, ResponseHeadersPolicy>;
 }
+
+type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 export class StaticHosting extends Construct {
     constructor(scope: Construct, id: string, props: StaticHostingProps) {
         super(scope, id);
 
-        // Should the stackExportPrefix is empty, 'StaticHosting' should be used as the prefix
         const exportPrefix = props.exportPrefix
             ? props.exportPrefix
             : 'StaticHosting';
 
-        // TODO: What do?
         const siteName = props.domainNames[0];
         const enforceSSL = props.enforceSSL !== false;
         const disableCSP = props.disableCSP === true;
@@ -162,22 +177,18 @@ export class StaticHosting extends Construct {
             });
         }
 
-        const loggingConfig = loggingBucket
-            ? { bucket: loggingBucket }
-            : undefined;
-
         const s3Origin = new S3Origin(bucket);
 
         const originRequestPolicy = new OriginRequestPolicy(
             this,
-            's3OriginRequestPolicy',
+            'S3OriginRequestPolicy',
             {
                 headerBehavior:
                     OriginRequestHeaderBehavior.allowList('x-forwarded-host')
             }
         );
 
-        const originCachePolicy = new CachePolicy(this, 's3OriginCachePolicy', {
+        const originCachePolicy = new CachePolicy(this, 'S3OriginCachePolicy', {
             headerBehavior: CacheHeaderBehavior.allowList('x-forwarded-host'),
             enableAcceptEncodingBrotli: true,
             enableAcceptEncodingGzip: true
@@ -192,6 +203,59 @@ export class StaticHosting extends Construct {
             }
         ];
 
+        let responseHeadersPolicy: IResponseHeadersPolicy | undefined;
+
+        if (!disableCSP) {
+            const cspHeader = this.generateCSPString(
+                props.csp,
+                props.explicitCSP
+            );
+
+            responseHeadersPolicy = new ResponseHeadersPolicy(
+                this,
+                'ResponseHeaders',
+                {
+                    securityHeadersBehavior: {
+                        contentSecurityPolicy: {
+                            contentSecurityPolicy: cspHeader,
+                            override: true
+                        }
+                    }
+                }
+            );
+        }
+
+        const defaultBehavior: Writeable<BehaviorOptions> = {
+            origin: s3Origin,
+            viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            edgeLambdas: props.defaultBehaviorEdgeLambdas,
+            originRequestPolicy: originRequestPolicy,
+            cachePolicy: originCachePolicy,
+            responseHeadersPolicy: responseHeadersPolicy
+        };
+
+        const additionalBehaviors: Record<
+            string,
+            Writeable<BehaviorOptions>
+        > = {};
+
+        if (
+            props.responseHeadersPolicies?.defaultBehaviorResponseHeaderPolicy
+        ) {
+            defaultBehavior.responseHeadersPolicy =
+                props.responseHeadersPolicies.defaultBehaviorResponseHeaderPolicy;
+        }
+
+        if (props.responseHeadersPolicies?.additionalBehaviorResponsePolicy) {
+            for (const path in props.responseHeadersPolicies
+                .additionalBehaviorResponsePolicy) {
+                additionalBehaviors[path].responseHeadersPolicy =
+                    props.responseHeadersPolicies.additionalBehaviorResponsePolicy[
+                        path
+                    ];
+            }
+        }
+
         const distributionProps: DistributionProps = {
             domainNames: props.domainNames,
             webAclId: props.webAclId,
@@ -200,21 +264,15 @@ export class StaticHosting extends Construct {
             sslSupportMethod: SSLMethod.SNI,
             priceClass: PriceClass.PRICE_CLASS_ALL,
             enableLogging: props.enableCloudFrontAccessLogging,
-            logBucket: loggingConfig?.bucket,
+            logBucket: props.enableCloudFrontAccessLogging ? bucket : undefined,
             minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2018,
             certificate: Certificate.fromCertificateArn(
                 this,
-                'domain-certificate',
+                'DomainCertificate',
                 props.certificateArn
             ),
-            defaultBehavior: {
-                origin: s3Origin,
-                viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-                edgeLambdas: props.defaultBehaviourEdgeLambdas,
-                originRequestPolicy: originRequestPolicy,
-                cachePolicy: originCachePolicy
-            },
-            additionalBehaviors: props.additionalBehaviors,
+            defaultBehavior: defaultBehavior,
+            additionalBehaviors: additionalBehaviors,
             errorResponses: props.enableErrorConfig ? errorResponses : []
         };
 
@@ -229,125 +287,6 @@ export class StaticHosting extends Construct {
                 .defaultChild as CfnDistribution;
             cfnDistribution.overrideLogicalId(props.overrideLogicalId);
         }
-
-        // TODO: CSP
-        // if (!disableCSP) {
-        //     const cspHeader = this.generateCSPString(
-        //         props.csp,
-        //         props.explicitCSP
-        //     );
-
-        //     const headersPolicy = new ResponseHeadersPolicy(
-        //         this,
-        //         'ResponseHeaders',
-        //         {
-        //             securityHeadersBehavior: {
-        //                 contentSecurityPolicy: {
-        //                     contentSecurityPolicy: cspHeader,
-        //                     override: true
-        //                 }
-        //             }
-        //         }
-        //     );
-
-        //     const cfnDistribution = distribution.node
-        //         .defaultChild as CfnDistribution;
-        //     // In the current version of CDK there's no nice way to do this...
-        //     // Instead just override the CloudFormation property directly
-        //     cfnDistribution.addOverride(
-        //         'Properties.DistributionConfig.DefaultCacheBehavior.ResponseHeadersPolicyId',
-        //         headersPolicy.responseHeadersPolicyId
-        //     );
-
-        //     new CfnOutput(this, 'CSP Header', {
-        //         description: 'CSP Header',
-        //         value: cspHeader,
-        //         exportName: `${exportPrefix}CSPHeader`
-        //     });
-        // }
-
-        /**
-         * Response Header policies
-         * This feature helps to attached custom ResponseHeadersPolicies to
-         *  the cache behaviors
-         */
-        // if (props.responseHeadersPolicies) {
-        //     const cfnDistribution = distribution.node
-        //         .defaultChild as CfnDistribution;
-
-        //     /**
-        //      * If we prepend custom origin configs,
-        //      *  it would change the array indexes.
-        //      */
-        //     let numberOfCustomBehaviors = 0;
-        //     if (props.prependCustomOriginBehaviours) {
-        //         numberOfCustomBehaviors = props.customOriginConfigs?.reduce(
-        //             (acc, current) => acc + current.behaviors.length,
-        //             0
-        //         )!;
-        //     }
-
-        //     props.responseHeadersPolicies.forEach((policyMapping) => {
-        //         /**
-        //          * If the policy should be attached to default behavior
-        //          */
-        //         if (policyMapping.attachToDefault) {
-        //             cfnDistribution.addOverride(
-        //                 `Properties.DistributionConfig.` +
-        //                     `DefaultCacheBehavior.` +
-        //                     `ResponseHeadersPolicyId`,
-        //                 policyMapping.header.responseHeadersPolicyId
-        //             );
-        //             new CfnOutput(
-        //                 this,
-        //                 `response header policies ${policyMapping.header.node.id} default`,
-        //                 {
-        //                     description: `response header policy mappings`,
-        //                     value: `{ path: "default", policy: "${policyMapping.header.responseHeadersPolicyId}" }`,
-        //                     exportName: `${exportPrefix}HeaderPolicy-default`
-        //                 }
-        //             );
-        //         }
-        //         /**
-        //          * If the policy should be attached to
-        //          *  specified path patterns
-        //          */
-        //         policyMapping.pathPatterns.forEach((path) => {
-        //             /**
-        //              * Looking for the index of the behavior
-        //              *  according to the path pattern
-        //              * If the path patter is not found, it would be ignored
-        //              */
-        //             let behaviorIndex =
-        //                 props.behaviors?.findIndex((behavior) => {
-        //                     return behavior.pathPattern === path;
-        //                 })! + numberOfCustomBehaviors;
-
-        //             if (behaviorIndex >= numberOfCustomBehaviors) {
-        //                 cfnDistribution.addOverride(
-        //                     `Properties.DistributionConfig.CacheBehaviors.` +
-        //                         `${behaviorIndex}` +
-        //                         `.ResponseHeadersPolicyId`,
-        //                     policyMapping.header.responseHeadersPolicyId
-        //                 );
-        //                 new CfnOutput(
-        //                     this,
-        //                     `response header policies ${
-        //                         policyMapping.header.node.id
-        //                     } ${path.replace(/\W/g, '')}`,
-        //                     {
-        //                         description: `response header policy mappings`,
-        //                         value: `{ path: "${path}", policy: "${policyMapping.header.responseHeadersPolicyId}"}`,
-        //                         exportName: `${exportPrefix}HeaderPolicy-${path.replace(
-        //                             /\W/g,
-        //                             ''
-        //                         )}`
-        //                     }
-        //                 );
-        //             }
-        //         });
-        //     });
-        // }
 
         if (publisherGroup) {
             const cloudFrontInvalidationPolicyStatement = new PolicyStatement({
