@@ -87,7 +87,7 @@ export interface ResponseHeaderMappings {
 }
 
 export class StaticHosting extends Construct {
-    private staticFiles = ["js", "css", "json", "svg", "jpg", "jpeg", "png"];
+    private staticFiles = ["js", "css", "json", "svg", "jpg", "jpeg", "png", "gif"];
 
     constructor(scope: Construct, id: string, props: StaticHostingProps) {
         super(scope, id);
