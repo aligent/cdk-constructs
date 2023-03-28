@@ -11,25 +11,31 @@ export const handler = async (
 ): Promise<CloudFrontRequest> => {
   let request = event.Records[0].cf.request;
 
-  // If the request is from a bot, is not a file and is not from prerender
-  // then set the x-request-prerender header so the origin-request lambda function
-  // alters the origin to prerender.io
-  if (
-    !IS_FILE.test(request.uri) &&
-    IS_BOT.test(request.headers["user-agent"][0].value) &&
-    !request.headers["x-prerender"]
-  ) {
-    request.headers["x-request-prerender"] = [
+  /**
+   * If the request is from a bot, is not a file and is not from prerender
+   *  then set the x-request-prerender header so the origin-request lambda function
+   *  alters the origin to prerender.io
+   * "x-is-a-bot" header should be whitelisted in the respective behaviors
+   */
+  if (IS_BOT.test(request.headers["user-agent"][0].value)) {
+    request.headers["x-is-a-bot"] = [
       {
-        key: "x-request-prerender",
+        key: "x-is-a-bot",
         value: "true",
       },
     ];
+    if (!IS_FILE.test(request.uri) && !request.headers["x-prerender"]) {
+      request.headers["x-request-prerender"] = [
+        {
+          key: "x-request-prerender",
+          value: "true",
+        },
+      ];
 
-    request.headers["x-prerender-host"] = [
-      { key: "X-Prerender-Host", value: request.headers.host[0].value },
-    ];
+      request.headers["x-prerender-host"] = [
+        { key: "X-Prerender-Host", value: request.headers.host[0].value },
+      ];
+    }
   }
-
   return request;
 };
