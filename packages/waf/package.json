@@ -14,7 +14,7 @@
     "prepublish": "tsc"
   },
   "devDependencies": {
-    "@aws-cdk/assert": "1.180.0",
+    "@aws-cdk/assert": "1.200.0",
     "@types/jest": "^27.0.2",
     "@types/node": "16.9.4",
     "jest": "^26.4.2",
@@ -24,16 +24,16 @@
     "typescript": "^4.4.3"
   },
   "dependencies": {
-    "@aws-cdk/aws-ec2": "1.180.0",
-    "@aws-cdk/aws-wafv2": "1.180.0",
-    "@aws-cdk/core": "1.180.0",
-    "aws-cdk": "1.180.0",
+    "@aws-cdk/aws-ec2": "1.200.0",
+    "@aws-cdk/aws-wafv2": "1.200.0",
+    "@aws-cdk/core": "1.200.0",
+    "aws-cdk": "1.200.0",
     "source-map-support": "^0.5.16"
   },
   "peerDependencies": {
-    "@aws-cdk/aws-ec2": "1.180.0",
-    "@aws-cdk/aws-wafv2": "1.180.0",
-    "@aws-cdk/core": "1.180.0",
-    "aws-cdk": "1.180.0"
+    "@aws-cdk/aws-ec2": "1.200.0",
+    "@aws-cdk/aws-wafv2": "1.200.0",
+    "@aws-cdk/core": "1.200.0",
+    "aws-cdk": "1.200.0"
   }
 }
