@@ -9,11 +9,6 @@ const server = prerender({
     chromeLocation: '/usr/bin/chromium-browser'
 });
 
-server.use(prerender.blacklist());
-server.use(prerender.httpHeaders());
-server.use(prerender.removeScriptTags());
-server.use(s3Cache);
-
 server.use({
     requestReceived: (req, res, next) => {
         let auth = req.headers['x-prerender-token'];
@@ -33,8 +28,13 @@ server.use({
         }
         if (!authenticated) return res.send(401);
 
-        return next();
+        next();
     }
 });
+
+server.use(prerender.blacklist());
+server.use(prerender.httpHeaders());
+server.use(prerender.removeScriptTags());
+server.use(s3Cache);
 
 server.start();
