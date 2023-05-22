@@ -94,6 +94,15 @@ export class PrerenderFargate extends Construct {
             }
         );
 
+        // As the prerender service will return a 401 on all unauthorised requests
+        // it should be considered healthy when receiving a 401 response
+        fargateService.targetGroup.configureHealthCheck({
+            path: "/health",
+            interval: Duration.seconds(120),
+            unhealthyThresholdCount: 5,
+            healthyHttpCodes: '401'
+        });
+
         // Setup AutoScaling policy
         const scaling = fargateService.service.autoScaleTaskCount({
             maxCapacity: props.maxInstanceCount || 2,
