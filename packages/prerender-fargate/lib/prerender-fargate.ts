@@ -94,6 +94,13 @@ export class PrerenderFargate extends Construct {
             }
         );
 
+        fargateService.targetGroup.configureHealthCheck({
+            path: "/health",
+            interval: Duration.seconds(120),
+            unhealthyThresholdCount: 5,
+            healthyHttpCodes: '401'
+        });
+
         // Setup AutoScaling policy
         const scaling = fargateService.service.autoScaleTaskCount({
             maxCapacity: props.maxInstanceCount || 2,
