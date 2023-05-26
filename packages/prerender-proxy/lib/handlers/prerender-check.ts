@@ -15,12 +15,6 @@ export const handler = async (
   // then set the x-request-prerender header so the origin-request lambda function
   // alters the origin to prerender.io
   if (IS_BOT.test(request.headers["user-agent"][0].value)) {
-    request.headers["x-is-a-bot"] = [
-      {
-        key: "x-is-a-bot",
-        value: "true",
-      },
-    ];
     if (!IS_FILE.test(request.uri) && !request.headers["x-prerender"]) {
       request.headers["x-request-prerender"] = [
         {
