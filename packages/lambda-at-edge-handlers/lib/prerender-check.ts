@@ -9,7 +9,7 @@ const IS_FILE =
 export const handler = async (
   event: CloudFrontRequestEvent
 ): Promise<CloudFrontRequest> => {
-  let request = event.Records[0].cf.request;
+  const request = event.Records[0].cf.request;
 
   // If the request is from a bot, is not a file and is not from prerender
   // then set the x-request-prerender header so the origin-request lambda function

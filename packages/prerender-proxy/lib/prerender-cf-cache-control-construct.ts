@@ -6,7 +6,7 @@ import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
 
 export interface CloudFrontCacheControlOptions {
     cacheKey?: string,
-    maxAge?: Number,
+    maxAge?: number,
 }
 
 export class CloudFrontCacheControl extends Construct {

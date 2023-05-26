@@ -26,8 +26,8 @@ const instance = axios.create({
 export const handler = (
   event: CloudFrontResponseEvent
 ): Promise<CloudFrontResponse | CloudFrontRequest> => {
-  let response = event.Records[0].cf.response;
-  let request = event.Records[0].cf.request;
+  const response = event.Records[0].cf.response;
+  const request = event.Records[0].cf.request;
 
   if (
     response.status != "200" &&

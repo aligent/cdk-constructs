@@ -6,7 +6,7 @@ const SUPPORTED_REGIONS = new RegExp( process.env.SUPPORTED_REGIONS || '')
 const DEFAULT_REGION = process.env.DEFAULT_REGION || '';
 
 export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFrontResponse|CloudFrontRequest> => {
-     let request = event.Records[0].cf.request;
+     const request = event.Records[0].cf.request;
 
      let redirectURL = `https://${REDIRECT_HOST}/`;
      if (request.headers['cloudfront-viewer-country']) {

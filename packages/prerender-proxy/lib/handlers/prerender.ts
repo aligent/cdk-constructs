@@ -6,7 +6,7 @@ const PATH_PREFIX = process.env.PATH_PREFIX;
 const PRERENDER_URL = process.env.PRERENDER_URL;
 
 export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFrontResponse|CloudFrontRequest> => {
-  let request = event.Records[0].cf.request;
+  const request = event.Records[0].cf.request;
 
   // viewer-request function will determine whether we prerender or not
   // if we should we add prerender as our custom origin
