@@ -26,8 +26,8 @@ const instance = axios.create({
 export const handler = (
   event: CloudFrontResponseEvent
 ): Promise<CloudFrontResponse | CloudFrontRequest> => {
-  let response = event.Records[0].cf.response;
-  let request = event.Records[0].cf.request;
+  const response = event.Records[0].cf.response;
+  const request = event.Records[0].cf.request;
 
   if (
     response.status != "200" &&
@@ -37,7 +37,7 @@ export const handler = (
     // Fetch default page and return body
     return instance
       .get(`https://${FRONTEND_HOST}${PATH_PREFIX}/index.html`)
-      .then((res) => {
+      .then(res => {
         // Commenting this as there is body is not defined in the CloudFrontResponse type
         // response.body = res.data;
 
@@ -53,7 +53,7 @@ export const handler = (
 
         return response;
       })
-      .catch((err) => {
+      .catch(err => {
         return response;
       });
   }
