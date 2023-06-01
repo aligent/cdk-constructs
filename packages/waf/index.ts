@@ -1,3 +1,3 @@
-import { WebApplicationFirewall, WebApplicationFirewallProps } from "./lib/waf"
+import { WebApplicationFirewall, WebApplicationFirewallProps } from "./lib/waf";
 
-export { WebApplicationFirewall, WebApplicationFirewallProps};
+export { WebApplicationFirewall, WebApplicationFirewallProps };

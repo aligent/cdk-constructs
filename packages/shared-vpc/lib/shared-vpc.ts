@@ -1,32 +1,37 @@
 import { Construct, CfnOutput } from "@aws-cdk/core";
-import { SubnetType, Vpc } from '@aws-cdk/aws-ec2';
-import { ARecord, CnameRecord, PrivateHostedZone, RecordTarget } from '@aws-cdk/aws-route53';
+import { SubnetType, Vpc } from "@aws-cdk/aws-ec2";
+import {
+  ARecord,
+  CnameRecord,
+  PrivateHostedZone,
+  RecordTarget,
+} from "@aws-cdk/aws-route53";
 
-const DEFAULT_ZONE_RECORD_SUFFIX = 'root';
+const DEFAULT_ZONE_RECORD_SUFFIX = "root";
 
 export type Zone = {
-  type: string,
-  target: string,
-  record?: string
-}
+  type: string;
+  target: string;
+  record?: string;
+};
 
 export interface SharedVpcProps {
   /**
    * The name we should use to create the VPC and prefix it's resources with
    */
-  vpcName: string
+  vpcName: string;
   /**
    * The optional CIDR address
    */
-  cidr?: string,
+  cidr?: string;
   /**
    * The optional domain to use for the hosted-zone
    */
-  hostedZoneDomain?: string,
+  hostedZoneDomain?: string;
   /**
    * Optional zone records
    */
-  hostedZoneRecords?: Zone[],
+  hostedZoneRecords?: Zone[];
 }
 
 export class SharedVpc extends Construct {
@@ -47,20 +52,20 @@ export class SharedVpc extends Construct {
         {
           cidrMask: 22,
           name: `${vpcName}-subnet-private`,
-          subnetType: SubnetType.PRIVATE_WITH_NAT
+          subnetType: SubnetType.PRIVATE_WITH_NAT,
         },
         {
           cidrMask: 22,
           name: `${vpcName}-subnet-public`,
-          subnetType: SubnetType.PUBLIC
-        }
-      ]
+          subnetType: SubnetType.PUBLIC,
+        },
+      ],
     });
 
     // Export the VPC ID
-    new CfnOutput(this, 'vpc', {
+    new CfnOutput(this, "vpc", {
       value: this.vpc.vpcId,
-      exportName: `${vpcName}-vpc`
+      exportName: `${vpcName}-vpc`,
     });
 
     // Export each subnet from this VPC
@@ -68,40 +73,46 @@ export class SharedVpc extends Construct {
       const id = index + 1;
       new CfnOutput(this, `private-subnet-${id}`, {
         value: subnet.subnetId,
-        exportName: `${vpcName}-private-subnet-${id}`
+        exportName: `${vpcName}-private-subnet-${id}`,
       });
     });
     this.vpc.publicSubnets.forEach((subnet, index) => {
       const id = index + 1;
       new CfnOutput(this, `public-subnet-${id}`, {
         value: subnet.subnetId,
-        exportName: `${vpcName}-public-subnet-${id}`
+        exportName: `${vpcName}-public-subnet-${id}`,
       });
     });
 
     // Generate DNS records for each hosted zone
     if (hostedZoneDomain) {
-      this.privateHostedZone = new PrivateHostedZone(this, `${vpcName}-hosted-zone`, {
-        zoneName: hostedZoneDomain,
-        vpc: this.vpc
-      });
+      this.privateHostedZone = new PrivateHostedZone(
+        this,
+        `${vpcName}-hosted-zone`,
+        {
+          zoneName: hostedZoneDomain,
+          vpc: this.vpc,
+        }
+      );
 
       if (hostedZoneRecords?.length) {
         for (const zone of hostedZoneRecords) {
-          const recordId = `${vpcName}-hosted-zone-record-${zone.record || DEFAULT_ZONE_RECORD_SUFFIX}`;
+          const recordId = `${vpcName}-hosted-zone-record-${
+            zone.record || DEFAULT_ZONE_RECORD_SUFFIX
+          }`;
           switch (zone.type) {
-            case 'A': {
+            case "A": {
               new ARecord(this, recordId, {
                 zone: this.privateHostedZone,
-                target: RecordTarget.fromIpAddresses(zone.target)
+                target: RecordTarget.fromIpAddresses(zone.target),
               });
               break;
             }
-            case 'CNAME': {
+            case "CNAME": {
               new CnameRecord(this, recordId, {
                 zone: this.privateHostedZone,
                 domainName: zone.target,
-                recordName: zone.record
+                recordName: zone.record,
               });
               break;
             }
@@ -113,9 +124,9 @@ export class SharedVpc extends Construct {
       }
 
       // Export the hosted zone
-      new CfnOutput(this, 'hosted-zone', {
+      new CfnOutput(this, "hosted-zone", {
         value: this.privateHostedZone.hostedZoneId,
-        exportName: `${vpcName}-hosted-zone`
+        exportName: `${vpcName}-hosted-zone`,
       });
     }
   }
