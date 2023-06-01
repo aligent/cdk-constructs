@@ -1,3 +1,3 @@
-import { RabbitMQ } from "./lib/rabbitmq-construct"
+import { RabbitMQ } from "./lib/rabbitmq-construct";
 
 export { RabbitMQ };
