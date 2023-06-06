@@ -5,7 +5,7 @@ import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
 import * as cdk from "@aws-cdk/core";
 
 export interface SecurityHeaderFunctionProps {
-  contentSecurityPolicy?: Array<String>;
+  contentSecurityPolicy?: Array<string>;
 }
 
 export class SecurityHeaderFunction extends cdk.Construct {
@@ -18,7 +18,7 @@ export class SecurityHeaderFunction extends cdk.Construct {
   ) {
     super(scope, id);
 
-    let defineOptions: any = {};
+    const defineOptions: any = {};
 
     if (props?.contentSecurityPolicy) {
       defineOptions.__CONTENT_SECURITY_POLICY__ = JSON.stringify(

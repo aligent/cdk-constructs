@@ -7,7 +7,7 @@ const REMAP_PATH = process.env.REMAP_PATH;
 export const handler = async (
   event: CloudFrontRequestEvent
 ): Promise<CloudFrontRequest> => {
-  let request = event.Records[0].cf.request;
+  const request = event.Records[0].cf.request;
 
   request.uri = REMAP_PATH;
 

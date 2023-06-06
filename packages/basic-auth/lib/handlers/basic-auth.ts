@@ -14,8 +14,8 @@ const authString =
 export const handler = async (
   event: CloudFrontRequestEvent
 ): Promise<CloudFrontRequest | CloudFrontResponse> => {
-  let request = event.Records[0].cf.request;
-  let headers = request.headers;
+  const request = event.Records[0].cf.request;
+  const headers = request.headers;
 
   // Require Basic authentication
   if (
