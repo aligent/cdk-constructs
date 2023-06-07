@@ -132,7 +132,7 @@ export class StaticHosting extends Construct {
     const enableStaticFileRemap = props.enableStaticFileRemap !== false;
     const disableCSP = props.disableCSP === true;
 
-    let distributionCnames: Array<string> = props.extraDistributionCnames
+    const distributionCnames: Array<string> = props.extraDistributionCnames
       ? siteNameArray.concat(props.extraDistributionCnames)
       : siteNameArray;
 
@@ -360,7 +360,7 @@ export class StaticHosting extends Construct {
 
     /**
      * Response Header policies
-     * This feature helps to attached custom ResponseHeadersPolicies to
+     * This feature helps to attach custom ResponseHeadersPolicies to
      *  the cache behaviors
      */
     if (props.responseHeadersPolicies) {
@@ -371,11 +371,11 @@ export class StaticHosting extends Construct {
        *  it would change the array indexes.
        */
       let numberOfCustomBehaviors = 0;
-      if (props.prependCustomOriginBehaviours) {
-        numberOfCustomBehaviors = props.customOriginConfigs?.reduce(
+      if (props.prependCustomOriginBehaviours && props.customOriginConfigs) {
+        numberOfCustomBehaviors = props.customOriginConfigs.reduce(
           (acc, current) => acc + current.behaviors.length,
           0
-        )!;
+        );
       }
 
       props.responseHeadersPolicies.forEach(policyMapping => {
@@ -409,10 +409,10 @@ export class StaticHosting extends Construct {
            *  according to the path pattern
            * If the path patter is not found, it would be ignored
            */
-          let behaviorIndex =
-            props.behaviors?.findIndex(behavior => {
+          const behaviorIndex =
+            (props.behaviors || []).findIndex(behavior => {
               return behavior.pathPattern === path;
-            })! + numberOfCustomBehaviors;
+            }) + numberOfCustomBehaviors;
 
           if (behaviorIndex >= numberOfCustomBehaviors) {
             cfnDistribution.addOverride(
@@ -495,7 +495,7 @@ export class StaticHosting extends Construct {
     // If the remap is to a different path, create a Lambda@Edge function to handle this
     if (from !== to) {
       // Remove special characters from path
-      const id = from.replace(/[&\/\\#,+()$~%'":*?<>{}]/g, "-");
+      const id = from.replace(/[&/\\#,+()$~%'":*?<>{}]/g, "-");
 
       const remapFunction = new ArbitraryPathRemapFunction(
         this,
