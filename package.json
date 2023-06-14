@@ -22,7 +22,7 @@
     "prepublish": "tsc",
     "lint": "eslint --ignore-path .eslintignore --ext .ts .",
     "lint:fix": "npm run lint --fix",
-    "format:check": "prettier --ignore-path .prettierignore --check \"**/*.+(js|ts|json)\"",
+    "format": "prettier --ignore-path .prettierignore --check \"**/*.+(js|ts|json)\"",
     "format:fix": "prettier --ignore-path .prettierignore --write \"**/*.+(js|ts|json)\""
   },
   "devDependencies": {
