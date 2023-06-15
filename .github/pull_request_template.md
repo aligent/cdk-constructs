@@ -19,7 +19,7 @@
 
 **Notes to PR author**
 
-⚠️ Please make sure the changes are adhered to the guidelines mention [here](https://aligent.atlassian.net/wiki/spaces/AL/pages/2728919167/Pull+Request+guidelines)
+⚠️ Please make sure the changes adhere to the guidelines mentioned [here](https://aligent.atlassian.net/wiki/spaces/AL/pages/2728919167/Pull+Request+guidelines)
 
 **Notes to reviewers**  
 
