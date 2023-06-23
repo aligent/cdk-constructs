@@ -116,6 +116,9 @@ export class StaticHosting extends Construct {
     "png",
     "gif",
     "ico",
+    "woff",
+    "woff2",
+    "otf"
   ];
 
   constructor(scope: Construct, id: string, props: StaticHostingProps) {
