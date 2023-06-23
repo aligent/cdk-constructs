@@ -19,8 +19,8 @@
 
 **Notes to PR author**
 
-⚠️  Please make sure the changes are adhere to the guidelines mention [here](https://aligent.atlassian.net/wiki/spaces/AL/pages/2758836297/Development+checklist+FE+BE+INT)
+⚠️ Please make sure the changes adhere to the guidelines mentioned [here](https://aligent.atlassian.net/wiki/spaces/AL/pages/2728919167/Pull+Request+guidelines)
 
 **Notes to reviewers**  
 
-* 
+🛈  When you've finished leaving feedback, please add a final comment to the PR tagging the author, letting them know that you have finished leaving feedback
