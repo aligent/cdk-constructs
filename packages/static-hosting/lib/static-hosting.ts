@@ -118,7 +118,7 @@ export class StaticHosting extends Construct {
     "ico",
     "woff",
     "woff2",
-    "otf"
+    "otf",
   ];
 
   constructor(scope: Construct, id: string, props: StaticHostingProps) {

@@ -19,7 +19,7 @@
 
 **Notes to PR author**
 
-⚠️ Please make sure the changes adhere to the guidelines mentioned [here](https://aligent.atlassian.net/wiki/spaces/AL/pages/2728919167/Pull+Request+guidelines)
+⚠️ Please make sure the changes adhere to the guidelines mentioned [here](https://github.com/aligent/cdk-constructs/blob/main/CONTRIBUTING.md)
 
 **Notes to reviewers**  
 
