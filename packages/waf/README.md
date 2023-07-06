@@ -63,6 +63,6 @@ By default, WebACL this stack creates will work in COUNT mode to begin with.Afte
 1. Pull this repository locally
 2. `cd` into this repository
 3. run `npm link`
-4. `cd` into the downstream repo (target project, etc) and run `npm link 'aws-waf-stack'`
-The downstream repository should now include a symlink to this module. Allowing local changes to be tested before pushing.
+4. `cd` into the downstream repo (target project, etc) and run `npm link '@aligent/cdk-waf'`
+The downstream repository should now include a symlink to this module. Allowing local changes to be tested before pushing. You may want to update the version notation of the package in the downstream repository's `package.json`.
 
