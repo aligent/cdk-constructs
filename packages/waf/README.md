@@ -21,9 +21,14 @@ const preprodEnv: Environment = {account: '<TargetAccountId-Preprod>', region: '
 const target = '<TargetAccountIdentifier>';
 const appName = 'WAF';
 
-const defaultAllowedIPs = [
+const defaultAllowedIPv4s = [
      'a.a.a.a/32', 'b.b.b.b/32',     // Offices
      'c.c.c.c/32', 'd.d.d.d/32',     // Payment Gateways
+]
+
+const defaultAllowedIPv6s = [
+     '1234:abcd:5678:ef01::/56',     // Offices
+     '1234:ef01:5678:abcd::/56',     // Security Scanner
 ]
 
 export const preProductionWafStackProps = {
