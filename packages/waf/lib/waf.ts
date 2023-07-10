@@ -128,48 +128,48 @@ export class WebApplicationFirewall extends Construct {
 
     if (props.allowedIPv6s) {
       // IPv6 Allowlist
-      const allowed_ips = new wafv2.CfnIPSet(this, 'IPSet-IPv6', {
+      const allowed_ips = new wafv2.CfnIPSet(this, "IPSet-IPv6", {
         addresses: props.allowedIPv6s,
-        ipAddressVersion: 'IPV6',
+        ipAddressVersion: "IPV6",
         scope: wafScope,
-        description: props.wafName
-      })
+        description: props.wafName,
+      });
 
       finalRules.push({
-        name: 'allow_xff_ip_rule_ipv6',
+        name: "allow_xff_ip_rule_ipv6",
         priority: 4,
         statement: {
           ipSetReferenceStatement: {
             arn: allowed_ips.attrArn,
             ipSetForwardedIpConfig: {
-              fallbackBehavior : 'NO_MATCH',
-              headerName : 'X-Forwarded-For',
-              position : 'ANY'
-            }
-          }
+              fallbackBehavior: "NO_MATCH",
+              headerName: "X-Forwarded-For",
+              position: "ANY",
+            },
+          },
         },
         action: { allow: {} },
         visibilityConfig: {
-            cloudWatchMetricsEnabled: true,
-            metricName: 'AllowXFFIPRule',
-            sampledRequestsEnabled: true
-        }
+          cloudWatchMetricsEnabled: true,
+          metricName: "AllowXFFIPRule",
+          sampledRequestsEnabled: true,
+        },
       });
 
       finalRules.push({
-        name: 'allow_src_ip_rule_ipv6',
+        name: "allow_src_ip_rule_ipv6",
         priority: 5,
         statement: {
           ipSetReferenceStatement: {
-            arn: allowed_ips.attrArn
-          }
+            arn: allowed_ips.attrArn,
+          },
         },
         action: { allow: {} },
         visibilityConfig: {
-            cloudWatchMetricsEnabled: true,
-            metricName: 'allow_src_ip_rule',
-            sampledRequestsEnabled: true
-        }
+          cloudWatchMetricsEnabled: true,
+          metricName: "allow_src_ip_rule",
+          sampledRequestsEnabled: true,
+        },
       });
     }
 
