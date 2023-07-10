@@ -19,10 +19,16 @@ export interface WebApplicationFirewallProps {
   activate?: boolean;
 
   /**
-   * List of Allowed IP addresses, if none are set allow_xff_ip_rule and allow_src_ip_rule rules
+   * List of Allowed IPv4 addresses, if neither allowedIPs nor allowedIPsIPv6 are set allow_xff_ip_rule and allow_src_ip_rule rules
    * are not added
    */
   allowedIPs?: string[];
+
+  /**
+   * List of Allowed IPv6 addresses, if neither allowedIPs nor allowedIPsIPv6 are set allow_xff_ip_rule and allow_src_ip_rule rules
+   * are not added
+   */
+  allowedIPv6s?: string[];
 
   /**
    * Explicit paths to allow through the waf
@@ -74,8 +80,8 @@ export class WebApplicationFirewall extends Construct {
     const wafScope = props.scope ?? REGIONAL;
 
     if (props.allowedIPs) {
-      // IP Allowlist
-      const allowed_ips = new wafv2.CfnIPSet(this, "IPSet", {
+      // IPv4 Allowlist
+      const allowed_ips = new wafv2.CfnIPSet(this, "IPSet-IPv4", {
         addresses: props.allowedIPs,
         ipAddressVersion: "IPV4",
         scope: wafScope,
@@ -106,6 +112,53 @@ export class WebApplicationFirewall extends Construct {
       finalRules.push({
         name: "allow_src_ip_rule",
         priority: 3,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: allowed_ips.attrArn,
+          },
+        },
+        action: { allow: {} },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "allow_src_ip_rule",
+          sampledRequestsEnabled: true,
+        },
+      });
+    }
+
+    if (props.allowedIPv6s) {
+      // IPv6 Allowlist
+      const allowed_ips = new wafv2.CfnIPSet(this, "IPSet-IPv6", {
+        addresses: props.allowedIPv6s,
+        ipAddressVersion: "IPV6",
+        scope: wafScope,
+        description: props.wafName,
+      });
+
+      finalRules.push({
+        name: "allow_xff_ip_rule_ipv6",
+        priority: 4,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: allowed_ips.attrArn,
+            ipSetForwardedIpConfig: {
+              fallbackBehavior: "NO_MATCH",
+              headerName: "X-Forwarded-For",
+              position: "ANY",
+            },
+          },
+        },
+        action: { allow: {} },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "AllowXFFIPRule",
+          sampledRequestsEnabled: true,
+        },
+      });
+
+      finalRules.push({
+        name: "allow_src_ip_rule_ipv6",
+        priority: 5,
         statement: {
           ipSetReferenceStatement: {
             arn: allowed_ips.attrArn,
@@ -189,7 +242,7 @@ export class WebApplicationFirewall extends Construct {
 
       finalRules.push({
         name: "allow_user_agent_rule",
-        priority: 4,
+        priority: 6,
         statement: {
           regexPatternSetReferenceStatement: {
             arn: allowed_user_agent.attrArn,
