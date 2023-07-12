@@ -29,7 +29,7 @@ export const handler = async (
         domainName: PRERENDER_URL,
         port: 443,
         protocol: "https",
-        readTimeout: 20,
+        readTimeout: 60,
         keepaliveTimeout: 5,
         sslProtocols: ["TLSv1", "TLSv1.1", "TLSv1.2"],
         path: "/https%3A%2F%2F" + request.headers["x-prerender-host"][0].value,
@@ -49,3 +49,4 @@ export const handler = async (
 
   return request;
 };
+1
