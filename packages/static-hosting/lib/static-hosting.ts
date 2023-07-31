@@ -202,7 +202,7 @@ export class StaticHosting extends Construct {
       : undefined;
 
     if (publisherGroup) {
-        this.bucket.grantReadWrite(publisherGroup);
+      this.bucket.grantReadWrite(publisherGroup);
 
       new CfnOutput(this, "PublisherGroupName", {
         description: "PublisherGroup",
@@ -351,7 +351,8 @@ export class StaticHosting extends Construct {
         },
       });
 
-      const cfnDistribution = this.distribution.node.defaultChild as CfnDistribution;
+      const cfnDistribution = this.distribution.node
+        .defaultChild as CfnDistribution;
       // In the current version of CDK there's no nice way to do this...
       // Instead just override the CloudFormation property directly
       cfnDistribution.addOverride(
@@ -372,7 +373,8 @@ export class StaticHosting extends Construct {
      *  the cache behaviors
      */
     if (props.responseHeadersPolicies) {
-      const cfnDistribution = this.distribution.node.defaultChild as CfnDistribution;
+      const cfnDistribution = this.distribution.node
+        .defaultChild as CfnDistribution;
 
       /**
        * If we prepend custom origin configs,
