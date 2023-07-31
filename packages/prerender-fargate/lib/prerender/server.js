@@ -14,9 +14,6 @@ server.use({
         let auth = req.headers['x-prerender-token'];
         if (!auth) return res.send(401);
 
-        // check credentials exist
-        if (!auth) return res.send(401);
-
         // compare credentials in header to list of allowed credentials
         const tokenAllowList = process.env.TOKEN_LIST.toString().split(',');
 
@@ -28,7 +25,12 @@ server.use({
         }
         if (!authenticated) return res.send(401);
 
-        next();
+        return next();
+    },
+    // Append a custom header to indicate the response is from Prerender
+    beforeSend: function(req, res, next) {
+        res.setHeader('x-prerender-requestid', crypto.randomUUID());
+        return next();
     }
 });
 
