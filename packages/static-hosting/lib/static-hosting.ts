@@ -1,6 +1,7 @@
 import { Construct, CfnOutput, RemovalPolicy } from "@aws-cdk/core";
 import {
   Bucket,
+  IBucket,
   BucketEncryption,
   BlockPublicAccess,
   BucketProps,
@@ -19,6 +20,7 @@ import {
   CfnDistribution,
   ResponseHeadersPolicy,
   HttpVersion,
+  IDistribution,
 } from "@aws-cdk/aws-cloudfront";
 import { HostedZone, ARecord } from "@aws-cdk/aws-route53";
 import { User, Group, Policy, PolicyStatement, Effect } from "@aws-cdk/aws-iam";
@@ -106,6 +108,9 @@ export interface ResponseHeaderMappings {
 }
 
 export class StaticHosting extends Construct {
+  public readonly distribution: IDistribution;
+  public readonly bucket: IBucket;
+
   private staticFiles = [
     "js",
     "css",
@@ -157,7 +162,7 @@ export class StaticHosting extends Construct {
       });
     }
 
-    const bucket = new Bucket(this, "ContentBucket", {
+    this.bucket = new Bucket(this, "ContentBucket", {
       bucketName: siteName,
       encryption: BucketEncryption.S3_MANAGED,
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
@@ -168,7 +173,7 @@ export class StaticHosting extends Construct {
 
     new CfnOutput(this, "Bucket", {
       description: "BucketName",
-      value: bucket.bucketName,
+      value: this.bucket.bucketName,
       exportName: `${exportPrefix}BucketName`,
     });
 
@@ -176,7 +181,7 @@ export class StaticHosting extends Construct {
       comment: "Allow CloudFront to access S3",
     });
 
-    bucket.grantRead(oai);
+    this.bucket.grantRead(oai);
 
     const publisherUser = props.createPublisherUser
       ? new User(this, "PublisherUser", {
@@ -197,7 +202,7 @@ export class StaticHosting extends Construct {
       : undefined;
 
     if (publisherGroup) {
-      bucket.grantReadWrite(publisherGroup);
+        this.bucket.grantReadWrite(publisherGroup);
 
       new CfnOutput(this, "PublisherGroupName", {
         description: "PublisherGroup",
@@ -256,7 +261,7 @@ export class StaticHosting extends Construct {
     // Create default origin
     originConfigs.push({
       s3OriginSource: {
-        s3BucketSource: bucket,
+        s3BucketSource: this.bucket,
         originAccessIdentity: oai,
       },
       // if behaviors have been passed via props use them instead
@@ -328,7 +333,7 @@ export class StaticHosting extends Construct {
       };
     }
 
-    const distribution = new CloudFrontWebDistribution(
+    this.distribution = new CloudFrontWebDistribution(
       this,
       "BucketCdn",
       distributionProps
@@ -346,7 +351,7 @@ export class StaticHosting extends Construct {
         },
       });
 
-      const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
+      const cfnDistribution = this.distribution.node.defaultChild as CfnDistribution;
       // In the current version of CDK there's no nice way to do this...
       // Instead just override the CloudFormation property directly
       cfnDistribution.addOverride(
@@ -367,7 +372,7 @@ export class StaticHosting extends Construct {
      *  the cache behaviors
      */
     if (props.responseHeadersPolicies) {
-      const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
+      const cfnDistribution = this.distribution.node.defaultChild as CfnDistribution;
 
       /**
        * If we prepend custom origin configs,
@@ -452,7 +457,7 @@ export class StaticHosting extends Construct {
           "cloudfront:ListInvalidations",
         ],
         resources: [
-          `arn:aws:cloudfront::*:distribution/${distribution.distributionId}`,
+          `arn:aws:cloudfront::*:distribution/${this.distribution.distributionId}`,
         ],
       });
 
@@ -467,12 +472,12 @@ export class StaticHosting extends Construct {
     }
     new CfnOutput(this, "DistributionId", {
       description: "DistributionId",
-      value: distribution.distributionId,
+      value: this.distribution.distributionId,
       exportName: `${exportPrefix}DistributionID`,
     });
     new CfnOutput(this, "DistributionDomainName", {
       description: "DistributionDomainName",
-      value: distribution.distributionDomainName,
+      value: this.distribution.distributionDomainName,
       exportName: `${exportPrefix}DistributionName`,
     });
 
@@ -483,7 +488,7 @@ export class StaticHosting extends Construct {
 
       new ARecord(this, "SiteAliasRecord", {
         recordName: siteName,
-        target: RecordTarget.fromAlias(new CloudFrontTarget(distribution)),
+        target: RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)),
         zone: zone,
       });
     }
