@@ -1,6 +1,7 @@
 'use strict';
 
 const prerender = require('prerender');
+const crypto = require('crypto');
 const s3Cache = require('prerender-aws-s3-cache');
 
 const server = prerender({
