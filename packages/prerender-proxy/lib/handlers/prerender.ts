@@ -49,4 +49,3 @@ export const handler = async (
 
   return request;
 };
-1;
