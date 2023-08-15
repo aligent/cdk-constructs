@@ -1,7 +1,16 @@
-import { PrerenderLambda } from "./lib/prerender-lambda-construct";
-import { PrerenderFunction } from "./lib/prerender-construct";
+import {
+  PrerenderLambda,
+  PrerenderLambdaProps,
+} from "./lib/prerender-lambda-construct";
+import {
+  PrerenderFunction,
+  PrerenderFunctionOptions,
+} from "./lib/prerender-construct";
 import { PrerenderCheckFunction } from "./lib/prerender-check-construct";
-import { ErrorResponseFunction } from "./lib/error-response-construct";
+import {
+  ErrorResponseFunction,
+  ErrorResponseFunctionOptions,
+} from "./lib/error-response-construct";
 import {
   CloudFrontCacheControl,
   CloudFrontCacheControlOptions,
@@ -14,4 +23,7 @@ export {
   ErrorResponseFunction,
   CloudFrontCacheControl,
   CloudFrontCacheControlOptions,
+  ErrorResponseFunctionOptions,
+  PrerenderFunctionOptions,
+  PrerenderLambdaProps,
 };
