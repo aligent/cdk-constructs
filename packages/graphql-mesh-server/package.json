@@ -1,0 +1,23 @@
+{
+  "name": "@aligent/cdk-graphql-mesh-server",
+  "version": "0.0.1",
+  "description": "A construct to host Prerender in Fargate",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "prepublish": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
+  },
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/aligent/cdk-constructs/issues"
+  },
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/prerender-fargate#readme",
+  "dependencies": {
+    "@types/yaml": "^1.9.7",
+    "yaml": "^2.3.1"
+  }
+}
