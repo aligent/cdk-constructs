@@ -33,3 +33,6 @@ When making a release (including experimental releases), the release tag should 
 |---------------|---------------|
 | Experimental  | 1.1.0-beta    |
 | Final         | 1.1.0         |
+
+## Testing locally
+
