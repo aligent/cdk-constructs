@@ -25,15 +25,15 @@ export class SecurityHeaderFunction extends Construct {
       this,
       'SecurityHeaderFunction',
       {
-        code: Bundling.bundle({
+        code: Bundling.bundle(this, {
           entry: `${__dirname}/handlers/security-header.ts`,
-          runtime: Runtime.NODEJS_14_X,
+          runtime: Runtime.NODEJS_16_X,
           sourceMap: true,
           projectRoot: `${__dirname}/handlers/`,
           depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
           define: defineOptions
         } as any), // TODO fix typing
-        runtime: Runtime.NODEJS_14_X,
+        runtime: Runtime.NODEJS_16_X,
         handler: 'index.handler',
       }
     );

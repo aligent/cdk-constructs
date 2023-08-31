@@ -19,9 +19,9 @@ export class PrerenderFunction extends Construct {
             this,
             'PrerenderFunction',
             {
-              code: Bundling.bundle({
+              code: Bundling.bundle(this, {
                 entry: `${__dirname}/handlers/prerender.ts`,
-                runtime: Runtime.NODEJS_12_X,
+                runtime: Runtime.NODEJS_16_X,
                 sourceMap: true,
                 projectRoot: `${__dirname}/handlers/`,
                 depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
@@ -34,7 +34,7 @@ export class PrerenderFunction extends Construct {
                 },
                 architecture: Architecture.X86_64
               }),
-              runtime: Runtime.NODEJS_12_X,
+              runtime: Runtime.NODEJS_16_X,
               handler: 'index.handler',
             }
           );
