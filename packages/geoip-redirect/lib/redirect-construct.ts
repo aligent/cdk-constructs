@@ -22,9 +22,9 @@ export class RedirectFunction extends Construct {
             this,
             'RedirectFunction',
             {
-              code: Bundling.bundle({
+              code: Bundling.bundle(this, {
                 entry: `${__dirname}/handlers/redirect.ts`,
-                runtime: Runtime.NODEJS_12_X,
+                runtime: Runtime.NODEJS_16_X,
                 sourceMap: true,
                 projectRoot: `${__dirname}/handlers/`,
                 depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
@@ -37,7 +37,7 @@ export class RedirectFunction extends Construct {
                   'process.env.DEFAULT_REGION': JSON.stringify(options.defaultRegion),
                 }
               } as any),
-              runtime: Runtime.NODEJS_12_X,
+              runtime: Runtime.NODEJS_16_X,
               handler: 'index.handler',
             }
           );

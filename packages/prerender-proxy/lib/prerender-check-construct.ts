@@ -13,15 +13,15 @@ export class PrerenderCheckFunction extends Construct {
         this,
         'PrerenderCheckFunction',
         {
-          code: Bundling.bundle({
+          code: Bundling.bundle(this, {
             entry: `${__dirname}/handlers/prerender-check.ts`,
-            runtime: Runtime.NODEJS_12_X,
+            runtime: Runtime.NODEJS_16_X,
             sourceMap: true,
             projectRoot: `${__dirname}/handlers/`,
             depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
             architecture: Architecture.X86_64
           }),
-          runtime: Runtime.NODEJS_12_X,
+          runtime: Runtime.NODEJS_16_X,
           handler: 'index.handler',
         }
       );

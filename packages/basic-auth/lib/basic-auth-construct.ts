@@ -19,11 +19,11 @@ export class BasicAuthFunction extends Construct {
             this,
             'BasicAuthFunction',
             {
-              runtime: Runtime.NODEJS_12_X,
+              runtime: Runtime.NODEJS_16_X,
               handler: 'index.handler',
-              code: Bundling.bundle({
+              code: Bundling.bundle(this, {
                 entry: `${__dirname}/handlers/basic-auth.ts`,
-                runtime: Runtime.NODEJS_12_X,
+                runtime: Runtime.NODEJS_16_X,
                 sourceMap: true,
                 projectRoot: `${__dirname}/handlers/`,
                 depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
