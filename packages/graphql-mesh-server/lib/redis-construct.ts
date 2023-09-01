@@ -4,7 +4,7 @@ import {
     CfnSubnetGroup,
     CfnParameterGroup,
 } from 'aws-cdk-lib/aws-elasticache';
-import { CfnOutput } from 'aws-cdk-lib';
+import { CfnOutput, Reference, Token } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 export interface RedisServiceProps {
@@ -83,14 +83,10 @@ export class RedisService extends Construct {
     }
 
     public get connectionEndPoint(): string {
-        return this.cacheCluster
-            .getAtt('RedisEndpoint.Address')
-            .toString();
+        return Token.asString(this.cacheCluster.getAtt('RedisEndpoint.Address'))
     }
 
-    public get connectionPort(): string {
-        return this.cacheCluster
-            .getAtt('RedisEndpoint.Port')
-            .toString();
+    public get connectionPort(): number {
+        return Token.asNumber(this.cacheCluster.getAtt('RedisEndpoint.Port'));
     }
 }
