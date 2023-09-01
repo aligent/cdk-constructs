@@ -1,5 +1,5 @@
 import { Construct } from 'constructs';
-import { Duration } from 'aws-cdk-lib';
+import { Duration, Token } from 'aws-cdk-lib';
 import { RemovalPolicy } from 'aws-cdk-lib';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
@@ -129,11 +129,11 @@ export class MeshService extends Construct {
         if (props.redis) {
             props.redis.securityGroup.addIngressRule(
                 securityGroup,
-                Port.tcp(Number(props.redis.connectionPort))
+                Port.tcp(props.redis.connectionPort)
             );
 
             environment['REDIS_ENDPOINT'] = props.redis.connectionEndPoint;
-            environment['REDIS_PORT'] = props.redis.connectionPort;
+            environment['REDIS_PORT'] = props.redis.connectionPort.toString();
         }
 
         // Construct secrets from provided ssm values
