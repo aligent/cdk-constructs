@@ -9,50 +9,54 @@ import { CfnCacheCluster } from "aws-cdk-lib/aws-elasticache";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 
 export type MeshHostingProps = {
-  /**
-   * VPC to attach Redis and Fargate instances to (default: create a vpc)
-   */
-  vpc?: Vpc;
-  /**
-   * If no VPC is provided create one with this name (default: 'graphql-server-vpc')
-   */
-  vpcName?: string;
-  /**
-   * Cache node type (default: 'cache.t2.micro')
-   */
-  cacheNodeType?: string;
-  /**
-   * Repository to pull the container image from
-   */
-  repository?: Repository;
-  /**
-   * ARN of the certificate to add to the load balancer
-   */
-  certificateArn: string;
-  /**
-   * Minimum number of Fargate instances
-   */
-  minCapacity?: number;
-  /**
-   * Maximum number of Fargate instances
-   */
-  maxCapacity?: number;
-  /**
-   * Amount of vCPU per Fargate instance (default: 512)
-   */
-  cpu?: number;
-  /**
-   * Amount of memory per Fargate instance (default: 1024)
-   */
-  memory?: number;
-  /**
-   * Redis instance to use for mesh caching
-   */
-  redis?: RedisService;
-  /**
-   * SSM values to pass through to the container as secrets
-   */
-  secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
+    /**
+     * VPC to attach Redis and Fargate instances to (default: create a vpc)
+     */
+    vpc?: Vpc;
+    /**
+     * If no VPC is provided create one with this name (default: 'graphql-server-vpc')
+     */
+    vpcName?: string;
+    /**
+     * Cache node type (default: 'cache.t2.micro')
+     */
+    cacheNodeType?: string;
+    /**
+     * Repository to pull the container image from 
+     */
+    repository?: Repository;
+    /**
+     * ARN of the certificate to add to the load balancer
+     */
+    certificateArn: string;
+    /**
+     * Minimum number of Fargate instances
+     */
+    minCapacity?: number;
+    /**
+     * Maximum number of Fargate instances
+     */
+    maxCapacity?: number;
+    /**
+     * Amount of vCPU per Fargate instance (default: 512)
+     */
+    cpu?: number;
+    /**
+     * Amount of memory per Fargate instance (default: 1024)
+     */
+    memory?: number;
+    /**
+     * Redis instance to use for mesh caching
+     */
+    redis?: RedisService;
+    /**
+     * SSM values to pass through to the container as secrets
+     */
+    secrets?: {[key: string]: ssm.IStringParameter | ssm.IStringListParameter};
+    /**
+     * ARN of the SNS Topic to send deployment notifications to
+     */
+    notificationArn?: string; 
 };
 
 export class MeshHosting extends Construct {
@@ -91,9 +95,10 @@ export class MeshHosting extends Construct {
     this.service = mesh.service;
     this.repository = mesh.repository;
 
-    new CodePipelineService(this, "pipeline", {
-      repository: this.repository,
-      service: this.service,
-    });
+      new CodePipelineService(this, 'pipeline', {
+          repository: this.repository,
+          service: this.service,
+          notificationArn: props.notificationArn
+      });
   }
 }
