@@ -8,6 +8,12 @@ import { Construct } from 'constructs';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as YAML from 'yaml';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { Topic } from 'aws-cdk-lib/aws-sns';
+import { LambdaSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
+import { DetailType, NotificationRule } from 'aws-cdk-lib/aws-codestarnotifications';
 
 export interface CodePipelineServiceProps {
     /**
@@ -24,6 +30,11 @@ export interface CodePipelineServiceProps {
      * Path to buildspec.yml (default: '../assets/buildspec.yml')
      */
     buildspecPath?: string;
+
+    /**
+     * ARN of the SNS Topic to send deployment notifications to
+     */
+    notificationArn?: string; 
 }
 
 export class CodePipelineService extends Construct {
@@ -87,5 +98,41 @@ export class CodePipelineService extends Construct {
                 }),
             ],
         });
+
+        if (props.notificationArn) {
+            const notifier = new NodejsFunction(this, 'NotifierLambda', {
+                entry: path.resolve(__dirname, '../assets/notify-sns.ts'),
+                description: 'Lambda function to forward SNS messages to another account.',
+                runtime: Runtime.NODEJS_18_X,
+                handler: 'index.handler',
+                timeout: Duration.seconds(10),
+                environment: {
+                    SNS_TOPIC: props.notificationArn
+                }
+            });
+
+            notifier.addToRolePolicy(new PolicyStatement({
+                actions: ['sns:publish'],
+                resources: [props.notificationArn],
+                effect: Effect.ALLOW
+            }));
+
+            const topic = new Topic(this, 'NotifierTopic');
+            topic.addSubscription(new LambdaSubscription(notifier));
+
+            const rule = new NotificationRule(this, 'CodeStarNotificationRule', {
+                detailType: DetailType.FULL,
+                events: [
+                    'codepipeline-pipeline-pipeline-execution-failed',
+                    'codepipeline-pipeline-pipeline-execution-canceled',
+                    'codepipeline-pipeline-pipeline-execution-started',
+                    'codepipeline-pipeline-pipeline-execution-resumed',
+                    'codepipeline-pipeline-pipeline-execution-succeeded',
+                    'codepipeline-pipeline-pipeline-execution-superseded',
+                ],
+                targets: [topic],
+                source: this.pipeline,
+            });
+        }
     }
 }

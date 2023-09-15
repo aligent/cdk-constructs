@@ -9,6 +9,7 @@
         ]
     },
     "devDependencies": {
+        "@types/aws-lambda": "^8.10.121",
         "@types/jest": "^26.0.10",
         "@types/node": "16.9.4",
         "jest": "^26.4.2",
@@ -21,6 +22,7 @@
         "esbuild": "^0.12.15"
     },
     "dependencies": {
+        "@aws-sdk/client-sns": "^3.413.0",
         "aws-cdk-lib": "^2.90.0",
         "constructs": "10.1.56"
     },
