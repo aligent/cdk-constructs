@@ -101,7 +101,7 @@ export class CodePipelineService extends Construct {
 
         if (props.notificationArn) {
             const notifier = new NodejsFunction(this, 'NotifierLambda', {
-                entry: path.resolve(__dirname, '../assets/notify-sns.ts'),
+                entry: path.resolve(__dirname, '../assets/handlers/notify-sns.ts'),
                 description: 'Lambda function to forward SNS messages to another account.',
                 runtime: Runtime.NODEJS_18_X,
                 handler: 'index.handler',
