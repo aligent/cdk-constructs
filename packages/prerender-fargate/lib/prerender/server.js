@@ -38,7 +38,6 @@ server.use({
 server.use(prerender.blacklist());
 
 if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
-    server.use(prerender.removeScriptTags());
     var he = require('he');
     var s3 = new (require('aws-sdk')).S3({params:{Bucket: process.env.S3_BUCKET_NAME}});
     server.use({
@@ -138,8 +137,9 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
 
                     next();
                 });
-        }
-    });
+            }
+        });
+        server.use(prerender.removeScriptTags());
 } else {
     server.use(prerender.httpHeaders());
     server.use(prerender.removeScriptTags());
