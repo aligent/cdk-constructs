@@ -15,7 +15,7 @@ import { ManagedRule, Scope, WebApplicationFirewall } from './web-application-fi
 
 export interface MeshServiceProps {
     /**
-     * Name of the read only role used to access logs
+     * Name of the read only role used to access logs (default: graphql-mesh-read-only-role)
      */
     readOnlyRoleName?: string;
     /**
@@ -236,11 +236,12 @@ export class MeshService extends Construct {
 
         // Cross account role to get read only access to mesh
         // and the relevant logs
-        if (props.readOnlyRoleName) {
+        if (props.awsAccountArn) {
+        const readOnlyRoleName = props.readOnlyRoleName || 'graphql-mesh-read-only-role';
         const readOnlyRole = new iam.Role(this, "read-only-role", {
             assumedBy: new iam.AccountPrincipal(props.awsAccountArn),
             description: "Read Only Role for Mesh Developers",
-            roleName: props.readOnlyRoleName,
+            roleName: readOnlyRoleName,
         });
         
         const readOnlyPolicy = new iam.ManagedPolicy(this, "read-only-policy");
