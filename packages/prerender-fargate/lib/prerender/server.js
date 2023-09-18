@@ -71,29 +71,32 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
                     next();
                 });
             },
+            // The pageLoaded function is a modified version of https://github.com/prerender/prerender/blob/478fa6d0a5196ea29c88c69e64e72eb5507b6d2c/lib/plugins/httpHeaders.js
 
             pageLoaded: function(req, res, next) {
                 const statusCodesToCache = ['200', '301', '302'];
                 let metaTagStatusCode = 200;
-                let location = '';
+                var s3Metadata = {
+                    httpreturncode: req.prerender.statusCode.toString()
+                }
 
                 if (req.prerender.content && req.prerender.renderType == 'html') {
-                    let statusMatch = /<meta[^<>]*(?:name=['"]prerender-status-code['"][^<>]*content=['"]([0-9]{3})['"]|content=['"]([0-9]{3})['"][^<>]*name=['"]prerender-status-code['"])[^<>]*>/i,
-                    headerMatch = /<meta[^<>]*(?:name=['"]prerender-header['"][^<>]*content=['"]([^'"]*?): ?([^'"]*?)['"]|content=['"]([^'"]*?): ?([^'"]*?)['"][^<>]*name=['"]prerender-header['"])[^<>]*>/gi,
-                    head = req.prerender.content.toString().split('</head>', 1).pop(),
-                    // statusCode = 200,
-                    match;
+                    const statusMatchRegex = /<meta[^<>]*(?:name=['"]prerender-status-code['"][^<>]*content=['"]([0-9]{3})['"]|content=['"]([0-9]{3})['"][^<>]*name=['"]prerender-status-code['"])[^<>]*>/i;
+                    const headerMatchRegex = /<meta[^<>]*(?:name=['"]prerender-header['"][^<>]*content=['"]([^'"]*?): ?([^'"]*?)['"]|content=['"]([^'"]*?): ?([^'"]*?)['"][^<>]*name=['"]prerender-header['"])[^<>]*>/gi
+                    const head = req.prerender.content.toString().split('</head>', 1).pop()
 
-                    if (match = statusMatch.exec(head)) {
-                        metaTagStatusCode = match[1] || match[2];
-                        req.prerender.content = req.prerender.content.toString().replace(match[0], '');
-                        console.log("metaTagStatusCode: " + metaTagStatusCode);
+                    const statusMatch = statusMatchRegex.exec(head)
+                    if (statusMatch) {
+                        metaTagStatusCode = statusMatch[1] || statusMatch[2];
+                        req.prerender.content = req.prerender.content.toString().replace(statusMatch[0], '');
                     }
 
-                    while (match = headerMatch.exec(head)) {
-                        location = he.decode(match[2] || match[4]);
-                        res.setHeader(match[1] || match[3], location);
-                        req.prerender.content = req.prerender.content.toString().replace(match[0], '');
+                    let headerMatch = headerMatchRegex.exec(head)
+                    while (headerMatch) {
+                        s3Metadata.location = he.decode(headerMatch[2] || headerMatch[4]);
+                        res.setHeader(headerMatch[1] || headerMatch[3], s3Metadata.location);
+                        req.prerender.content = req.prerender.content.toString().replace(headerMatch[0], '');
+                        headerMatch = headerMatchRegex.exec(head)
                     }
 
                     // Skip caching for the http response codes not in the list, such as 404
@@ -113,13 +116,6 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
                 console.log("Caching the object with statusCode " + req.prerender.statusCode);
 
                 var key = req.prerender.url;
-                var s3Metadata = {
-                    httpreturncode: req.prerender.statusCode.toString()
-                }
-
-                if (location) {
-                    s3Metadata.location = location;
-                }
 
                 if (process.env.S3_PREFIX_KEY) {
                     key = process.env.S3_PREFIX_KEY + '/' + key;
