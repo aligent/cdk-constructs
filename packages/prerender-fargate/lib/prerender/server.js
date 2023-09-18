@@ -41,7 +41,7 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
     var he = require('he');
     var s3 = new (require('aws-sdk')).S3({params:{Bucket: process.env.S3_BUCKET_NAME}});
     server.use({
-            requestReceived: function(req, res, next) {
+        requestReceived: function(req, res, next) {
                 if(req.method !== 'GET' && req.method !== 'HEAD') {
                     console.log("skipping requestReceived from S3 Cache... ")
                     return next();
@@ -54,11 +54,10 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
                 }
 
                 s3.getObject({
-                        Key: key
+                    Key: key
                 }, function (err, result) {
 
                     if (!err && result) {
-                        console.log(result.Metadata);
                         console.log("Found cached object: " + key);
                         if (result.Metadata.location){
                             res.setHeader('Location', result.Metadata.location);
@@ -72,7 +71,6 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
                 });
             },
             // The pageLoaded function is a modified version of https://github.com/prerender/prerender/blob/478fa6d0a5196ea29c88c69e64e72eb5507b6d2c/lib/plugins/httpHeaders.js
-
             pageLoaded: function(req, res, next) {
                 const statusCodesToCache = ['200', '301', '302'];
                 let metaTagStatusCode = 200;
