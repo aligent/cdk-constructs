@@ -101,7 +101,7 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
 
                     // Skip caching for the http response codes not in the list, such as 404
                     if ( ! statusCodesToCache.includes(metaTagStatusCode.toString()) ) {
-                        console.log("metaTagStatusCode " + metaTagStatusCode + " is not in the cachable code list. Returning without caching.");
+                        console.log(`metaTagStatusCode ${metaTagStatusCode} for ${req.prerender.url} is not in the cachable code list. Returning without caching the result.`);
                         return res.send(metaTagStatusCode, req.prerender.content);
                     }
                 }
@@ -113,8 +113,7 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
                 // Override req.prerender.statusCode with the StatusCode returned via the meta tag.
                 // If metaTagStatusCode is not in the statusCodesToCache array or req.prerender.statusCode is not 200, then this line wouldn't be reached. Therefore no if condition for this overriding is needed.
                 req.prerender.statusCode = metaTagStatusCode;
-                console.log("Caching the object with statusCode " + req.prerender.statusCode);
-
+                console.log(`Caching the object ${req.prerender.url} with statusCode ${metaTagStatusCode}`);
                 var key = req.prerender.url;
 
                 if (process.env.S3_PREFIX_KEY) {
