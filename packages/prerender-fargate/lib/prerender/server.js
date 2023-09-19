@@ -41,6 +41,9 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
     var he = require('he');
     var s3 = new (require('aws-sdk')).S3({params:{Bucket: process.env.S3_BUCKET_NAME}});
     server.use({
+            // The requestReceived and pageLoaded functions are a modified version of
+            // httpHeader plugin - https://github.com/prerender/prerender/blob/478fa6d0a5196ea29c88c69e64e72eb5507b6d2c/lib/plugins/httpHeaders.js combined with
+            // s3cache plugin - https://github.com/prerender/prerender-aws-s3-cache/blob/98707fa0f787de83aa41583682cd2c2d330a9cca/index.js
         requestReceived: function(req, res, next) {
                 if(req.method !== 'GET' && req.method !== 'HEAD') {
                     console.log("skipping requestReceived from S3 Cache... ")
@@ -62,7 +65,8 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
                         if (result.Metadata.location){
                             res.setHeader('Location', result.Metadata.location);
                         }
-                        return res.send(result.Metadata.httpreturncode, result.Body);
+                        // default 200 for legacy objects that do not have Metadata.httpreturncode defined
+                        return res.send(result.Metadata.httpreturncode || 200, result.Body);
                     } else {
                         console.error(err);
                     }
@@ -70,69 +74,61 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
                     next();
                 });
             },
-            // The pageLoaded function is a modified version of https://github.com/prerender/prerender/blob/478fa6d0a5196ea29c88c69e64e72eb5507b6d2c/lib/plugins/httpHeaders.js
-            pageLoaded: function(req, res, next) {
-                const statusCodesToCache = ['200', '301', '302'];
-                let metaTagStatusCode = 200;
-                var s3Metadata = {
-                    httpreturncode: req.prerender.statusCode.toString()
+
+        pageLoaded: function(req, res, next) {
+            const statusCodesToCache = ['200', '301', '302'];
+            var s3Metadata = {}
+
+            // Inspect prerender meta tags and update response accordingly
+            if (req.prerender.content && req.prerender.renderType == 'html') {
+                const statusMatchRegex = /<meta[^<>]*(?:name=['"]prerender-status-code['"][^<>]*content=['"]([0-9]{3})['"]|content=['"]([0-9]{3})['"][^<>]*name=['"]prerender-status-code['"])[^<>]*>/i;
+                const headerMatchRegex = /<meta[^<>]*(?:name=['"]prerender-header['"][^<>]*content=['"]([^'"]*?): ?([^'"]*?)['"]|content=['"]([^'"]*?): ?([^'"]*?)['"][^<>]*name=['"]prerender-header['"])[^<>]*>/gi
+                const head = req.prerender.content.toString().split('</head>', 1).pop()
+
+                const statusMatch = statusMatchRegex.exec(head)
+                if (statusMatch) {
+                    req.prerender.statusCode = statusMatch[1] || statusMatch[2];
+                    req.prerender.content = req.prerender.content.toString().replace(statusMatch[0], '');
                 }
 
-                if (req.prerender.content && req.prerender.renderType == 'html') {
-                    const statusMatchRegex = /<meta[^<>]*(?:name=['"]prerender-status-code['"][^<>]*content=['"]([0-9]{3})['"]|content=['"]([0-9]{3})['"][^<>]*name=['"]prerender-status-code['"])[^<>]*>/i;
-                    const headerMatchRegex = /<meta[^<>]*(?:name=['"]prerender-header['"][^<>]*content=['"]([^'"]*?): ?([^'"]*?)['"]|content=['"]([^'"]*?): ?([^'"]*?)['"][^<>]*name=['"]prerender-header['"])[^<>]*>/gi
-                    const head = req.prerender.content.toString().split('</head>', 1).pop()
-
-                    const statusMatch = statusMatchRegex.exec(head)
-                    if (statusMatch) {
-                        metaTagStatusCode = statusMatch[1] || statusMatch[2];
-                        req.prerender.content = req.prerender.content.toString().replace(statusMatch[0], '');
-                    }
-
-                    let headerMatch = headerMatchRegex.exec(head)
-                    while (headerMatch) {
-                        s3Metadata.location = he.decode(headerMatch[2] || headerMatch[4]);
-                        res.setHeader(headerMatch[1] || headerMatch[3], s3Metadata.location);
-                        req.prerender.content = req.prerender.content.toString().replace(headerMatch[0], '');
-                        headerMatch = headerMatchRegex.exec(head)
-                    }
-
-                    // Skip caching for the http response codes not in the list, such as 404
-                    if ( ! statusCodesToCache.includes(metaTagStatusCode.toString()) ) {
-                        console.log(`metaTagStatusCode ${metaTagStatusCode} for ${req.prerender.url} is not in the cachable code list. Returning without caching the result.`);
-                        return res.send(metaTagStatusCode, req.prerender.content);
-                    }
+                let headerMatch = headerMatchRegex.exec(head)
+                while (headerMatch) {
+                    s3Metadata.location = he.decode(headerMatch[2] || headerMatch[4]);
+                    res.setHeader(headerMatch[1] || headerMatch[3], s3Metadata.location);
+                    req.prerender.content = req.prerender.content.toString().replace(headerMatch[0], '');
+                    headerMatch = headerMatchRegex.exec(head)
                 }
 
-                if(req.prerender.statusCode !== 200) {
-                    return next();
+                // Skip caching for the http response codes not in the list, such as 404
+                if ( ! statusCodesToCache.includes(req.prerender.statusCode.toString()) ) {
+                    console.log(`StatusCode ${req.prerender.statusCode} for ${req.prerender.url} is not in the cachable code list. Returning without caching the result.`);
+                    return res.send(req.prerender.statusCode, req.prerender.content);
                 }
-
-                // Override req.prerender.statusCode with the StatusCode returned via the meta tag.
-                // If metaTagStatusCode is not in the statusCodesToCache array or req.prerender.statusCode is not 200, then this line wouldn't be reached. Therefore no if condition for this overriding is needed.
-                req.prerender.statusCode = metaTagStatusCode;
-                console.log(`Caching the object ${req.prerender.url} with statusCode ${metaTagStatusCode}`);
-                var key = req.prerender.url;
-
-                if (process.env.S3_PREFIX_KEY) {
-                    key = process.env.S3_PREFIX_KEY + '/' + key;
-                }
-
-                s3.putObject({
-                    Key: key,
-                    ContentType: 'text/html;charset=UTF-8',
-                    StorageClass: 'REDUCED_REDUNDANCY',
-                    Body: req.prerender.content,
-                    Metadata: s3Metadata
-                }, function(err, result) {
-                    console.log(result);
-                    if (err) console.error(err);
-
-                    next();
-                });
             }
-        });
-        server.use(prerender.removeScriptTags());
+            s3Metadata.httpreturncode = req.prerender.statusCode.toString()
+
+            console.log(`Caching the object ${req.prerender.url} with statusCode ${req.prerender.statusCode}`);
+            var key = req.prerender.url;
+
+            if (process.env.S3_PREFIX_KEY) {
+                key = process.env.S3_PREFIX_KEY + '/' + key;
+            }
+
+            s3.putObject({
+                Key: key,
+                ContentType: 'text/html;charset=UTF-8',
+                StorageClass: 'REDUCED_REDUNDANCY',
+                Body: req.prerender.content,
+                Metadata: s3Metadata
+            }, function(err, result) {
+                console.log(result);
+                if (err) console.error(err);
+
+                next();
+            });
+        }
+    });
+    server.use(prerender.removeScriptTags());
 } else {
     server.use(prerender.httpHeaders());
     server.use(prerender.removeScriptTags());
