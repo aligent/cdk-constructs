@@ -46,8 +46,7 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
             // s3cache plugin - https://github.com/prerender/prerender-aws-s3-cache/blob/98707fa0f787de83aa41583682cd2c2d330a9cca/index.js
         requestReceived: function(req, res, next) {
                 if(req.method !== 'GET' && req.method !== 'HEAD') {
-                    console.log("skipping requestReceived from S3 Cache... ")
-                    return next();
+\                    return next();
                 }
 
                 var key = req.prerender.url;
