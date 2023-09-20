@@ -1,5 +1,5 @@
 import { Construct } from 'constructs';
-import { Duration, Token } from 'aws-cdk-lib';
+import { CfnOutput, Duration } from 'aws-cdk-lib';
 import { RemovalPolicy } from 'aws-cdk-lib';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
@@ -8,11 +8,21 @@ import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as auto_scaling from 'aws-cdk-lib/aws-autoscaling';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import { Port, SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { RedisService } from './redis-construct';
 import { ManagedRule, Scope, WebApplicationFirewall } from './web-application-firewall';
 
 export interface MeshServiceProps {
+    /**
+     * Name of the read only role used to access logs (default: graphql-mesh-read-only-role)
+     */
+    readOnlyRoleName?: string;
+    /**
+     * ARN of the account to allow access to assume role from
+     * If provided a read only user will be created
+     */
+    awsAccountArn?: string;
     /**
      * VPC to attach Redis instance to
      */
@@ -142,6 +152,9 @@ export class MeshService extends Construct {
         for (const [key, ssm] of Object.entries(props.secrets)) {
             secrets[key] = ecs.Secret.fromSsmParameter(ssm);
         }
+
+        const logGroup = new logs.LogGroup(this, "log-group");
+
         // Create a load-balanced Fargate service and make it public
         const fargateService =
             new ecsPatterns.ApplicationLoadBalancedFargateService(
@@ -161,6 +174,10 @@ export class MeshService extends Construct {
                         containerPort: 4000, // graphql mesh gateway port
                         secrets: secrets,
                         environment: environment,
+                        logDriver: new ecs.AwsLogDriver({
+                            logGroup: logGroup,
+                            streamPrefix: "mesh",
+                        }),
                     },
                     publicLoadBalancer: true, // default,
                     taskSubnets: {
@@ -216,5 +233,58 @@ export class MeshService extends Construct {
             ],
             adjustmentType: auto_scaling.AdjustmentType.CHANGE_IN_CAPACITY,
         });
+
+        // Cross account role to get read only access to mesh
+        // and the relevant logs
+        if (props.awsAccountArn) {
+        const readOnlyRoleName = props.readOnlyRoleName || 'graphql-mesh-read-only-role';
+        const readOnlyRole = new iam.Role(this, "read-only-role", {
+            assumedBy: new iam.AccountPrincipal(props.awsAccountArn),
+            description: "Read Only Role for Mesh Developers",
+            roleName: readOnlyRoleName,
+        });
+        
+        const readOnlyPolicy = new iam.ManagedPolicy(this, "read-only-policy");
+        readOnlyPolicy.addStatements(
+            new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: [
+                    "logs:Describe*",
+                    "logs:Get*",
+                    "logs:List*",
+                    "logs:StartQuery",
+                    "logs:StopQuery",
+                    "logs:TestMetricFilter",
+                    "logs:FilterLogEvents",
+                    "logs:StartLiveTail",
+                    "logs:StopLiveTail",
+                ],
+                resources: [logGroup.logGroupArn],
+            }),
+            new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: [
+                    "ecs:DescribeClusters",
+                    "ecs:DescribeServices",
+                    "ecs:DescribeTasks",
+                    "ecs:DescribeTaskDefinition",
+                    "esc:DescribeContainerInstances",
+                    "ecs:ListClusters",
+                    "ecs:ListContainerInstances",
+                    "ecs:ListServices",
+                    "ecs:ListTaskDefinitions",
+                    "ecs:ListTasks",
+                ],
+                resources: ["*"],
+            })
+        );
+
+        readOnlyRole.addManagedPolicy(readOnlyPolicy);
+
+        new CfnOutput(this, "read-only-role-arn", {
+            description: "ReadOnlyRoleArn",
+            value: readOnlyRole.roleArn,
+        });
+        }
     }
 }
