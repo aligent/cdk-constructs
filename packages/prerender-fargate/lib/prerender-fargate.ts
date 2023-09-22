@@ -22,6 +22,7 @@ export interface PrerenderOptions {
     maxInstanceCount?: number,
     instanceCPU?: number,
     instanceMemory?: number
+    enableRedirectCache?: string
 }
 
 export class PrerenderFargate extends Construct {
@@ -80,6 +81,7 @@ export class PrerenderFargate extends Construct {
                         AWS_ACCESS_KEY_ID: accessKey.accessKeyId,
                         AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.toString(),
                         AWS_REGION: Stack.of(this).region,
+                        ENABLE_REDIRECT_CACHE: props.enableRedirectCache || "false",
                         TOKEN_LIST: props.tokenList.toString()
                     }
                 },
