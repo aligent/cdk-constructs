@@ -10,20 +10,63 @@ import { AccessKey, User } from 'aws-cdk-lib/aws-iam';
 import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import * as path from 'path';
 
+/**
+ * Options for configuring a Prerender Fargate service.
+ */
 export interface PrerenderOptions {
-    prerenderName: string,
-    domainName: string,
-    vpcId?: string,
-    bucketName?: string,
-    expirationDays?: number,
-    tokenList: Array<string>,
-    certificateArn: string,
-    desiredInstanceCount?: number,
-    maxInstanceCount?: number,
-    instanceCPU?: number,
-    instanceMemory?: number
-    enableRedirectCache?: string
-}
+    /**
+     * The name of the Prerender service.
+     */
+    prerenderName: string;
+    /** 
+     * The domain name to use for the Prerender service. 
+     */
+    domainName: string;
+    /** 
+     * The ID of the VPC. 
+     */
+    vpcId?: string;
+    /** 
+     * The name of the S3 bucket to use for storing Prerender data. 
+     */
+    bucketName?: string;
+    /** 
+     * The number of days to keep Prerender data before expiring it. 
+     */
+    expirationDays?: number;
+    /** 
+     * A list of tokens to use for authenticating requests to the Prerender service. 
+     */
+    tokenList: Array<string>;
+    /** 
+     * The ARN of the SSL certificate to use for the Prerender service. 
+     */
+    certificateArn: string;
+    /** 
+     * The desired number of instances in the ECS cluster. 
+     */
+    desiredInstanceCount?: number;
+    /** 
+     * The maximum number of instances in the ECS cluster. 
+     */
+    maxInstanceCount?: number;
+    /** 
+     * The amount of CPU to allocate to each instance. 
+     */
+    instanceCPU?: number;
+    /** 
+     * The amount of memory to allocate to each instance. 
+     */
+    instanceMemory?: number;
+    /** 
+     * Whether to enable caching of redirects in the Prerender service. 
+     */
+    enableRedirectCache?: string;
+    /** 
+     * Whether to create a new VPC for the Prerender service. 
+     */
+    createVpc: boolean;
+  }
 
 export class PrerenderFargate extends Construct {
     readonly bucket: Bucket;
@@ -52,8 +95,26 @@ export class PrerenderFargate extends Construct {
             serial: 1
         });
 
-        const vpcLookup = props.vpcId ? { vpcId: props.vpcId } : { isDefault: true };
-        const vpc = ec2.Vpc.fromLookup(this, "vpc", vpcLookup); 
+        let vpc!: ec2.IVpc;
+        // Create a new VPC or use an existing one
+        if (props.createVpc) {
+            vpc = new ec2.Vpc(this, `${props.prerenderName}-vpc`, {
+                maxAzs: 2,
+                subnetConfiguration: [
+                    {
+                        name: 'public',
+                        subnetType: ec2.SubnetType.PUBLIC,
+                    },
+                    {
+                        name: 'private',
+                        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+                    },
+                ],
+            });
+        } else {
+            const vpcLookup = { vpcId: props.vpcId };
+            vpc = ec2.Vpc.fromLookup(this, "vpc", vpcLookup); 
+        }
 
         const cluster = new ecs.Cluster(this, `${props.prerenderName}-cluster`, { vpc: vpc });
 
@@ -79,7 +140,7 @@ export class PrerenderFargate extends Construct {
                     environment: {
                         S3_BUCKET_NAME: this.bucket.bucketName,
                         AWS_ACCESS_KEY_ID: accessKey.accessKeyId,
-                        AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.toString(),
+                        AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.unsafeUnwrap().toString(),
                         AWS_REGION: Stack.of(this).region,
                         ENABLE_REDIRECT_CACHE: props.enableRedirectCache || "false",
                         TOKEN_LIST: props.tokenList.toString()
