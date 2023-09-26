@@ -119,6 +119,10 @@ export class StaticHosting extends Construct {
     const enforceSSL = props.enforceSSL !== false;
     const disableCSP = props.disableCSP === true;
 
+    const domainNames: Array<string> = props.extraDistributionCnames
+      ? siteNameArray.concat(props.extraDistributionCnames)
+      : siteNameArray;
+
     const s3LoggingBucket = props.enableS3AccessLogging
       ? new Bucket(this, "S3LoggingBucket", {
           bucketName: `${siteName}-s3-access-logs`,
@@ -271,10 +275,6 @@ export class StaticHosting extends Construct {
       }
     }
 
-    const domainNames: Array<string> = props.extraDistributionCnames
-      ? siteNameArray.concat(props.extraDistributionCnames)
-      : siteNameArray;
-
     const distributionProps: DistributionProps = {
       domainNames: domainNames,
       webAclId: props.webAclArn,
@@ -283,7 +283,9 @@ export class StaticHosting extends Construct {
       sslSupportMethod: SSLMethod.SNI,
       priceClass: PriceClass.PRICE_CLASS_ALL,
       enableLogging: props.enableCloudFrontAccessLogging,
-      logBucket: props.enableCloudFrontAccessLogging ? bucket : undefined,
+      logBucket: props.enableCloudFrontAccessLogging
+        ? loggingBucket
+        : undefined,
       minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2018,
       certificate: Certificate.fromCertificateArn(
         this,
@@ -315,10 +317,14 @@ export class StaticHosting extends Construct {
         ],
       });
 
-      new Policy(this, "CloudFrontInvalidationPolicy", {
-        groups: [publisherGroup],
-        statements: [cloudFrontInvalidationPolicyStatement],
-      });
+      const cloudFrontInvalidationPolicy = new Policy(
+        this,
+        "CloudFrontInvalidationPolicy",
+        {
+          groups: [publisherGroup],
+          statements: [cloudFrontInvalidationPolicyStatement],
+        }
+      );
     }
     new CfnOutput(this, "DistributionId", {
       description: "DistributionId",
