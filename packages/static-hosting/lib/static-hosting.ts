@@ -90,7 +90,7 @@ export interface StaticHostingProps {
   responseHeadersPolicies?: ResponseHeaderMappings;
   additionalBehaviors?: Record<string, BehaviorOptions>;
   errorResponsePagePath?: string;
-  defaultBehaviorEdgeLambdas: EdgeLambda[];
+  defaultBehaviorEdgeLambdas?: EdgeLambda[];
 
   /**
    * After switching constructs, you need to maintain the same logical ID
@@ -147,6 +147,7 @@ export class StaticHosting extends Construct {
     const enableStaticFileRemap = props.enableStaticFileRemap !== false;
     const defaultRootObject = props.defaultRootObject ?? "/index.html";
     const errorResponsePagePath = props.errorResponsePagePath ?? "/index.html";
+    const defaultBehaviorEdgeLambdas = props.defaultBehaviorEdgeLambdas ?? [];
     const disableCSP = props.disableCSP === true;
 
     const domainNames: Array<string> = props.extraDistributionCnames
@@ -295,7 +296,7 @@ export class StaticHosting extends Construct {
     const defaultBehavior: Writeable<BehaviorOptions> = {
       origin: s3Origin,
       viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-      edgeLambdas: props.defaultBehaviorEdgeLambdas,
+      edgeLambdas: defaultBehaviorEdgeLambdas,
       originRequestPolicy: originRequestPolicy,
       cachePolicy: originCachePolicy,
       responseHeadersPolicy: responseHeadersPolicy,
@@ -319,7 +320,10 @@ export class StaticHosting extends Construct {
 
     if (enableStaticFileRemap) {
       for (const path of this.staticFiles) {
-        additionalBehaviors[`*.${path}`] = { origin: s3Origin };
+        additionalBehaviors[`*.${path}`] = {
+          origin: s3Origin,
+          viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        };
       }
     }
 
