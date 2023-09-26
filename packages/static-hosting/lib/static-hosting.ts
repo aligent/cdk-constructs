@@ -92,7 +92,7 @@ export interface StaticHostingProps {
   defaultBehaviorEdgeLambdas: EdgeLambda[];
 
   /**
-   * After switching constructs, if you need to maintain the same logical ID
+   * After switching constructs, you need to maintain the same logical ID
    * for the underlying CfnDistribution if you wish to avoid the deletion
    * and recreation of your distribution.
    *
@@ -144,6 +144,7 @@ export class StaticHosting extends Construct {
     const siteNameArray: Array<string> = [siteName];
     const enforceSSL = props.enforceSSL !== false;
     const enableStaticFileRemap = props.enableStaticFileRemap !== false;
+    const errorResponsePagePath = props.errorResponsePagePath ?? "/index.html";
     const disableCSP = props.disableCSP === true;
 
     const domainNames: Array<string> = props.extraDistributionCnames
@@ -255,7 +256,7 @@ export class StaticHosting extends Construct {
       {
         httpStatus: 404,
         responseHttpStatus: 200,
-        responsePagePath: props.errorResponsePagePath ?? "/index.html",
+        responsePagePath: errorResponsePagePath,
         ttl: Duration.seconds(0),
       },
     ];
