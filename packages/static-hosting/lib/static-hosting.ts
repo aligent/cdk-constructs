@@ -39,27 +39,51 @@ import {
 import { CSP } from "../types/csp";
 
 export interface StaticHostingProps {
-  domainNames: string[];
   exportPrefix?: string;
-  enforceSSL?: boolean;
-  disableCSP?: boolean;
-  enableS3AccessLogging?: boolean;
-  s3ExtendedProps?: BucketProps;
-  createPublisherUser?: boolean;
-  createPublisherGroup?: boolean;
-  enableCloudFrontAccessLogging?: boolean;
-  errorResponsePagePath?: string;
-  webAclId?: string;
-  defaultRootObject?: string;
+  domainName: string;
+  subDomainName: string;
   certificateArn: string;
-  defaultBehaviorEdgeLambdas: EdgeLambda[];
-  additionalBehaviors?: Record<string, BehaviorOptions>;
-  enableErrorConfig?: boolean;
   createDnsRecord?: boolean;
+  createPublisherGroup?: boolean;
+  createPublisherUser?: boolean;
+  extraDistributionCnames?: ReadonlyArray<string>;
+  enableCloudFrontAccessLogging?: boolean;
+  enableS3AccessLogging?: boolean;
   zoneName?: string;
+  enableErrorConfig?: boolean;
+  defaultRootObject?: string;
+  enforceSSL?: boolean;
+
+  /**
+   * Disable the use of the CSP header. Default value is false.
+   */
+  disableCSP?: boolean;
+
+  /**
+   * AWS limits the max header size to 1kb, this is too small for complex csp headers.
+   * The main purpose of this csp header is to provide a method of setting a report-uri.
+   */
   csp?: CSP;
+
+  /**
+   * This will generate a csp based *purely* on the provided csp object.
+   * Therefore disabling the automatic adding of common use-case properties.
+   */
   explicitCSP?: boolean;
+
+  /**
+   * Extend the default props for S3 bucket
+   */
+  s3ExtendedProps?: BucketProps;
+
+  /**
+   * Optional WAF ARN
+   */
+  webAclArn?: string;
   responseHeadersPolicies?: ResponseHeaderMappings;
+  additionalBehaviors?: Record<string, BehaviorOptions>;
+  errorResponsePagePath?: string;
+  defaultBehaviorEdgeLambdas: EdgeLambda[];
 
   /**
    * After switching constructs, you need to maintain the same logical ID
@@ -90,7 +114,8 @@ export class StaticHosting extends Construct {
       ? props.exportPrefix
       : "StaticHosting";
 
-    const siteName = props.domainNames[0];
+    const siteName = `${props.subDomainName}.${props.domainName}`;
+    const siteNameArray: Array<string> = [siteName];
     const enforceSSL = props.enforceSSL !== false;
     const disableCSP = props.disableCSP === true;
 
@@ -246,9 +271,13 @@ export class StaticHosting extends Construct {
       }
     }
 
+    const domainNames: Array<string> = props.extraDistributionCnames
+      ? siteNameArray.concat(props.extraDistributionCnames)
+      : siteNameArray;
+
     const distributionProps: DistributionProps = {
-      domainNames: props.domainNames,
-      webAclId: props.webAclId,
+      domainNames: domainNames,
+      webAclId: props.webAclArn,
       defaultRootObject: props.defaultRootObject,
       httpVersion: HttpVersion.HTTP3,
       sslSupportMethod: SSLMethod.SNI,
