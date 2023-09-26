@@ -50,7 +50,7 @@ export class PathRemapFunction extends Construct {
       this,
       `${id}-edge-function`,
       {
-        code: Code.fromAsset(join(__dirname, "edge-handlers"), {
+        code: Code.fromAsset(join(__dirname, "handlers"), {
           assetHashType: AssetHashType.OUTPUT,
           bundling: {
             command,

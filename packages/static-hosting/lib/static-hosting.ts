@@ -20,6 +20,7 @@ import {
   CacheHeaderBehavior,
   IResponseHeadersPolicy,
   LambdaEdgeEventType,
+  OriginAccessIdentity,
 } from "aws-cdk-lib/aws-cloudfront";
 import { HttpOrigin, S3Origin } from "aws-cdk-lib/aws-cloudfront-origins";
 import {
@@ -144,6 +145,7 @@ export class StaticHosting extends Construct {
     const siteNameArray: Array<string> = [siteName];
     const enforceSSL = props.enforceSSL !== false;
     const enableStaticFileRemap = props.enableStaticFileRemap !== false;
+    const defaultRootObject = props.defaultRootObject ?? "/index.html";
     const errorResponsePagePath = props.errorResponsePagePath ?? "/index.html";
     const disableCSP = props.disableCSP === true;
 
@@ -177,6 +179,12 @@ export class StaticHosting extends Construct {
       enforceSSL: enforceSSL,
       ...props.s3ExtendedProps,
     });
+
+    const oai = new OriginAccessIdentity(this, "OriginAccessIdentity", {
+      comment: "Allow CloudFront to access S3",
+    });
+
+    bucket.grantRead(oai);
 
     new CfnOutput(this, "Bucket", {
       description: "BucketName",
@@ -227,6 +235,8 @@ export class StaticHosting extends Construct {
       : undefined;
 
     if (loggingBucket) {
+      loggingBucket.grantWrite(oai);
+
       new CfnOutput(this, "LoggingBucketName", {
         description: "CloudFront Logs",
         value: loggingBucket.bucketName,
@@ -234,7 +244,9 @@ export class StaticHosting extends Construct {
       });
     }
 
-    const s3Origin = new S3Origin(bucket);
+    const s3Origin = new S3Origin(bucket, {
+      originAccessIdentity: oai,
+    });
     let backendOrigin = undefined;
 
     const originRequestPolicy = new OriginRequestPolicy(
@@ -298,6 +310,7 @@ export class StaticHosting extends Construct {
         for (const path of props.remapBackendPaths) {
           additionalBehaviors[path.from] = {
             origin: backendOrigin,
+            viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             edgeLambdas: this.createRemapBehavior(path.from, path.to),
           };
         }
@@ -334,8 +347,6 @@ export class StaticHosting extends Construct {
       }
     }
 
-    const mergedAdditionalBehaviors = {};
-
     // If additional behaviours are provided via props, then merge, overriding generated behaviours if required.
     if (props.additionalBehaviors) {
       Object.assign(additionalBehaviors, props.additionalBehaviors);
@@ -344,7 +355,7 @@ export class StaticHosting extends Construct {
     const distributionProps: DistributionProps = {
       domainNames: domainNames,
       webAclId: props.webAclArn,
-      defaultRootObject: props.defaultRootObject,
+      defaultRootObject: defaultRootObject,
       httpVersion: HttpVersion.HTTP3,
       sslSupportMethod: SSLMethod.SNI,
       priceClass: PriceClass.PRICE_CLASS_ALL,
@@ -359,7 +370,7 @@ export class StaticHosting extends Construct {
         props.certificateArn
       ),
       defaultBehavior: defaultBehavior,
-      additionalBehaviors: mergedAdditionalBehaviors,
+      additionalBehaviors: additionalBehaviors,
       errorResponses: props.enableErrorConfig ? errorResponses : [],
     };
 
