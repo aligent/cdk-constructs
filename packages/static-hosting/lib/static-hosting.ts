@@ -333,6 +333,13 @@ export class StaticHosting extends Construct {
       }
     }
 
+    const mergedAdditionalBehaviors = {};
+
+    // If additional behaviours are provided via props, then merge, overriding generated behaviours if required.
+    if (props.additionalBehaviors) {
+      Object.assign(additionalBehaviors, props.additionalBehaviors);
+    }
+
     const distributionProps: DistributionProps = {
       domainNames: domainNames,
       webAclId: props.webAclArn,
@@ -351,7 +358,7 @@ export class StaticHosting extends Construct {
         props.certificateArn
       ),
       defaultBehavior: defaultBehavior,
-      additionalBehaviors: additionalBehaviors,
+      additionalBehaviors: mergedAdditionalBehaviors,
       errorResponses: props.enableErrorConfig ? errorResponses : [],
     };
 
