@@ -286,14 +286,10 @@ export class StaticHosting extends Construct {
         ],
       });
 
-      const cloudFrontInvalidationPolicy = new Policy(
-        this,
-        "CloudFrontInvalidationPolicy",
-        {
-          groups: [publisherGroup],
-          statements: [cloudFrontInvalidationPolicyStatement],
-        }
-      );
+      new Policy(this, "CloudFrontInvalidationPolicy", {
+        groups: [publisherGroup],
+        statements: [cloudFrontInvalidationPolicyStatement],
+      });
     }
     new CfnOutput(this, "DistributionId", {
       description: "DistributionId",
