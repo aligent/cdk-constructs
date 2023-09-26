@@ -19,8 +19,9 @@ import {
   OriginRequestHeaderBehavior,
   CacheHeaderBehavior,
   IResponseHeadersPolicy,
+  LambdaEdgeEventType,
 } from "aws-cdk-lib/aws-cloudfront";
-import { S3Origin } from "aws-cdk-lib/aws-cloudfront-origins";
+import { HttpOrigin, S3Origin } from "aws-cdk-lib/aws-cloudfront-origins";
 import {
   Effect,
   Group,
@@ -37,6 +38,7 @@ import {
   BucketProps,
 } from "aws-cdk-lib/aws-s3";
 import { CSP } from "../types/csp";
+import { PathRemapFunction } from "./path-remap";
 
 export interface StaticHostingProps {
   exportPrefix?: string;
@@ -51,6 +53,10 @@ export interface StaticHostingProps {
   enableS3AccessLogging?: boolean;
   zoneName?: string;
   enableErrorConfig?: boolean;
+  enableStaticFileRemap?: boolean;
+  remapPaths?: remapPath[];
+  backendHost?: string;
+  remapBackendPaths?: remapPath[];
   defaultRootObject?: string;
   enforceSSL?: boolean;
 
@@ -86,7 +92,7 @@ export interface StaticHostingProps {
   defaultBehaviorEdgeLambdas: EdgeLambda[];
 
   /**
-   * After switching constructs, you need to maintain the same logical ID
+   * After switching constructs, if you need to maintain the same logical ID
    * for the underlying CfnDistribution if you wish to avoid the deletion
    * and recreation of your distribution.
    *
@@ -99,6 +105,11 @@ export interface StaticHostingProps {
   overrideLogicalId?: string;
 }
 
+interface remapPath {
+  from: string;
+  to: string;
+}
+
 export interface ResponseHeaderMappings {
   defaultBehaviorResponseHeaderPolicy?: ResponseHeadersPolicy;
   additionalBehaviorResponsePolicy?: Record<string, ResponseHeadersPolicy>;
@@ -107,6 +118,21 @@ export interface ResponseHeaderMappings {
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 export class StaticHosting extends Construct {
+  private staticFiles = [
+    "js",
+    "css",
+    "json",
+    "svg",
+    "jpg",
+    "jpeg",
+    "png",
+    "gif",
+    "ico",
+    "woff",
+    "woff2",
+    "otf",
+  ];
+
   constructor(scope: Construct, id: string, props: StaticHostingProps) {
     super(scope, id);
 
@@ -117,6 +143,7 @@ export class StaticHosting extends Construct {
     const siteName = `${props.subDomainName}.${props.domainName}`;
     const siteNameArray: Array<string> = [siteName];
     const enforceSSL = props.enforceSSL !== false;
+    const enableStaticFileRemap = props.enableStaticFileRemap !== false;
     const disableCSP = props.disableCSP === true;
 
     const domainNames: Array<string> = props.extraDistributionCnames
@@ -207,6 +234,7 @@ export class StaticHosting extends Construct {
     }
 
     const s3Origin = new S3Origin(bucket);
+    let backendOrigin = undefined;
 
     const originRequestPolicy = new OriginRequestPolicy(
       this,
@@ -261,6 +289,36 @@ export class StaticHosting extends Construct {
     };
 
     const additionalBehaviors: Record<string, Writeable<BehaviorOptions>> = {};
+
+    if (props.backendHost) {
+      backendOrigin = new HttpOrigin(props.backendHost);
+
+      if (props.remapBackendPaths) {
+        for (const path of props.remapBackendPaths) {
+          additionalBehaviors[path.from] = {
+            origin: backendOrigin,
+            edgeLambdas: this.createRemapBehavior(path.from, path.to),
+          };
+        }
+      }
+    }
+
+    if (enableStaticFileRemap) {
+      for (const path of this.staticFiles) {
+        additionalBehaviors[`*.${path}`] = { origin: s3Origin };
+      }
+    }
+
+    // Note: A given path may override if the same path is defined both remapPaths and remapBackendPaths. This is an
+    // unlikely scenario but worth noting. e.g. `/robots.txt` should be defined in one of the above but not both.
+    if (props.remapPaths) {
+      for (const path of props.remapPaths) {
+        additionalBehaviors[path.from] = {
+          origin: s3Origin,
+          edgeLambdas: this.createRemapBehavior(path.from, path.to),
+        };
+      }
+    }
 
     if (props.responseHeadersPolicies?.defaultBehaviorResponseHeaderPolicy) {
       defaultBehavior.responseHeadersPolicy =
@@ -348,6 +406,29 @@ export class StaticHosting extends Construct {
         zone: zone,
       });
     }
+  }
+
+  private createRemapBehavior(from: string, to: string): EdgeLambda[] {
+    const lambdas: EdgeLambda[] = [];
+
+    // If the remap is to a different path, create a Lambda@Edge function to handle this
+    if (from !== to) {
+      // Remove special characters from path
+      const id = from.replace(/[&/\\#,+()$~%'":*?<>{}]/g, "-");
+
+      const remapFunction = new PathRemapFunction(
+        this,
+        `remap-function-${id}`,
+        { path: to }
+      );
+
+      lambdas.push({
+        functionVersion: remapFunction.getFunctionVersion(),
+        eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
+      });
+    }
+
+    return lambdas;
   }
 
   private generateCSPString(csp?: CSP, explicit?: boolean) {
