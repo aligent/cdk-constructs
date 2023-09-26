@@ -1,3 +1,3 @@
-import { PrerenderFargate } from "./lib/prerender-fargate";
+import { PrerenderFargate, PrerenderOptions } from "./lib/prerender-fargate";
 
-export { PrerenderFargate };
+export { PrerenderFargate, PrerenderOptions };
