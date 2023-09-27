@@ -18,8 +18,10 @@
     "url": "https://github.com/aligent/cdk-constructs/issues"
   },
   "homepage": "https://github.com/aligent/cdk-constructs#readme",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.122"
+  },
   "dependencies": {
-    "@types/aws-lambda": "^8.10.122",
     "source-map-support": "^0.5.21",
     "axios": "^1.5.1"
   }
