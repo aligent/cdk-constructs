@@ -3,7 +3,7 @@ import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 import { join } from "path";
 import * as cf from "aws-cdk-lib/aws-cloudfront";
-import { Esbuild } from "./utils/esbuild";
+import { Esbuild } from "@aligent/esbuild";
 
 export interface RemapOptions {
   path: string;
