@@ -23,7 +23,7 @@ export class PathRemapFunction extends Construct {
 
     this.edgeFunction = new cf.experimental.EdgeFunction(
       this,
-      `${id}-edge-function`,
+      `${id}-remap-fn`,
       {
         code: Code.fromAsset(join(__dirname, "handlers"), {
           assetHashType: AssetHashType.OUTPUT,
@@ -47,7 +47,7 @@ export class PathRemapFunction extends Construct {
   public getFunctionVersion(): IVersion {
     return Version.fromVersionArn(
       this,
-      "remap-function-version",
+      "remap-fn-version",
       this.edgeFunction.currentVersion.edgeArn
     );
   }

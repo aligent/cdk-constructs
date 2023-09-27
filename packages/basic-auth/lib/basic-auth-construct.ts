@@ -45,7 +45,7 @@ export class BasicAuthFunction extends Construct {
   public getFunctionVersion(): IVersion {
     return Version.fromVersionArn(
       this,
-      "basic-auth-function-version",
+      "basic-auth-fn-version",
       this.edgeFunction.currentVersion.edgeArn
     );
   }
