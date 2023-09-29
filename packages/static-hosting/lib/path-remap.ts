@@ -3,7 +3,7 @@ import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 import { join } from "path";
 import * as cf from "aws-cdk-lib/aws-cloudfront";
-import { Esbuild } from "./utils/esbuild";
+import { Esbuild } from "@aligent/esbuild";
 
 export interface RemapOptions {
   path: string;
@@ -23,7 +23,7 @@ export class PathRemapFunction extends Construct {
 
     this.edgeFunction = new cf.experimental.EdgeFunction(
       this,
-      `${id}-edge-function`,
+      `${id}-remap-fn`,
       {
         code: Code.fromAsset(join(__dirname, "handlers"), {
           assetHashType: AssetHashType.OUTPUT,
@@ -47,7 +47,7 @@ export class PathRemapFunction extends Construct {
   public getFunctionVersion(): IVersion {
     return Version.fromVersionArn(
       this,
-      "remap-function-version",
+      "remap-fn-version",
       this.edgeFunction.currentVersion.edgeArn
     );
   }

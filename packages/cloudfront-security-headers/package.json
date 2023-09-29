@@ -1,17 +1,14 @@
 {
-  "name": "@aligent/cdk-static-hosting",
+  "name": "@aligent/cdk-cloudfront-security-headers",
   "version": "2.0.0",
-  "main": "index.js",
-  "license": "GPL-3.0-only",
-  "homepage": "https://github.com/aligent/aws-cdk-static-hosting-stack#readme",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/aligent/aws-cdk-static-hosting-stack"
-  },
-  "types": "index.d.ts",
+  "description": "A Cloudfront Lambda@Edge function for adding security headers.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "prepublish": "tsc"
+    "build": "tsc && cd ./lib/handlers && npm ci",
+    "prepublish": "tsc && cd ./lib/handlers && npm ci",
+    "watch": "tsc -w",
+    "test": "jest"
   },
   "devDependencies": {
     "@types/jest": "^29.5.5",
@@ -26,7 +23,6 @@
   "dependencies": {
     "aws-cdk-lib": "2.97.0",
     "constructs": "^10.0.0",
-    "esbuild": "^0.17.0",
     "source-map-support": "^0.5.21"
   }
 }

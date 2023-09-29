@@ -1,12 +1,12 @@
 {
-  "name": "@aligent/cdk-static-hosting",
+  "name": "@aligent/cdk-waf",
   "version": "2.0.0",
   "main": "index.js",
   "license": "GPL-3.0-only",
-  "homepage": "https://github.com/aligent/aws-cdk-static-hosting-stack#readme",
+  "homepage": "https://github.com/aligent/aws-cdk-waf-stack#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aligent/aws-cdk-static-hosting-stack"
+    "url": "https://github.com/aligent/aws-cdk-waf-stack"
   },
   "types": "index.d.ts",
   "scripts": {
@@ -16,7 +16,6 @@
   "devDependencies": {
     "@types/jest": "^29.5.5",
     "@types/node": "20.6.3",
-    "@types/aws-lambda": "^8.10.122",
     "aws-cdk": "2.97.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.1",
@@ -26,7 +25,6 @@
   "dependencies": {
     "aws-cdk-lib": "2.97.0",
     "constructs": "^10.0.0",
-    "esbuild": "^0.17.0",
     "source-map-support": "^0.5.21"
   }
 }

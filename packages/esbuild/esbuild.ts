@@ -12,13 +12,13 @@ export class Esbuild implements ILocalBundling {
       logLevel: "info",
       sourcemap: false,
       bundle: true,
-      minify: false,
+      minify: true,
       platform: "node",
       // Do not minify identifiers, otherwise the exported `handler` function name gets minified failing to start
       // the lambda
       minifyIdentifiers: false,
-      minifyWhitespace: false,
-      minifySyntax: false,
+      minifyWhitespace: true,
+      minifySyntax: true,
     });
   }
 
