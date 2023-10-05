@@ -79,7 +79,7 @@ export class PrerenderFargate extends Construct {
                     environment: {
                         S3_BUCKET_NAME: this.bucket.bucketName,
                         AWS_ACCESS_KEY_ID: accessKey.accessKeyId,
-                        AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.toString(),
+                        AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.unsafeUnwrap(),
                         AWS_REGION: Stack.of(this).region,
                         ENABLE_REDIRECT_CACHE: props.enableRedirectCache || "false",
                         TOKEN_LIST: props.tokenList.toString()
