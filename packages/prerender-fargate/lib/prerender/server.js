@@ -72,8 +72,9 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
 
                     next();
                 });
-            },
-
+            }});
+    server.use(prerender.removeScriptTags());
+    server.use({
         pageLoaded: function(req, res, next) {
             const statusCodesToCache = ['200', '301', '302'];
             var s3Metadata = {}
@@ -127,7 +128,6 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
             });
         }
     });
-    server.use(prerender.removeScriptTags());
 } else {
     server.use(prerender.httpHeaders());
     server.use(prerender.removeScriptTags());
