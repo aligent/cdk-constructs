@@ -12,8 +12,12 @@ const server = prerender({
 
 server.use({
     requestReceived: (req, res, next) => {
+        console.log(`${new Date().toISOString()} User-Agent: "${req.get('user-agent')}" ${req.prerender.reqId} ${req.prerender.url}`);
         let auth = req.headers['x-prerender-token'];
-        if (!auth) return res.send(401);
+        if (!auth) {
+            console.log(`${new Date().toISOString()} "${req.get('user-agent')}" ${req.prerender.reqId} Authentication header not found.`);
+            return res.send(401);
+        }
 
         // compare credentials in header to list of allowed credentials
         const tokenAllowList = process.env.TOKEN_LIST.toString().split(',');
@@ -24,7 +28,10 @@ server.use({
 
             if (authenticated) break;
         }
-        if (!authenticated) return res.send(401);
+        if (!authenticated) {
+            console.log(`${new Date().toISOString()} "${req.get('user-agent')}" ${req.prerender.reqId} Authentication Failed.`);
+            return res.send(401);
+        }
 
         return next();
     },
