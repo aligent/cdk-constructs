@@ -1,0 +1,24 @@
+{
+  "name": "@aligent/cdk-prerender-fargate",
+  "version": "0.0.1",
+  "description": "A construct to host Prerender in Fargate",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "prepublish": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
+  },
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/aligent/cdk-constructs/issues"
+  },
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/prerender-fargate#readme",
+  "dependencies": {
+    "@aws-cdk/aws-apigatewayv2-alpha": "2.30.0-alpha.0",
+    "@aws-cdk/aws-apigatewayv2-authorizers-alpha": "2.30.0-alpha.0",
+    "@aws-cdk/aws-apigatewayv2-integrations-alpha": "2.30.0-alpha.0"
+  }
+}
