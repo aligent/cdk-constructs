@@ -23,6 +23,7 @@ export interface PrerenderOptions {
     instanceCPU?: number,
     instanceMemory?: number
     enableRedirectCache?: string
+    enableS3Endpoint?: boolean
 }
 
 export class PrerenderFargate extends Construct {
@@ -114,5 +115,16 @@ export class PrerenderFargate extends Construct {
             scaleInCooldown: Duration.seconds(60),
             scaleOutCooldown: Duration.seconds(60),
         });
+
+        /**
+         * Enable VPC Endpoints for S3
+         * This would  create S3 endpoints in all the PUBLIC subnets of the VPC
+         */
+        if (props.enableS3Endpoint) {
+            vpc.addGatewayEndpoint("S3Endpoint", {
+            service: ec2.GatewayVpcEndpointAwsService.S3,
+            subnets: [{ subnetType: ec2.SubnetType.PUBLIC }],
+            });
+        }
     }
 }
