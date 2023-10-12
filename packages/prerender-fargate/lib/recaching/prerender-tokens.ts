@@ -12,15 +12,26 @@ interface TokenUrlAssociation {
 /**
  * Interface for associating a token with a URL for prerendering.
  */
-export interface PrerenderTokenUrlAssociation extends StackProps {
+export interface PrerenderTokenUrlAssociationProps extends StackProps {
   /**
    * Object containing the token and its associated URL.
+   * ### Example
+   * ```typescript
+   * tokenUrlAssociation: {
+   *  token1: [
+   *    "https://example.com",
+   *    "https://acme.example.com"],
+   *  token2: [
+   *    "https://example1.com",
+   *    "https://acme.example1.com"]
+   * }
+   * ```
    */
   tokenUrlAssociation: TokenUrlAssociation;
   /**
    * Prefix for the SSM parameter path where the token value is stored.
    */
-  ssmPathPrefix: string;
+  ssmPathPrefix?: string;
 }
 
 /**
@@ -31,15 +42,16 @@ export interface PrerenderTokenUrlAssociation extends StackProps {
  * The constructor loops through the tokenUrlAssociation object and
  * creates an SSM parameter for each token.
  */
-export class PrerenderTokensUrlAssociation extends Stack {
+export class PrerenderTokenUrlAssociation extends Stack {
   constructor(
     scope: Construct,
     id: string,
-    props: PrerenderTokenUrlAssociation
+    props: PrerenderTokenUrlAssociationProps
   ) {
     super(scope, id, props);
 
-    const { tokenUrlAssociation, ssmPathPrefix } = props;
+    const { tokenUrlAssociation, ssmPathPrefix = "/prerender/recache/tokens" } =
+      props;
 
     // Loop through the tokenDomains
     for (const [token, domains] of Object.entries(tokenUrlAssociation)) {

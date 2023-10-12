@@ -34,9 +34,8 @@ interface PreRenderRequestBody {
 const QueueUrl = process.env.SQS_QUEUE_URL;
 const Bucket = process.env.PRERENDER_CACHE_BUCKET;
 
-
 export const MAX_URLS = 1000;
-export const PARAM_PREFIX  = "prerender/recache/tokens";
+export const PARAM_PREFIX = "prerender/recache/tokens";
 
 const sqsClient = new SQSClient({});
 const s3Client = new S3Client({});
@@ -52,7 +51,7 @@ const tokens: Map<string, string[]> = new Map();
  */
 export const handler = async (
   event: APIGatewayEvent,
-  _context: Context 
+  _context: Context
 ): Promise<APIGatewayProxyResult> => {
   let urlsToRecache: string[];
 
