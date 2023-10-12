@@ -9,7 +9,8 @@ import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
 import { AccessKey, User } from 'aws-cdk-lib/aws-iam';
 import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import * as path from 'path';
-
+import { PrerenderRecacheApi } from "./recaching/prerender-recache-api-construct";
+import { PrerenderTokenUrlAssociation, PrerenderTokensUrlAssociation } from './recaching/prerender-tokens';
 export interface PrerenderOptions {
     prerenderName: string,
     domainName: string,
@@ -23,11 +24,18 @@ export interface PrerenderOptions {
     instanceCPU?: number,
     instanceMemory?: number
     enableRedirectCache?: string
+    tokenUrlAssociation?: PrerenderTokenUrlAssociation,
 }
 
 export class PrerenderFargate extends Construct {
     readonly bucket: Bucket;
 
+    /**
+     * Constructs a new Prerender Fargate service.
+     * @param scope The scope of the construct.
+     * @param id The ID of the construct.
+     * @param props The properties of the Prerender Fargate service.
+     */
     constructor(scope: Construct, id: string, props: PrerenderOptions) {
         super(scope, id);
 
@@ -62,6 +70,12 @@ export class PrerenderFargate extends Construct {
             directory,
         });
 
+        /**
+         * This provide backward compatibility for the tokenList property
+         * If tokenUrlAssociation is provided, tokenList will be ignored
+         */
+        const tokenList = props.tokenUrlAssociation ? Object.keys(props.tokenUrlAssociation.tokenUrlAssociation) : props.tokenList.toString();
+
         // Create a load-balanced Fargate service 
         const fargateService = new ecsPatterns.ApplicationLoadBalancedFargateService(
             this,
@@ -82,7 +96,7 @@ export class PrerenderFargate extends Construct {
                         AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.unsafeUnwrap(),
                         AWS_REGION: Stack.of(this).region,
                         ENABLE_REDIRECT_CACHE: props.enableRedirectCache || "false",
-                        TOKEN_LIST: props.tokenList.toString()
+                        TOKEN_LIST: tokenList.toString()
                     }
                 },
                 healthCheckGracePeriod: Duration.seconds(20),
@@ -114,5 +128,36 @@ export class PrerenderFargate extends Construct {
             scaleInCooldown: Duration.seconds(60),
             scaleOutCooldown: Duration.seconds(60),
         });
+
+        /**
+         * Recache API
+         * Recaching is enable by default
+         */
+        if (props.tokenUrlAssociation) {
+            /**
+             * Create the token-url association
+             * This is used for managing prerender tokens in prerender re-caching.
+             * Example:
+             *  {
+             *      tokenUrlAssociation: {
+             *          token1: [url1, url2], 
+             *          token2: [url3, url4]}, 
+             *      ssmPathPrefix: /prerender/recache/tokens
+             *  }
+             */
+            new PrerenderTokensUrlAssociation(this, `${props.prerenderName}-token-url-association`, {
+                tokenUrlAssociation: props.tokenUrlAssociation.tokenUrlAssociation,
+                ssmPathPrefix: props.tokenUrlAssociation.ssmPathPrefix
+            });
+            
+            /**
+             * Create the recache API
+             * This would create the API that can be used to trigger recaching of URLs.
+             */
+            new PrerenderRecacheApi(this, `${props.prerenderName}-recache-api`, {
+                prerenderS3Bucket: this.bucket,
+                tokenList: Object.keys(props.tokenUrlAssociation.tokenUrlAssociation), 
+            });
+        }
     }
 }
