@@ -28,7 +28,7 @@ export interface PrerenderFargateOptions {
    * A list of tokens to use for authentication with the Prerender service.
    * This parameter is deprecated and will be removed in a future release.
    * Please use the `tokenUrlAssociation` parameter instead.
-   * __If `tokenUrlAssociation` is provided, `tokenList` will be ignored__
+   * *If `tokenUrlAssociation` is provided, `tokenList` will be ignored*
    */
   tokenList: Array<string>;
   /**
