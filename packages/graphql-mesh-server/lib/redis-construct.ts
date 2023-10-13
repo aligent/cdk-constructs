@@ -1,4 +1,4 @@
-import { SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
+import { SecurityGroup, IVpc } from "aws-cdk-lib/aws-ec2";
 import {
   CfnCacheCluster,
   CfnSubnetGroup,
@@ -11,7 +11,7 @@ export interface RedisServiceProps {
   /**
    * VPC to attach Redis instance to
    */
-  vpc: Vpc;
+  vpc: IVpc;
   /**
    * Cache node type (default: 'cache.t2.micro')
    */
@@ -20,7 +20,7 @@ export interface RedisServiceProps {
 
 export class RedisService extends Construct {
   public readonly cacheCluster: CfnCacheCluster;
-  public readonly vpc: Vpc;
+  public readonly vpc: IVpc;
   public readonly securityGroup: SecurityGroup;
 
   constructor(scope: Construct, id: string, props: RedisServiceProps) {

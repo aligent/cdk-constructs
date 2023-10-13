@@ -1,5 +1,5 @@
 import { Construct } from "constructs";
-import { Duration, Token } from "aws-cdk-lib";
+import { Duration } from "aws-cdk-lib";
 import { RemovalPolicy } from "aws-cdk-lib";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as ecs from "aws-cdk-lib/aws-ecs";
@@ -8,7 +8,7 @@ import * as ecsPatterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as auto_scaling from "aws-cdk-lib/aws-autoscaling";
-import { Port, SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
+import { Port, SecurityGroup, IVpc, Vpc } from "aws-cdk-lib/aws-ec2";
 import { RedisService } from "./redis-construct";
 import {
   ManagedRule,
@@ -20,7 +20,7 @@ export interface MeshServiceProps {
   /**
    * VPC to attach Redis instance to
    */
-  vpc?: Vpc;
+  vpc?: IVpc;
   /**
    * Repository to pull the container image from
    */
@@ -46,9 +46,12 @@ export interface MeshServiceProps {
    */
   memory?: number;
   /**
-   * Redis instance to use for mesh caching
+   * Redis configuration to use for mesh caching
    */
-  redis: RedisService;
+  redis: {
+    service: RedisService;
+    database?: string;
+  };
   /**
    * SSM values to pass through to the container as secrets
    */
@@ -56,7 +59,7 @@ export interface MeshServiceProps {
 }
 
 export class MeshService extends Construct {
-  public readonly vpc: Vpc;
+  public readonly vpc: IVpc;
   public readonly repository: ecr.Repository;
   public readonly service: ecs.FargateService;
   public readonly firewall: WebApplicationFirewall;
@@ -131,13 +134,14 @@ export class MeshService extends Construct {
 
     // If using Redis configure security group and pass connection string to container
     if (props.redis) {
-      props.redis.securityGroup.addIngressRule(
+      props.redis.service.securityGroup.addIngressRule(
         securityGroup,
-        Port.tcp(props.redis.connectionPort)
+        Port.tcp(props.redis.service.connectionPort)
       );
 
-      environment["REDIS_ENDPOINT"] = props.redis.connectionEndPoint;
-      environment["REDIS_PORT"] = props.redis.connectionPort.toString();
+      environment["REDIS_ENDPOINT"] = props.redis.service.connectionEndPoint;
+      environment["REDIS_PORT"] = props.redis.service.connectionPort.toString();
+      environment["REDIS_DATABASE"] = props.redis.database ?? "0";
     }
 
     // Construct secrets from provided ssm values
