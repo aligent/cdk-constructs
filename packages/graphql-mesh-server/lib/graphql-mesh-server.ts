@@ -56,6 +56,10 @@ export type MeshHostingProps = {
    * SSM values to pass through to the container as secrets
    */
   secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
+  /**
+   * ARN of the SNS Topic to send deployment notifications to
+   */
+  notificationArn?: string;
 };
 
 export class MeshHosting extends Construct {
@@ -100,6 +104,7 @@ export class MeshHosting extends Construct {
     new CodePipelineService(this, "pipeline", {
       repository: this.repository,
       service: this.service,
+      notificationArn: props.notificationArn,
     });
   }
 }
