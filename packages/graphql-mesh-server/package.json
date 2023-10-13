@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/aligent/cdk-constructs#readme",
   "devDependencies": {
+    "@types/yaml": "^1.9.7",
     "@types/jest": "^29.5.5",
     "@types/node": "20.6.3",
     "@types/aws-lambda": "^8.10.122",
@@ -27,7 +28,6 @@
     "typescript": "~5.2.2"
   },
   "dependencies": {
-    "@types/yaml": "^1.9.7",
     "yaml": "^2.3.1",
     "aws-cdk-lib": "2.97.0",
     "constructs": "^10.0.0",
