@@ -9,78 +9,105 @@ import * as ecrAssets from "aws-cdk-lib/aws-ecr-assets";
 import { AccessKey, User } from "aws-cdk-lib/aws-iam";
 import { Duration, RemovalPolicy, Stack } from "aws-cdk-lib";
 import * as path from "path";
+import { PrerenderTokenUrlAssociation } from "./recaching/prerender-tokens";
+import { PrerenderRecacheApi } from "./recaching/prerender-recache-api-construct";
+import { PrerenderFargateOptions } from "./prerender-fargate-options";
 
 /**
- * Options for configuring the Prerender Fargate construct.
+ * `PrerenderFargate` construct sets up an AWS Fargate service to run a
+ * Prerender service in an ECS cluster.
+ *
+ * Prerender is a node server that uses Headless Chrome to render HTML,
+ * screenshots, PDFs, and HAR files out of any web page. The Prerender server
+ * listens for an http request, takes the URL and loads it in Headless Chrome,
+ * waits for the page to finish loading by waiting for the network to be idle,
+ * and then returns your content to the requesting client.
+ *
+ * ### AWS Resources Created/Configured by this Class:
+ * - **S3 Bucket**: For storing prerendered web pages.
+ * - **Fargate Service**: For running the Prerender service..
+ * - **ECR Asset**: For managing the Docker image of Prerender service.
+ * - **VPC & VPC Endpoints**: For network configuration and enabling direct access to S3.
+ * - **Recache API**: (optional) To trigger recaching of URLs.
+ *
+ * ### Usage
+ * The class is utilized by instantiating it with suitable `PrerenderFargateOptions`
+ * and placing it within a CDK stack. The `PrerenderOptions` parameter allows the
+ * developer to customize various aspects of the Prerender service.
+ *
+ * ### Example
+ * ```typescript
+ * new PrerenderFargate(this, 'PrerenderService', {
+ *     prerenderName: 'myPrerender',
+ *     bucketName: 'myPrerenderBucket',
+ *     expirationDays: 7,
+ *     vpcId: 'vpc-xxxxxxxx',
+ *     desiredInstanceCount: 1,
+ *     instanceCPU: 512,
+ *     instanceMemory: 1024,
+ *     domainName: 'prerender.mydomain.com',
+ *     certificateArn: 'arn:aws:acm:region:account:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+ *     enableRedirectCache: 'false',
+ *     maxInstanceCount: 2,
+ *     enableS3Endpoint: true,
+ *     tokenUrlAssociation: {
+ *     tokenUrlAssociation: {
+ *        token1: [
+ *          "https://example.com",
+ *          "https://acme.example.com"
+ *        ],
+ *        token2: [
+ *          "https://example1.com",
+ *          "https://acme.example1.com"
+ *        ]
+ *    },
+ *    ssmPathPrefix: "/prerender/recache/tokens"
+ * }
+ * });
+ * ```
+ *
+ * @param {Construct} scope The scope of the construct.
+ * @param {string} id The ID of the construct.
+ * @param {PrerenderFargateOptions} props The properties of the Prerender Fargate service.
+ *
+ * @returns {PrerenderFargate} An instance of the PrerenderFargate class.
  */
-export interface PrerenderOptions {
-  /**
-   * The name of the Prerender service.
-   */
-  prerenderName: string;
-  /**
-   * The domain name to prerender.
-   */
-  domainName: string;
-  /**
-   * The ID of the VPC to deploy the Fargate service in.
-   */
-  vpcId?: string;
-  /**
-   * The name of the S3 bucket to store prerendered pages in.
-   */
-  bucketName?: string;
-  /**
-   * The number of days to keep prerendered pages in the S3 bucket before expiring them.
-   */
-  expirationDays?: number;
-  /**
-   * A list of tokens to use for authentication with the Prerender service.
-   */
-  tokenList: Array<string>;
-  /**
-   * The ARN of the SSL certificate to use for HTTPS connections.
-   */
-  certificateArn: string;
-  /**
-   * The desired number of Fargate instances to run.
-   */
-  desiredInstanceCount?: number;
-  /**
-   * The maximum number of Fargate instances to run.
-   */
-  maxInstanceCount?: number;
-  /**
-   * The amount of CPU to allocate to each Fargate instance.
-   */
-  instanceCPU?: number;
-  /**
-   * The amount of memory to allocate to each Fargate instance.
-   */
-  instanceMemory?: number;
-  /**
-   * Whether to enable caching of HTTP redirects.
-   */
-  enableRedirectCache?: string;
-  /**
-   * Whether to enable the S3 endpoint for the VPC.
-   */
-  enableS3Endpoint?: boolean;
-}
 
 export class PrerenderFargate extends Construct {
   readonly bucket: Bucket;
 
-  constructor(scope: Construct, id: string, props: PrerenderOptions) {
+  /**
+   * Constructs a new Prerender Fargate service.
+   * @param scope The scope of the construct.
+   * @param id The ID of the construct.
+   * @param props The properties of the Prerender Fargate service.
+   */
+  constructor(scope: Construct, id: string, props: PrerenderFargateOptions) {
     super(scope, id);
 
+    const {
+      tokenUrlAssociation,
+      certificateArn,
+      vpcId,
+      maxInstanceCount,
+      instanceMemory,
+      instanceCPU,
+      expirationDays,
+      enableS3Endpoint,
+      enableRedirectCache,
+      desiredInstanceCount,
+      bucketName,
+      domainName,
+      prerenderName,
+    } = props;
+
     // Create bucket for prerender storage
-    this.bucket = new Bucket(this, `${props.prerenderName}-bucket`, {
-      bucketName: props.bucketName,
+    this.bucket = new Bucket(this, `${prerenderName}-bucket`, {
+      bucketName: bucketName,
       lifecycleRules: [
         {
           enabled: true,
-          expiration: Duration.days(props.expirationDays || 7), // Default to 7 day expiration
+          expiration: Duration.days(expirationDays || 7), // Default to 7 day expiration
         },
       ],
       removalPolicy: RemovalPolicy.DESTROY,
@@ -97,35 +124,41 @@ export class PrerenderFargate extends Construct {
       serial: 1,
     });
 
-    const vpcLookup = props.vpcId
-      ? { vpcId: props.vpcId }
-      : { isDefault: true };
+    const vpcLookup = vpcId ? { vpcId: vpcId } : { isDefault: true };
     const vpc = ec2.Vpc.fromLookup(this, "vpc", vpcLookup);
 
-    const cluster = new ecs.Cluster(this, `${props.prerenderName}-cluster`, {
+    const cluster = new ecs.Cluster(this, `${prerenderName}-cluster`, {
       vpc: vpc,
     });
 
     const directory = path.join(__dirname, "prerender");
     const asset = new ecrAssets.DockerImageAsset(
       this,
-      `${props.prerenderName}-image`,
+      `${prerenderName}-image`,
       {
         directory,
       }
     );
 
+    /**
+     * This provide backward compatibility for the tokenList property
+     * If tokenUrlAssociation is provided, tokenList will be ignored
+     */
+    const tokenList = tokenUrlAssociation
+      ? Object.keys(tokenUrlAssociation.tokenUrlAssociation)
+      : props.tokenList.toString();
+
     // Create a load-balanced Fargate service
     const fargateService =
       new ecsPatterns.ApplicationLoadBalancedFargateService(
         this,
-        `${props.prerenderName}-service`,
+        `${prerenderName}-service`,
         {
           cluster,
-          serviceName: `${props.prerenderName}-service`,
-          desiredCount: props.desiredInstanceCount || 1,
-          cpu: props.instanceCPU || 512, // 0.5 vCPU default
-          memoryLimitMiB: props.instanceMemory || 1024, // 1 GB default to give Chrome enough memory
+          serviceName: `${prerenderName}-service`,
+          desiredCount: desiredInstanceCount || 1,
+          cpu: instanceCPU || 512, // 0.5 vCPU default
+          memoryLimitMiB: instanceMemory || 1024, // 1 GB default to give Chrome enough memory
           taskImageOptions: {
             image: ecs.ContainerImage.fromDockerImageAsset(asset),
             enableLogging: true,
@@ -135,8 +168,8 @@ export class PrerenderFargate extends Construct {
               AWS_ACCESS_KEY_ID: accessKey.accessKeyId,
               AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.unsafeUnwrap(),
               AWS_REGION: Stack.of(this).region,
-              ENABLE_REDIRECT_CACHE: props.enableRedirectCache || "false",
-              TOKEN_LIST: props.tokenList.toString(),
+              ENABLE_REDIRECT_CACHE: enableRedirectCache || "false",
+              TOKEN_LIST: tokenList.toString(),
             },
           },
           healthCheckGracePeriod: Duration.seconds(20),
@@ -144,20 +177,20 @@ export class PrerenderFargate extends Construct {
           assignPublicIp: true,
           listenerPort: 443,
           redirectHTTP: true,
-          domainName: props.domainName,
+          domainName: domainName,
           domainZone: new HostedZone(this, "hosted-zone", {
-            zoneName: props.domainName,
+            zoneName: domainName,
           }),
           certificate: Certificate.fromCertificateArn(
             this,
             "cert",
-            props.certificateArn
+            certificateArn
           ),
         }
       );
 
     // As the prerender service will return a 401 on all unauthorised requests
-    // it should be considered healthy when receiving a 401 response
+    // It should be considered healthy when receiving a 401 response
     fargateService.targetGroup.configureHealthCheck({
       path: "/health",
       interval: Duration.seconds(120),
@@ -167,9 +200,9 @@ export class PrerenderFargate extends Construct {
 
     // Setup AutoScaling policy
     const scaling = fargateService.service.autoScaleTaskCount({
-      maxCapacity: props.maxInstanceCount || 2,
+      maxCapacity: maxInstanceCount || 2,
     });
-    scaling.scaleOnCpuUtilization(`${props.prerenderName}-scaling`, {
+    scaling.scaleOnCpuUtilization(`${prerenderName}-scaling`, {
       targetUtilizationPercent: 50,
       scaleInCooldown: Duration.seconds(60),
       scaleOutCooldown: Duration.seconds(60),
@@ -179,10 +212,38 @@ export class PrerenderFargate extends Construct {
      * Enable VPC Endpoints for S3
      * This would  create S3 endpoints in all the PUBLIC subnets of the VPC
      */
-    if (props.enableS3Endpoint) {
+    if (enableS3Endpoint) {
       vpc.addGatewayEndpoint("S3Endpoint", {
         service: ec2.GatewayVpcEndpointAwsService.S3,
         subnets: [{ subnetType: ec2.SubnetType.PUBLIC }],
+      });
+    }
+
+    /**
+     * Recache API
+     * Recaching is enable by default
+     */
+    if (tokenUrlAssociation) {
+      /**
+       * Create the token-url association
+       * This is used for managing prerender tokens in prerender re-caching
+       */
+      new PrerenderTokenUrlAssociation(
+        this,
+        `${prerenderName}-token-url-association`,
+        {
+          tokenUrlAssociation: tokenUrlAssociation.tokenUrlAssociation,
+          ssmPathPrefix: tokenUrlAssociation.ssmPathPrefix,
+        }
+      );
+
+      /**
+       * Create the recache API
+       * This would create the API that is used to trigger recaching of the URLs
+       */
+      new PrerenderRecacheApi(this, `${prerenderName}-recache-api`, {
+        prerenderS3Bucket: this.bucket,
+        tokenList: Object.keys(tokenUrlAssociation.tokenUrlAssociation),
       });
     }
   }
