@@ -1,8 +1,8 @@
 import { Construct } from "constructs";
-import { MeshService, MeshServiceProps } from "./fargate";
-import { RedisService, RedisServiceProps } from "./redis-construct";
+import { MeshService } from "./fargate";
+import { RedisService } from "./redis-construct";
 import { CodePipelineService } from "./pipeline";
-import { SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
+import { SecurityGroup, IVpc, Vpc } from "aws-cdk-lib/aws-ec2";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import { CfnCacheCluster } from "aws-cdk-lib/aws-elasticache";
@@ -12,7 +12,7 @@ export type MeshHostingProps = {
   /**
    * VPC to attach Redis and Fargate instances to (default: create a vpc)
    */
-  vpc?: Vpc;
+  vpc?: IVpc;
   /**
    * If no VPC is provided create one with this name (default: 'graphql-server-vpc')
    */
@@ -46,17 +46,24 @@ export type MeshHostingProps = {
    */
   memory?: number;
   /**
-   * Redis instance to use for mesh caching
+   * Redis configuration to use for mesh caching
    */
-  redis?: RedisService;
+  redis?: {
+    service: RedisService;
+    database?: string;
+  };
   /**
    * SSM values to pass through to the container as secrets
    */
   secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
+  /**
+   * ARN of the SNS Topic to send deployment notifications to
+   */
+  notificationArn?: string;
 };
 
 export class MeshHosting extends Construct {
-  public readonly vpc: Vpc;
+  public readonly vpc: IVpc;
   public readonly repository: Repository;
   public readonly service: FargateService;
   public readonly cacheCluster: CfnCacheCluster;
@@ -73,7 +80,7 @@ export class MeshHosting extends Construct {
       });
 
     const redis =
-      props.redis ||
+      props.redis?.service ||
       new RedisService(this, "redis", {
         ...props,
         vpc: this.vpc,
@@ -85,7 +92,10 @@ export class MeshHosting extends Construct {
     const mesh = new MeshService(this, "mesh", {
       ...props,
       vpc: this.vpc,
-      redis,
+      redis: {
+        service: redis,
+        database: props.redis?.database,
+      },
     });
 
     this.service = mesh.service;
@@ -94,6 +104,7 @@ export class MeshHosting extends Construct {
     new CodePipelineService(this, "pipeline", {
       repository: this.repository,
       service: this.service,
+      notificationArn: props.notificationArn,
     });
   }
 }

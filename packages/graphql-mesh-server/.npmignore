@@ -1,5 +1,5 @@
 *.ts
-!lib/handlers/*.ts
+!assets/handlers/*.ts
 !*.d.ts
 !*.js
 
