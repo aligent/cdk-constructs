@@ -19,7 +19,9 @@ export class SecurityHeaderFunction extends Construct {
   ) {
     super(scope, id);
 
-    const defineOptions: any = {};
+    const defineOptions: {
+      __CONTENT_SECURITY_POLICY__?: string;
+    } = {};
 
     if (props?.contentSecurityPolicy) {
       defineOptions.__CONTENT_SECURITY_POLICY__ = JSON.stringify(
