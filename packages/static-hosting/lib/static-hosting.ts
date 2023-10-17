@@ -21,6 +21,7 @@ import {
   IResponseHeadersPolicy,
   LambdaEdgeEventType,
   OriginAccessIdentity,
+  IDistribution,
 } from "aws-cdk-lib/aws-cloudfront";
 import { HttpOrigin, S3Origin } from "aws-cdk-lib/aws-cloudfront-origins";
 import {
@@ -37,6 +38,7 @@ import {
   Bucket,
   BucketEncryption,
   BucketProps,
+  IBucket,
 } from "aws-cdk-lib/aws-s3";
 import { CSP } from "../types/csp";
 import { PathRemapFunction } from "./path-remap";
@@ -119,6 +121,9 @@ export interface ResponseHeaderMappings {
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 export class StaticHosting extends Construct {
+  public readonly distribution: IDistribution;
+  public readonly bucket: IBucket;
+
   private staticFiles = [
     "js",
     "css",
@@ -172,7 +177,7 @@ export class StaticHosting extends Construct {
       });
     }
 
-    const bucket = new Bucket(this, "ContentBucket", {
+    this.bucket = new Bucket(this, "ContentBucket", {
       bucketName: siteName,
       encryption: BucketEncryption.S3_MANAGED,
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
@@ -185,11 +190,11 @@ export class StaticHosting extends Construct {
       comment: "Allow CloudFront to access S3",
     });
 
-    bucket.grantRead(oai);
+    this.bucket.grantRead(oai);
 
     new CfnOutput(this, "Bucket", {
       description: "BucketName",
-      value: bucket.bucketName,
+      value: this.bucket.bucketName,
       exportName: `${exportPrefix}BucketName`,
     });
 
@@ -212,7 +217,7 @@ export class StaticHosting extends Construct {
       : undefined;
 
     if (publisherGroup) {
-      bucket.grantReadWrite(publisherGroup);
+      this.bucket.grantReadWrite(publisherGroup);
 
       new CfnOutput(this, "PublisherGroupName", {
         description: "PublisherGroup",
@@ -245,7 +250,7 @@ export class StaticHosting extends Construct {
       });
     }
 
-    const s3Origin = new S3Origin(bucket, {
+    const s3Origin = new S3Origin(this.bucket, {
       originAccessIdentity: oai,
     });
     let backendOrigin = undefined;
@@ -394,7 +399,7 @@ export class StaticHosting extends Construct {
           "cloudfront:ListInvalidations",
         ],
         resources: [
-          `arn:aws:cloudfront::*:distribution/${distribution.distributionId}`,
+          `arn:aws:cloudfront::*:distribution/${this.distribution.distributionId}`,
         ],
       });
 
@@ -409,12 +414,12 @@ export class StaticHosting extends Construct {
     }
     new CfnOutput(this, "DistributionId", {
       description: "DistributionId",
-      value: distribution.distributionId,
+      value: this.distribution.distributionId,
       exportName: `${exportPrefix}DistributionID`,
     });
     new CfnOutput(this, "DistributionDomainName", {
       description: "DistributionDomainName",
-      value: distribution.distributionDomainName,
+      value: this.distribution.distributionDomainName,
       exportName: `${exportPrefix}DistributionName`,
     });
 
@@ -425,7 +430,7 @@ export class StaticHosting extends Construct {
 
       new ARecord(this, "SiteAliasRecord", {
         recordName: siteName,
-        target: RecordTarget.fromAlias(new CloudFrontTarget(distribution)),
+        target: RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)),
         zone: zone,
       });
     }
