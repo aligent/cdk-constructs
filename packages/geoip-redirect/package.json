@@ -4,8 +4,7 @@
   "description": "A Cloudfront Lambda@Edge stack for performing redirection based on CloudFront-Viewer-Country",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && cd ./lib/handlers && npm ci",
-    "prepublish": "tsc && cd ./lib/handlers && npm ci"
+    "build": "tsc && cd ./lib/handlers && npm ci"
   },
   "repository": {
     "type": "git",

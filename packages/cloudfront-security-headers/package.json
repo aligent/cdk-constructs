@@ -6,7 +6,6 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc && cd ./lib/handlers && npm ci",
-    "prepublish": "tsc && cd ./lib/handlers && npm ci",
     "watch": "tsc -w",
     "test": "jest"
   },

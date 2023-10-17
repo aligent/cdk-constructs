@@ -4,8 +4,7 @@
   "description": "A construct to host Prerender in Fargate",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "prepublish": "tsc"
+    "build": "tsc"
   },
   "repository": {
     "type": "git",

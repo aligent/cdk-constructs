@@ -10,8 +10,7 @@
   },
   "types": "index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "prepublish": "tsc"
+    "build": "tsc"
   },
   "devDependencies": {
     "@types/jest": "^29.5.5",

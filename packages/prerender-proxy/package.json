@@ -4,8 +4,7 @@
   "description": "Cloudfront Lambda@Edge constructs for integrating with prerender.io",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "prepublish": "tsc"
+    "build": "tsc"
   },
   "repository": {
     "type": "git",

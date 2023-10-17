@@ -5,8 +5,7 @@
   "main": "index.js",
   "license": "GPL-3.0-only",
   "scripts": {
-    "build": "tsc",
-    "prepublish": "tsc"
+    "build": "tsc"
   },
   "devDependencies": {
     "@types/jest": "^29.5.5",
