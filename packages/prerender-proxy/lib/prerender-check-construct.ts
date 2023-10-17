@@ -1,28 +1,43 @@
-import { Construct } from "@aws-cdk/core";
-import { Bundling } from "@aws-cdk/aws-lambda-nodejs/lib/bundling";
-import { Runtime } from "@aws-cdk/aws-lambda";
-import { experimental } from "@aws-cdk/aws-cloudfront";
-import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
+import { AssetHashType, DockerImage } from "aws-cdk-lib";
+import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
+import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
+import { Construct } from "constructs";
+import { join } from "path";
+import { Esbuild } from "@aligent/esbuild";
 
 export class PrerenderCheckFunction extends Construct {
   readonly edgeFunction: EdgeFunction;
 
   constructor(scope: Construct, id: string) {
     super(scope, id);
-    this.edgeFunction = new experimental.EdgeFunction(
+
+    const command = [
+      "sh",
+      "-c",
+      'echo "Docker build not supported. Please install esbuild."',
+    ];
+
+    this.edgeFunction = new EdgeFunction(this, `${id}-prerender-check-fn`, {
+      code: Code.fromAsset(join(__dirname, "handlers"), {
+        assetHashType: AssetHashType.OUTPUT,
+        bundling: {
+          command,
+          image: DockerImage.fromRegistry("busybox"),
+          local: new Esbuild({
+            entryPoints: [join(__dirname, "handlers/prerender-check.ts")],
+          }),
+        },
+      }),
+      runtime: Runtime.NODEJS_18_X,
+      handler: "prerender-check.handler",
+    });
+  }
+
+  public getFunctionVersion(): IVersion {
+    return Version.fromVersionArn(
       this,
-      "PrerenderCheckFunction",
-      {
-        code: Bundling.bundle({
-          entry: `${__dirname}/handlers/prerender-check.ts`,
-          runtime: Runtime.NODEJS_14_X,
-          sourceMap: true,
-          projectRoot: `${__dirname}/handlers/`,
-          depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
-        } as any),
-        runtime: Runtime.NODEJS_14_X,
-        handler: "index.handler",
-      }
+      "prerender-check-fn-version",
+      this.edgeFunction.currentVersion.edgeArn
     );
   }
 }

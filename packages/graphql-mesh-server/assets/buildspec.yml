@@ -1,0 +1,10 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - jq -n --arg image_uri $IMAGE_URI --arg container_name $CONTAINER_NAME '[{"name":"\($container_name)","imageUri":"\($image_uri)"}]' > imagedefinitions.json
+artifacts:
+  files:
+    - 'imagedefinitions.json'
+  name: images-$(date +%Y-%m-%d)

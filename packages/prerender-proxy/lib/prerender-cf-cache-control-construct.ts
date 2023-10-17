@@ -1,8 +1,9 @@
-import { Construct } from "@aws-cdk/core";
-import { Bundling } from "@aws-cdk/aws-lambda-nodejs/lib/bundling";
-import { Runtime } from "@aws-cdk/aws-lambda";
-import { experimental } from "@aws-cdk/aws-cloudfront";
-import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
+import { AssetHashType, DockerImage } from "aws-cdk-lib";
+import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
+import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
+import { Construct } from "constructs";
+import { join } from "path";
+import { Esbuild } from "@aligent/esbuild";
 
 export interface CloudFrontCacheControlOptions {
   cacheKey?: string;
@@ -19,31 +20,39 @@ export class CloudFrontCacheControl extends Construct {
   ) {
     super(scope, id);
 
-    this.edgeFunction = new experimental.EdgeFunction(
+    const command = [
+      "sh",
+      "-c",
+      'echo "Docker build not supported. Please install esbuild."',
+    ];
+
+    this.edgeFunction = new EdgeFunction(this, `${id}-cache-control-fn`, {
+      code: Code.fromAsset(join(__dirname, "handlers"), {
+        assetHashType: AssetHashType.OUTPUT,
+        bundling: {
+          command,
+          image: DockerImage.fromRegistry("busybox"),
+          local: new Esbuild({
+            entryPoints: [join(__dirname, "handlers/cache-control.ts")],
+            define: {
+              "process.env.PRERENDER_CACHE_KEY":
+                options?.cacheKey ?? "x-prerender-requestid",
+              "process.env.PRERENDER_CACHE_MAX_AGE":
+                String(options?.maxAge) ?? "0",
+            },
+          }),
+        },
+      }),
+      runtime: Runtime.NODEJS_18_X,
+      handler: "cache-control.handler",
+    });
+  }
+
+  public getFunctionVersion(): IVersion {
+    return Version.fromVersionArn(
       this,
-      "PrerenderCloudFrontCacheControl",
-      {
-        code: Bundling.bundle({
-          entry: `${__dirname}/handlers/cache-control.ts`,
-          runtime: Runtime.NODEJS_14_X,
-          sourceMap: true,
-          projectRoot: `${__dirname}/handlers/`,
-          depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
-          // Define options replace values at build time so we can use environment variables to test locally
-          // and replace during build/deploy with static values. This gets around the lambda@edge limitation
-          // of no environment variables at runtime.
-          define: {
-            "process.env.PRERENDER_CACHE_KEY": JSON.stringify(
-              options?.cacheKey ?? "x-prerender-requestid"
-            ),
-            "process.env.PRERENDER_CACHE_MAX_AGE": JSON.stringify(
-              String(options?.maxAge) ?? "0"
-            ),
-          },
-        } as any),
-        runtime: Runtime.NODEJS_14_X,
-        handler: "index.handler",
-      }
+      "cache-control-fn-version",
+      this.edgeFunction.currentVersion.edgeArn
     );
   }
 }

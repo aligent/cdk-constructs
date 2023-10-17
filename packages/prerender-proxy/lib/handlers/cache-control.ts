@@ -1,9 +1,6 @@
 import "source-map-support/register";
 import { CloudFrontResponseEvent, CloudFrontResponse } from "aws-lambda";
-/*  
-    Prerender cache control function 
-    Consider associate this function as *origin response* function
-*/
+
 export const handler = async (
   event: CloudFrontResponseEvent
 ): Promise<CloudFrontResponse> => {

@@ -5,7 +5,6 @@ import {
   CloudFrontResponse,
 } from "aws-lambda";
 import axios from "axios";
-import { URL } from "url";
 import * as https from "https";
 
 const FRONTEND_HOST = process.env.FRONTEND_HOST;

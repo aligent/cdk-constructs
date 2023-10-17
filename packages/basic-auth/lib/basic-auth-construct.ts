@@ -1,8 +1,9 @@
-import { Construct } from "@aws-cdk/core";
-import { Bundling } from "@aws-cdk/aws-lambda-nodejs/lib/bundling";
-import { Runtime } from "@aws-cdk/aws-lambda";
-import { experimental } from "@aws-cdk/aws-cloudfront";
-import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
+import { Construct } from "constructs";
+import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
+import { Esbuild } from "@aligent/esbuild";
+import { AssetHashType, DockerImage } from "aws-cdk-lib";
+import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
+import { join } from "path";
 
 export interface BasicAuthFunctionOptions {
   username: string;
@@ -15,27 +16,37 @@ export class BasicAuthFunction extends Construct {
   constructor(scope: Construct, id: string, options: BasicAuthFunctionOptions) {
     super(scope, id);
 
-    this.edgeFunction = new experimental.EdgeFunction(
+    const command = [
+      "sh",
+      "-c",
+      'echo "Docker build not supported. Please install esbuild."',
+    ];
+
+    this.edgeFunction = new EdgeFunction(this, `${id}-basic-auth-fn`, {
+      code: Code.fromAsset(join(__dirname, "handlers"), {
+        assetHashType: AssetHashType.OUTPUT,
+        bundling: {
+          command,
+          image: DockerImage.fromRegistry("busybox"),
+          local: new Esbuild({
+            entryPoints: [join(__dirname, "handlers/basic-auth.ts")],
+            define: {
+              "process.env.AUTH_USERNAME": options.username,
+              "process.env.AUTH_PASSWORD": options.password,
+            },
+          }),
+        },
+      }),
+      runtime: Runtime.NODEJS_18_X,
+      handler: "basic-auth.handler",
+    });
+  }
+
+  public getFunctionVersion(): IVersion {
+    return Version.fromVersionArn(
       this,
-      "BasicAuthFunction",
-      {
-        code: Bundling.bundle({
-          entry: `${__dirname}/handlers/basic-auth.ts`,
-          runtime: Runtime.NODEJS_14_X,
-          sourceMap: true,
-          projectRoot: `${__dirname}/handlers/`,
-          depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
-          // Define options replace values at build time so we can use environment variables to test locally
-          // and replace during build/deploy with static values. This gets around the lambda@edge limitation
-          // of no environment variables at runtime.
-          define: {
-            "process.env.AUTH_USERNAME": JSON.stringify(options.username),
-            "process.env.AUTH_PASSWORD": JSON.stringify(options.password),
-          },
-        } as any),
-        runtime: Runtime.NODEJS_14_X,
-        handler: "index.handler",
-      }
+      "basic-auth-fn-version",
+      this.edgeFunction.currentVersion.edgeArn
     );
   }
 }

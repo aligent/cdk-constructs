@@ -1,5 +1,5 @@
-import { Construct } from "@aws-cdk/core";
-import * as wafv2 from "@aws-cdk/aws-wafv2";
+import { aws_wafv2 } from "aws-cdk-lib";
+import { Construct } from "constructs";
 
 export const REGIONAL = "REGIONAL";
 export type REGIONAL = typeof REGIONAL;
@@ -67,7 +67,7 @@ export interface WebApplicationFirewallProps {
 }
 
 export class WebApplicationFirewall extends Construct {
-  readonly web_acl: wafv2.CfnWebACL;
+  readonly web_acl: aws_wafv2.CfnWebACL;
 
   constructor(
     scope: Construct,
@@ -76,12 +76,12 @@ export class WebApplicationFirewall extends Construct {
   ) {
     super(scope, id);
 
-    const finalRules: wafv2.CfnWebACL.RuleProperty[] = [];
+    const finalRules: aws_wafv2.CfnWebACL.RuleProperty[] = [];
     const wafScope = props.scope ?? REGIONAL;
 
     if (props.allowedIPs) {
       // IPv4 Allowlist
-      const allowed_ips = new wafv2.CfnIPSet(this, "IPSet-IPv4", {
+      const allowed_ips = new aws_wafv2.CfnIPSet(this, "IPSet-IPv4", {
         addresses: props.allowedIPs,
         ipAddressVersion: "IPV4",
         scope: wafScope,
@@ -128,7 +128,7 @@ export class WebApplicationFirewall extends Construct {
 
     if (props.allowedIPv6s) {
       // IPv6 Allowlist
-      const allowed_ips = new wafv2.CfnIPSet(this, "IPSet-IPv6", {
+      const allowed_ips = new aws_wafv2.CfnIPSet(this, "IPSet-IPv6", {
         addresses: props.allowedIPv6s,
         ipAddressVersion: "IPV6",
         scope: wafScope,
@@ -198,7 +198,7 @@ export class WebApplicationFirewall extends Construct {
 
     if (props.allowedPaths) {
       // Path Allowlist
-      const allowed_paths = new wafv2.CfnRegexPatternSet(this, "PathSet", {
+      const allowed_paths = new aws_wafv2.CfnRegexPatternSet(this, "PathSet", {
         regularExpressionList: props.allowedPaths,
         scope: wafScope,
       });
@@ -231,7 +231,7 @@ export class WebApplicationFirewall extends Construct {
 
     // UserAgent Allowlist - only when the parameter is present
     if (props.allowedUserAgents) {
-      const allowed_user_agent = new wafv2.CfnRegexPatternSet(
+      const allowed_user_agent = new aws_wafv2.CfnRegexPatternSet(
         this,
         "UserAgent",
         {
@@ -273,7 +273,7 @@ export class WebApplicationFirewall extends Construct {
     }
 
     // Exclude specific rules from AWS Core Rule Group - only when the parameter is present
-    const excludedAwsRules: wafv2.CfnWebACL.ExcludedRuleProperty[] = [];
+    const excludedAwsRules: aws_wafv2.CfnWebACL.ExcludedRuleProperty[] = [];
     if (props.excludedAwsRules) {
       props.excludedAwsRules.forEach(ruleName => {
         excludedAwsRules.push({
@@ -345,7 +345,7 @@ export class WebApplicationFirewall extends Construct {
 
     const defaultAction = props.blockByDefault ? { block: {} } : { allow: {} };
 
-    this.web_acl = new wafv2.CfnWebACL(this, "WebAcl", {
+    this.web_acl = new aws_wafv2.CfnWebACL(this, "WebAcl", {
       name: props.wafName,
       defaultAction: defaultAction,
       scope: wafScope,
@@ -360,7 +360,7 @@ export class WebApplicationFirewall extends Construct {
     // If any resources associations have been passed loop through them and add an association with WebACL
     if (props.associations) {
       props.associations.forEach((association, index) => {
-        new wafv2.CfnWebACLAssociation(this, "WebACLAssociation" + index, {
+        new aws_wafv2.CfnWebACLAssociation(this, "WebACLAssociation" + index, {
           // If the application stack has had the ARN exported, importValue could be used as below:
           // resourceArn: cdk.Fn.importValue("WAFTestALB"),
           resourceArn: association,

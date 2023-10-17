@@ -1,9 +1,10 @@
-import * as mq from "@aws-cdk/aws-amazonmq";
-import { Construct, CfnOutput } from "@aws-cdk/core";
-import * as ec2 from "@aws-cdk/aws-ec2";
+import { Construct } from "constructs";
+import { CfnOutput } from "aws-cdk-lib";
+import { SecurityGroup, Vpc, Port } from "aws-cdk-lib/aws-ec2";
+import { CfnBrokerProps, CfnBroker } from "aws-cdk-lib/aws-amazonmq";
 
 export interface RabbitMQProps {
-  rabbitMQProps: mq.CfnBrokerProps;
+  rabbitMQProps: CfnBrokerProps;
   applicationVpcId: string;
   applicationSecurityGroupId: string;
 }
@@ -12,21 +13,23 @@ export class RabbitMQ extends Construct {
   constructor(scope: Construct, id: string, props: RabbitMQProps) {
     super(scope, id);
 
-    const sourceSecurityGroup = ec2.SecurityGroup.fromLookup(
+    const sourceSecurityGroup = SecurityGroup.fromLookupById(
       this,
       id + "-sourceSecurityGroup",
       props.applicationSecurityGroupId
     );
-    const applicationVpc = ec2.Vpc.fromLookup(this, id + "-applicationVpc", {
+
+    const applicationVpc = Vpc.fromLookup(this, id + "-applicationVpc", {
       vpcId: props.applicationVpcId,
     });
-    const securityGroup = new ec2.SecurityGroup(this, id + "-securityGroup", {
+
+    const securityGroup = new SecurityGroup(this, id + "-securityGroup", {
       vpc: applicationVpc,
       allowAllOutbound: false,
     });
 
-    securityGroup.addIngressRule(sourceSecurityGroup, ec2.Port.tcp(5671));
-    securityGroup.addIngressRule(sourceSecurityGroup, ec2.Port.tcp(443));
+    securityGroup.addIngressRule(sourceSecurityGroup, Port.tcp(5671));
+    securityGroup.addIngressRule(sourceSecurityGroup, Port.tcp(443));
 
     // Choose only one or two subnets out of all the available private ones
     const rabbitMqSubnets: string[] = [];
@@ -37,7 +40,7 @@ export class RabbitMQ extends Construct {
       rabbitMqSubnets.push(applicationVpc.privateSubnets[1].subnetId);
     }
 
-    const rabbitMQ = new mq.CfnBroker(this, id + "-rabbitMQBroker", {
+    const rabbitMQ = new CfnBroker(this, id + "-rabbitMQBroker", {
       autoMinorVersionUpgrade: props.rabbitMQProps.autoMinorVersionUpgrade,
       brokerName: props.rabbitMQProps.brokerName,
       deploymentMode: props.rabbitMQProps.deploymentMode,

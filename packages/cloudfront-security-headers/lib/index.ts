@@ -1,24 +1,27 @@
-import { Bundling } from "@aws-cdk/aws-lambda-nodejs/lib/bundling";
-import { Runtime } from "@aws-cdk/aws-lambda";
-import { experimental } from "@aws-cdk/aws-cloudfront";
-import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
-import * as cdk from "@aws-cdk/core";
+import { AssetHashType, DockerImage } from "aws-cdk-lib";
+import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
+import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
+import { Construct } from "constructs";
+import { join } from "path";
+import { Esbuild } from "@aligent/esbuild";
 
 export interface SecurityHeaderFunctionProps {
   contentSecurityPolicy?: Array<string>;
 }
 
-export class SecurityHeaderFunction extends cdk.Construct {
+export class SecurityHeaderFunction extends Construct {
   readonly edgeFunction: EdgeFunction;
 
   constructor(
-    scope: cdk.Construct,
+    scope: Construct,
     id: string,
     props?: SecurityHeaderFunctionProps
   ) {
     super(scope, id);
 
-    const defineOptions: any = {};
+    const defineOptions: {
+      __CONTENT_SECURITY_POLICY__?: string;
+    } = {};
 
     if (props?.contentSecurityPolicy) {
       defineOptions.__CONTENT_SECURITY_POLICY__ = JSON.stringify(
@@ -26,26 +29,34 @@ export class SecurityHeaderFunction extends cdk.Construct {
       );
     }
 
-    this.edgeFunction = new experimental.EdgeFunction(
-      this,
-      "SecurityHeaderFunction",
-      {
-        code: Bundling.bundle({
-          entry: `${__dirname}/handlers/security-header.ts`,
-          runtime: Runtime.NODEJS_14_X,
-          sourceMap: true,
-          projectRoot: `${__dirname}/handlers/`,
-          depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
-          define: defineOptions,
-        } as any), // TODO fix typing
-        runtime: Runtime.NODEJS_14_X,
-        handler: "index.handler",
-      }
-    );
+    const command = [
+      "sh",
+      "-c",
+      'echo "Docker build not supported. Please install esbuild."',
+    ];
 
-    new cdk.CfnOutput(this, "SecurityHeaderVersionARN", {
-      description: "SecurityHeaderVersionARN",
-      value: this.edgeFunction.currentVersion.edgeArn,
+    this.edgeFunction = new EdgeFunction(this, `${id}-security-header-fn`, {
+      code: Code.fromAsset(join(__dirname, "handlers"), {
+        assetHashType: AssetHashType.OUTPUT,
+        bundling: {
+          command,
+          image: DockerImage.fromRegistry("busybox"),
+          local: new Esbuild({
+            entryPoints: [join(__dirname, "handlers/security-header.ts")],
+            define: defineOptions,
+          }),
+        },
+      }),
+      runtime: Runtime.NODEJS_18_X,
+      handler: "security-header.handler",
     });
+  }
+
+  public getFunctionVersion(): IVersion {
+    return Version.fromVersionArn(
+      this,
+      "security-header-fn-version",
+      this.edgeFunction.currentVersion.edgeArn
+    );
   }
 }

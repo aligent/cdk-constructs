@@ -1,11 +1,12 @@
-import { Construct, CfnOutput } from "@aws-cdk/core";
-import { SubnetType, Vpc } from "@aws-cdk/aws-ec2";
+import { CfnOutput } from "aws-cdk-lib";
+import { SubnetType, Vpc } from "aws-cdk-lib/aws-ec2";
 import {
   ARecord,
   CnameRecord,
   PrivateHostedZone,
   RecordTarget,
-} from "@aws-cdk/aws-route53";
+} from "aws-cdk-lib/aws-route53";
+import { Construct } from "constructs";
 
 const DEFAULT_ZONE_RECORD_SUFFIX = "root";
 

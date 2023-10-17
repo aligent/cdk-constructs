@@ -1,8 +1,9 @@
-import { Construct } from "@aws-cdk/core";
-import { Bundling } from "@aws-cdk/aws-lambda-nodejs/lib/bundling";
-import { experimental } from "@aws-cdk/aws-cloudfront";
-import { EdgeFunction } from "@aws-cdk/aws-cloudfront/lib/experimental";
-import { aws_lambda } from "aws-cdk-lib";
+import { AssetHashType, DockerImage } from "aws-cdk-lib";
+import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
+import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
+import { Construct } from "constructs";
+import { join } from "path";
+import { Esbuild } from "@aligent/esbuild";
 
 export interface RedirectFunctionOptions {
   redirectHost: string;
@@ -18,30 +19,39 @@ export class RedirectFunction extends Construct {
   constructor(scope: Construct, id: string, options: RedirectFunctionOptions) {
     super(scope, id);
 
-    this.edgeFunction = new experimental.EdgeFunction(
+    const command = [
+      "sh",
+      "-c",
+      'echo "Docker build not supported. Please install esbuild."',
+    ];
+
+    this.edgeFunction = new EdgeFunction(this, `${id}-redirect-fn`, {
+      code: Code.fromAsset(join(__dirname, "handlers"), {
+        assetHashType: AssetHashType.OUTPUT,
+        bundling: {
+          command,
+          image: DockerImage.fromRegistry("busybox"),
+          local: new Esbuild({
+            entryPoints: [join(__dirname, "handlers/redirect.ts")],
+            define: {
+              "process.env.REDIRECT_HOST": options.redirectHost,
+              "process.env.SUPPORTED_REGIONS":
+                options.supportedRegionsExpression,
+              "process.env.DEFAULT_REGION": options.defaultRegion,
+            },
+          }),
+        },
+      }),
+      runtime: Runtime.NODEJS_18_X,
+      handler: "redirect.handler",
+    });
+  }
+
+  public getFunctionVersion(): IVersion {
+    return Version.fromVersionArn(
       this,
-      "RedirectFunction",
-      {
-        code: Bundling.bundle({
-          entry: `${__dirname}/handlers/redirect.ts`,
-          runtime: aws_lambda.NODEJS_12_X,
-          sourceMap: true,
-          projectRoot: `${__dirname}/handlers/`,
-          depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
-          // Define options replace values at build time so we can use environment variables to test locally
-          // and replace during build/deploy with static values. This gets around the lambda@edge limitation
-          // of no environment variables at runtime.
-          define: {
-            "process.env.REDIRECT_HOST": JSON.stringify(options.redirectHost),
-            "process.env.SUPPORTED_REGIONS": JSON.stringify(
-              options.supportedRegionsExpression
-            ),
-            "process.env.DEFAULT_REGION": JSON.stringify(options.defaultRegion),
-          },
-        } as any),
-        runtime: aws_lambda.NODEJS_12_X,
-        handler: "index.handler",
-      }
+      "redirect-fn-version",
+      this.edgeFunction.currentVersion.edgeArn
     );
   }
 }
