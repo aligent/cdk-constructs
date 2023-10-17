@@ -1,12 +1,17 @@
 # Aligent CDK Constructs
 
-This repo contains all of Aligent's CDK constructs. These are all using CDK 1 (except one) and will all be upgraded to support CDK 2 in the near future.
+This repo contains all of Aligent's CDK constructs.
+
+These are all written for CDK v2. See the offical AWS guide for how to migrate from CDK v1: https://docs.aws.amazon.com/cdk/v2/guide/migrating-v2.html.
 
 Construct | Description
 -- | --
 [basic-auth](packages/basic-auth) |
 [cloudfront-security-headers](packages/cloudfront-security-headers) |
-[geoip-redirect](packages/geoip-redirect) | :warning: Uses CDK 2
+[geoip-redirect](packages/geoip-redirect) |
+[graphql-server](packages/graphql-server) |
+[lambda-at-edge-handlers](packages/lambda-at-edge-handlers) |
+[prerender-fargate](packages/prerender-fargate) |
 [prerender-proxy](packages/prerender-proxy) |
 [rabbitmq](packages/rabbitmq) |
 [shared-vpc](packages/shared-vpc) |
