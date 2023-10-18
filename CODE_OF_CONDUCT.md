@@ -1,14 +1,15 @@
 # Code of Conduct
 
-We are committed to providing a welcoming and inclusive environment for everyone who participates in this project, regardless of gender, 
+We are committed to providing a welcoming and inclusive environment for everyone who participates in this project, regardless of gender,
 gender identity and expression, sexual orientation, disability, physical appearance, body size, race, ethnicity, age, religion, or any other personal characteristic.
 
 ## Our Responsibilities
 
-As project maintainers, we are responsible for maintaining a respectful and inclusive environment. We will take appropriate and fair action in response to any reports of unacceptable behavior, 
+As project maintainers, we are responsible for maintaining a respectful and inclusive environment. We will take appropriate and fair action in response to any reports of unacceptable behavior,
 harassment, discrimination, or other violations of this code of conduct.
 
 We are committed to:
+
 - Ensuring that the project remains a safe and inclusive space for all contributors.
 - Addressing any reported issues promptly and with discretion.
 - Providing guidance and support to those who experience harassment, discrimination, or other violations of this code of conduct.
@@ -26,11 +27,10 @@ We expect all contributors to adhere to the following code of conduct:
 6. __Follow the project guidelines:__ Adhere to the guidelines and procedures set forth by the project. Respect the project's technical choices, coding conventions, and contribution guidelines.
 7. __Report any issues:__ If you encounter any behavior that violates this code of conduct or have any concerns, please report it to the project maintainers. They will address the issue promptly and confidentially.
 
-
-
 ## Unacceptable Behavior
 
 Unacceptable behavior includes, but is not limited to:
+
 - Harassment, discrimination, or offensive behavior based on personal characteristics.
 - Intimidation, threats, or any other form of inappropriate conduct.
 - Exclusion or marginalization of individuals or groups.
@@ -40,6 +40,7 @@ Unacceptable behavior includes, but is not limited to:
 ## Consequences of Unacceptable Behavior
 
 Instances of unacceptable behavior will not be tolerated. Those engaging in such behavior may face consequences, including:
+
 - A private or public warning from the project maintainers.
 - Temporary or permanent restrictions on participation in community spaces.
 - Removal of contributions.
@@ -48,6 +49,7 @@ Instances of unacceptable behavior will not be tolerated. Those engaging in such
 ## Reporting Guidelines
 
 If you believe you have experienced or witnessed any form of unacceptable behavior, harassment, discrimination, or other violations of the code of conduct, please follow these guidelines:
+
 - If you feel comfortable, address your concerns directly with the person(s) involved, aiming for a respectful resolution.
 - If the issue persists, or you prefer not to engage directly, please contact the project maintainers privately. Rest assured, your report will be handled with utmost confidentiality.
 - Provide detailed information, including any supporting evidence, to aid in the investigation and resolution of the matter.
@@ -55,7 +57,7 @@ If you believe you have experienced or witnessed any form of unacceptable behavi
 
 ## Attribution
 
-This code of conduct is adapted from the Contributor Covenant, version 2.0, available at https://www.contributor-covenant.org/version/2/0/code_of_conduct.html.
+This code of conduct is adapted from the Contributor Covenant, version 2.0, available at <https://www.contributor-covenant.org/version/2/0/code_of_conduct.html>.
 
 __By participating in this project, you are expected to uphold this code of conduct. Project maintainers have the right and responsibility to remove, edit,
 or reject any contributions that do not align with this code of conduct.__
