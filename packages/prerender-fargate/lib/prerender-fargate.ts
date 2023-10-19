@@ -6,7 +6,6 @@ import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import { HostedZone } from "aws-cdk-lib/aws-route53";
 import { Bucket, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import * as ecrAssets from "aws-cdk-lib/aws-ecr-assets";
-import { AccessKey, User } from "aws-cdk-lib/aws-iam";
 import { Duration, RemovalPolicy, Stack } from "aws-cdk-lib";
 import * as path from "path";
 import { PrerenderTokenUrlAssociation } from "./recaching/prerender-tokens";
