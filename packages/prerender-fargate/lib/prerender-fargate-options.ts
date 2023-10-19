@@ -1,4 +1,4 @@
-import { PrerenderTokenUrlAssociationProps } from "./recaching/prerender-tokens";
+import { PrerenderTokenUrlAssociationOptions } from "./recaching/prerender-tokens";
 
 /**
  * Options for configuring the Prerender Fargate construct.
@@ -77,5 +77,5 @@ export interface PrerenderFargateOptions {
    * }
    * ```
    */
-  tokenUrlAssociation?: PrerenderTokenUrlAssociationProps;
+  tokenUrlAssociation?: PrerenderTokenUrlAssociationOptions;
 }
