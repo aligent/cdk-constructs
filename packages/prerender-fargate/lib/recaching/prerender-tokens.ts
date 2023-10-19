@@ -12,7 +12,7 @@ interface TokenUrlAssociation {
 /**
  * Interface for associating a token with a URL for prerendering.
  */
-export interface PrerenderTokenUrlAssociationProps extends StackProps {
+export interface PrerenderTokenUrlAssociationOptions extends StackProps {
   /**
    * Object containing the token and its associated URL.
    * ### Example
@@ -46,7 +46,7 @@ export class PrerenderTokenUrlAssociation extends Stack {
   constructor(
     scope: Construct,
     id: string,
-    props: PrerenderTokenUrlAssociationProps
+    props: PrerenderTokenUrlAssociationOptions
   ) {
     super(scope, id, props);
 

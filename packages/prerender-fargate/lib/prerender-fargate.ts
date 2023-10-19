@@ -6,7 +6,6 @@ import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import { HostedZone } from "aws-cdk-lib/aws-route53";
 import { Bucket, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import * as ecrAssets from "aws-cdk-lib/aws-ecr-assets";
-import { AccessKey, User } from "aws-cdk-lib/aws-iam";
 import { Duration, RemovalPolicy, Stack } from "aws-cdk-lib";
 import * as path from "path";
 import { PrerenderTokenUrlAssociation } from "./recaching/prerender-tokens";
@@ -115,15 +114,6 @@ export class PrerenderFargate extends Construct {
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
     });
 
-    // Configure access to the bucket for the container
-    const user = new User(this, "PrerenderAccess");
-    this.bucket.grantReadWrite(user);
-
-    const accessKey = new AccessKey(this, "PrerenderAccessKey", {
-      user: user,
-      serial: 1,
-    });
-
     const vpcLookup = vpcId ? { vpcId: vpcId } : { isDefault: true };
     const vpc = ec2.Vpc.fromLookup(this, "vpc", vpcLookup);
 
@@ -165,8 +155,6 @@ export class PrerenderFargate extends Construct {
             containerPort: 3000,
             environment: {
               S3_BUCKET_NAME: this.bucket.bucketName,
-              AWS_ACCESS_KEY_ID: accessKey.accessKeyId,
-              AWS_SECRET_ACCESS_KEY: accessKey.secretAccessKey.unsafeUnwrap(),
               AWS_REGION: Stack.of(this).region,
               ENABLE_REDIRECT_CACHE: enableRedirectCache || "false",
               TOKEN_LIST: tokenList.toString(),
@@ -188,6 +176,9 @@ export class PrerenderFargate extends Construct {
           ),
         }
       );
+
+    // Grant S3 Bucket access to the task role
+    this.bucket.grantReadWrite(fargateService.taskDefinition.taskRole);
 
     // As the prerender service will return a 401 on all unauthorised requests
     // It should be considered healthy when receiving a 401 response
