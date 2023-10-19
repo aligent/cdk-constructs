@@ -176,10 +176,10 @@ export class PrerenderFargate extends Construct {
           ),
         }
       );
-      
+
     // Grant S3 Bucket access to the task role
     this.bucket.grantReadWrite(fargateService.taskDefinition.taskRole);
-    
+
     // As the prerender service will return a 401 on all unauthorised requests
     // It should be considered healthy when receiving a 401 response
     fargateService.targetGroup.configureHealthCheck({
