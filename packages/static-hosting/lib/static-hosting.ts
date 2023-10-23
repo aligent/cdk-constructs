@@ -383,10 +383,10 @@ export class StaticHosting extends Construct {
       errorResponses: props.enableErrorConfig ? errorResponses : [],
     };
 
-    const distribution = new Distribution(this, "BucketCdn", distributionProps);
+    this.distribution = new Distribution(this, "BucketCdn", distributionProps);
 
     if (props.overrideLogicalId) {
-      const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
+      const cfnDistribution = this.distribution.node.defaultChild as CfnDistribution;
       cfnDistribution.overrideLogicalId(props.overrideLogicalId);
     }
 
