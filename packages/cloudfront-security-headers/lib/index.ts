@@ -3,7 +3,7 @@ import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
 import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 import { join } from "path";
-import { Esbuild } from "@aligent/esbuild";
+import { Esbuild } from "@aligent/cdk-esbuild";
 
 export interface SecurityHeaderFunctionProps {
   contentSecurityPolicy?: Array<string>;

@@ -1,6 +1,6 @@
 import { Construct } from "constructs";
 import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
-import { Esbuild } from "@aligent/esbuild";
+import { Esbuild } from "@aligent/cdk-esbuild";
 import { AssetHashType, DockerImage } from "aws-cdk-lib";
 import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
 import { join } from "path";
