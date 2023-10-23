@@ -386,7 +386,8 @@ export class StaticHosting extends Construct {
     this.distribution = new Distribution(this, "BucketCdn", distributionProps);
 
     if (props.overrideLogicalId) {
-      const cfnDistribution = this.distribution.node.defaultChild as CfnDistribution;
+      const cfnDistribution = this.distribution.node
+        .defaultChild as CfnDistribution;
       cfnDistribution.overrideLogicalId(props.overrideLogicalId);
     }
 
