@@ -1,5 +1,5 @@
 {
-  "name": "@aligent/esbuild",
+  "name": "@aligent/cdk-esbuild",
   "version": "2.0.0",
   "description": "Esbuild implementation for CDK",
   "main": "index.js",
