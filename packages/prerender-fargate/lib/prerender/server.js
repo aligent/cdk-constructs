@@ -1,3 +1,14 @@
+/**
+ * This file defines a Prerender server that uses AWS S3 cache to cache prerendered pages.
+ * It also includes middleware to handle authentication, append a custom header to indicate the response is from Prerender,
+ * and remove script tags from the prerendered content.
+ * @requires prerender
+ * @requires crypto
+ * @requires prerender-aws-s3-cache
+ * @requires he
+ * @requires aws-sdk
+ * @requires fs
+ */
 'use strict';
 
 const prerender = require('prerender');
@@ -43,6 +54,9 @@ server.use({
 });
 
 server.use(prerender.blacklist());
+
+// Send 'X-Prerender': '1'
+server.use(prerender.sendPrerenderHeader());
 
 if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
     var he = require('he');
