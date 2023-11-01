@@ -23,10 +23,13 @@ const server = prerender({
 
 server.use({
     requestReceived: (req, res, next) => {
-        console.log(`${new Date().toISOString()} User-Agent: "${req.get('user-agent')}" ${req.prerender.reqId} ${req.prerender.url}`);
+        // Log "x-prerender-user-agent" value forwarded from CloudFront/Lambda@edge that contains the original User-Agent value. If not present, e.g. requests from ELB, default to "user-agent" value.
+        const userAgent = req.get('x-prerender-user-agent') || req.get('user-agent');
+
+        console.log(`${new Date().toISOString()} User-Agent: "${userAgent}" ${req.prerender.reqId} ${req.prerender.url}`);
         let auth = req.headers['x-prerender-token'];
         if (!auth) {
-            console.log(`${new Date().toISOString()} "${req.get('user-agent')}" ${req.prerender.reqId} Authentication header not found.`);
+            console.log(`${new Date().toISOString()} "${userAgent}" ${req.prerender.reqId} Authentication header not found.`);
             return res.send(401);
         }
 
@@ -40,7 +43,7 @@ server.use({
             if (authenticated) break;
         }
         if (!authenticated) {
-            console.log(`${new Date().toISOString()} "${req.get('user-agent')}" ${req.prerender.reqId} Authentication Failed.`);
+            console.log(`${new Date().toISOString()} "${userAgent}" ${req.prerender.reqId} Authentication Failed.`);
             return res.send(401);
         }
 
