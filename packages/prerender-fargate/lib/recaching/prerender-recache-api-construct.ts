@@ -18,6 +18,10 @@ export interface PrerenderRecacheApiOptions {
    * A list of tokens used to authenticate API requests.
    */
   tokenList: string[];
+  /**
+   * Maximum number of concurrent executions of the Prerender Recache API.
+   */
+  maxConcurrentExecutions: number;
 }
 
 /**
@@ -48,8 +52,8 @@ export class PrerenderRecacheApi extends Construct {
     new LambdaToSqsToLambda(this, "prerenderRequestQueue", {
       existingProducerLambdaObj: apiHandler,
       existingConsumerLambdaObj: new NodejsFunction(this, "consumer", {
+        reservedConcurrentExecutions: options.maxConcurrentExecutions,
         timeout: Duration.seconds(60),
-        reservedConcurrentExecutions: 1,
       }),
       deployDeadLetterQueue: false,
       queueProps: { visibilityTimeout: Duration.minutes(60) },
