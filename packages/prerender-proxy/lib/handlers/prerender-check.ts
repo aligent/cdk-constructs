@@ -26,6 +26,14 @@ export const handler = async (
       request.headers["x-prerender-host"] = [
         { key: "X-Prerender-Host", value: request.headers.host[0].value },
       ];
+
+      // Custom header to be forwarded to Prerender service for better logging
+      request.headers["x-prerender-user-agent"] = [
+        {
+          key: "x-prerender-user-agent",
+          value: request.headers["user-agent"][0].value,
+        },
+      ];
     }
   }
 
