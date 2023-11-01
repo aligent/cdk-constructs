@@ -100,6 +100,7 @@ export class PrerenderFargate extends Construct {
       prerenderName,
       minInstanceCount,
       prerenderFargateScalingOptions,
+      prerenderFargateRecachingOptions,
     } = props;
 
     // Create bucket for prerender storage
@@ -252,6 +253,8 @@ export class PrerenderFargate extends Construct {
       new PrerenderRecacheApi(this, `${prerenderName}-recache-api`, {
         prerenderS3Bucket: this.bucket,
         tokenList: Object.keys(tokenUrlAssociation.tokenUrlAssociation),
+        maxConcurrentExecutions:
+          prerenderFargateRecachingOptions?.maxConcurrentExecutions || 1,
       });
     }
   }

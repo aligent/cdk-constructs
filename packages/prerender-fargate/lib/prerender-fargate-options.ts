@@ -1,5 +1,4 @@
 import { PrerenderTokenUrlAssociationOptions } from "./recaching/prerender-tokens";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 /**
  * Options for configuring the Prerender Fargate construct.
@@ -89,6 +88,11 @@ export interface PrerenderFargateOptions {
    * for most of the cases.
    */
   prerenderFargateScalingOptions?: PrerenderFargateScalingOptions;
+  /**
+   * Prerender Fargate Re-caching options
+   * This allows to alter the re-caching behavior. The default configuration should be sufficient.
+   */
+  prerenderFargateRecachingOptions?: PrerenderFargateRecachingOptions;
 }
 
 /**
@@ -136,4 +140,15 @@ export interface PrerenderFargateScalingOptions {
    * @default - 5
    */
   unhealthyThresholdCount?: number;
+}
+
+/**
+ * Prerender Fargate Re-caching options
+ */
+export interface PrerenderFargateRecachingOptions {
+  /**
+   * The maximum number of concurrent executions of the Prerender Re-cache API.
+   * @default - 1
+   */
+  maxConcurrentExecutions: number;
 }
