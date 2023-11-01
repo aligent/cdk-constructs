@@ -1,4 +1,5 @@
 import { PrerenderTokenUrlAssociationOptions } from "./recaching/prerender-tokens";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 /**
  * Options for configuring the Prerender Fargate construct.
@@ -35,6 +36,10 @@ export interface PrerenderFargateOptions {
    * The ARN of the SSL certificate to use for HTTPS connections.
    */
   certificateArn: string;
+  /**
+   * The minimum number of Fargate instances to run.
+   */
+  minInstanceCount?: number;
   /**
    * The desired number of Fargate instances to run.
    */
@@ -78,4 +83,57 @@ export interface PrerenderFargateOptions {
    * ```
    */
   tokenUrlAssociation?: PrerenderTokenUrlAssociationOptions;
+  /**
+   * Prerender Fargate Scaling option
+   * This allows to alter the scaling behavior. The default configuration should be sufficient
+   * for most of the cases.
+   */
+  prerenderFargateScalingOptions?: PrerenderFargateScalingOptions;
+}
+
+/**
+ * Prerender Fargate Scaling option
+ */
+export interface PrerenderFargateScalingOptions {
+  /**
+   * Fargate service health check grace period.
+   * The minimum number of tasks, specified as a percentage of
+   * the Amazon ECS service's DesiredCount value, that must
+   * continue to run and remain healthy during a deployment.
+   * @default - 20 seconds
+   */
+  healthCheckGracePeriod?: number;
+  /**
+   * Fargate service minimum healthy percent.
+   * @default - 0
+   */
+  minHealthyPercent?: number;
+  /**
+   * Fargate service maximum healthy percent.
+   * This limits the scheduler from starting a replacement task first,
+   * the scheduler will stop an unhealthy task one at a time at random to
+   * free up capacity, and then start a replacement task
+   * @default - 200
+   */
+  maxHealthyPercent?: number;
+  /**
+   * Health check interval in seconds.
+   * @default - 50
+   */
+  healthCheckInterval?: number;
+  /**
+   * Scale in cooldown in seconds.
+   * @default - 60
+   */
+  scaleInCooldown?: number;
+  /**
+   * Scale out cooldown in seconds.
+   * @default - 60
+   */
+  scaleOutCooldown?: number;
+  /**
+   * The number of consecutive health check failures required before considering a task unhealthy.
+   * @default - 5
+   */
+  unhealthyThresholdCount?: number;
 }

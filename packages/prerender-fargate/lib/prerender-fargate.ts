@@ -98,6 +98,8 @@ export class PrerenderFargate extends Construct {
       bucketName,
       domainName,
       prerenderName,
+      minInstanceCount,
+      prerenderFargateScalingOptions,
     } = props;
 
     // Create bucket for prerender storage
@@ -160,7 +162,6 @@ export class PrerenderFargate extends Construct {
               TOKEN_LIST: tokenList.toString(),
             },
           },
-          healthCheckGracePeriod: Duration.seconds(20),
           publicLoadBalancer: true,
           assignPublicIp: true,
           listenerPort: 443,
@@ -174,6 +175,14 @@ export class PrerenderFargate extends Construct {
             "cert",
             certificateArn
           ),
+          // Scaling configuration
+          healthCheckGracePeriod: Duration.seconds(
+            prerenderFargateScalingOptions?.healthCheckGracePeriod || 20
+          ),
+          minHealthyPercent:
+            prerenderFargateScalingOptions?.minHealthyPercent || 50,
+          maxHealthyPercent:
+            prerenderFargateScalingOptions?.maxHealthyPercent || 200,
         }
       );
 
@@ -184,19 +193,27 @@ export class PrerenderFargate extends Construct {
     // It should be considered healthy when receiving a 401 response
     fargateService.targetGroup.configureHealthCheck({
       path: "/health",
-      interval: Duration.seconds(120),
-      unhealthyThresholdCount: 5,
+      interval: Duration.seconds(
+        prerenderFargateScalingOptions?.healthCheckInterval || 120
+      ),
+      unhealthyThresholdCount:
+        prerenderFargateScalingOptions?.unhealthyThresholdCount || 5,
       healthyHttpCodes: "401",
     });
 
     // Setup AutoScaling policy
     const scaling = fargateService.service.autoScaleTaskCount({
       maxCapacity: maxInstanceCount || 2,
+      minCapacity: minInstanceCount || 1,
     });
     scaling.scaleOnCpuUtilization(`${prerenderName}-scaling`, {
       targetUtilizationPercent: 50,
-      scaleInCooldown: Duration.seconds(60),
-      scaleOutCooldown: Duration.seconds(60),
+      scaleInCooldown: Duration.seconds(
+        prerenderFargateScalingOptions?.scaleInCooldown || 60
+      ),
+      scaleOutCooldown: Duration.seconds(
+        prerenderFargateScalingOptions?.scaleOutCooldown || 60
+      ),
     });
 
     /**
