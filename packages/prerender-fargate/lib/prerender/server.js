@@ -1,3 +1,14 @@
+/**
+ * This file defines a Prerender server that uses AWS S3 cache to cache prerendered pages.
+ * It also includes middleware to handle authentication, append a custom header to indicate the response is from Prerender,
+ * and remove script tags from the prerendered content.
+ * @requires prerender
+ * @requires crypto
+ * @requires prerender-aws-s3-cache
+ * @requires he
+ * @requires aws-sdk
+ * @requires fs
+ */
 'use strict';
 
 const prerender = require('prerender');
@@ -12,10 +23,13 @@ const server = prerender({
 
 server.use({
     requestReceived: (req, res, next) => {
-        console.log(`${new Date().toISOString()} User-Agent: "${req.get('user-agent')}" ${req.prerender.reqId} ${req.prerender.url}`);
+        // Log "x-prerender-user-agent" value forwarded from CloudFront/Lambda@edge that contains the original User-Agent value. If not present, e.g. requests from ELB, default to "user-agent" value.
+        const userAgent = req.get('x-prerender-user-agent') || req.get('user-agent');
+
+        console.log(`${new Date().toISOString()} User-Agent: "${userAgent}" ${req.prerender.reqId} ${req.prerender.url}`);
         let auth = req.headers['x-prerender-token'];
         if (!auth) {
-            console.log(`${new Date().toISOString()} "${req.get('user-agent')}" ${req.prerender.reqId} Authentication header not found.`);
+            console.log(`${new Date().toISOString()} "${userAgent}" ${req.prerender.reqId} Authentication header not found.`);
             return res.send(401);
         }
 
@@ -29,7 +43,7 @@ server.use({
             if (authenticated) break;
         }
         if (!authenticated) {
-            console.log(`${new Date().toISOString()} "${req.get('user-agent')}" ${req.prerender.reqId} Authentication Failed.`);
+            console.log(`${new Date().toISOString()} "${userAgent}" ${req.prerender.reqId} Authentication Failed.`);
             return res.send(401);
         }
 
@@ -43,6 +57,9 @@ server.use({
 });
 
 server.use(prerender.blacklist());
+
+// Send 'X-Prerender': '1'
+server.use(prerender.sendPrerenderHeader());
 
 if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
     var he = require('he');

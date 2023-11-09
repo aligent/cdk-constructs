@@ -16,7 +16,6 @@
   },
   "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/prerender-fargate#readme",
   "dependencies": {
-    "@aligent/cdk-prerender-fargate": "0.1.10",
     "@aws-sdk/client-s3": "^3.421.0",
     "@aws-sdk/client-sqs": "^3.421.0",
     "@aws-sdk/client-ssm": "^3.421.0",
