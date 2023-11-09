@@ -14,6 +14,7 @@ export interface PrerenderFargateOptions {
   domainName: string;
   /**
    * The ID of the VPC to deploy the Fargate service in.
+   * @default - The default VPC will be used
    */
   vpcId?: string;
   /**
@@ -22,6 +23,7 @@ export interface PrerenderFargateOptions {
   bucketName?: string;
   /**
    * The number of days to keep prerendered pages in the S3 bucket before expiring them.
+   * @default - 10 days
    */
   expirationDays?: number;
   /**
@@ -37,30 +39,37 @@ export interface PrerenderFargateOptions {
   certificateArn: string;
   /**
    * The minimum number of Fargate instances to run.
+   * @default - 1
    */
   minInstanceCount?: number;
   /**
    * The desired number of Fargate instances to run.
+   * @default - 1
    */
   desiredInstanceCount?: number;
   /**
    * The maximum number of Fargate instances to run.
+   * @default - 1
    */
   maxInstanceCount?: number;
   /**
    * The amount of CPU to allocate to each Fargate instance.
+   * @default - 0.5 vCPU
    */
   instanceCPU?: number;
   /**
    * The amount of memory to allocate to each Fargate instance.
+   * @default - 512MB
    */
   instanceMemory?: number;
   /**
    * Whether to enable caching of HTTP redirects.
+   * @default - false
    */
   enableRedirectCache?: string;
   /**
    * Whether to enable the S3 endpoint for the VPC.
+   * @default - false
    */
   enableS3Endpoint?: boolean;
   /**
@@ -91,6 +100,7 @@ export interface PrerenderFargateOptions {
   /**
    * Prerender Fargate Re-caching options
    * This allows to alter the re-caching behavior. The default configuration should be sufficient.
+   * @default - { maxConcurrentExecutions: 1 }
    */
   prerenderFargateRecachingOptions?: PrerenderFargateRecachingOptions;
 }
