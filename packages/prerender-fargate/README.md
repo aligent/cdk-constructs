@@ -52,6 +52,10 @@ To use the PrerenderFargate construct, you can instantiate it with suitable Prer
 
 - The maximum number of Fargate instances to run.
 
+### `minInstanceCount` (number, optional)
+
+- The minimum number of Fargate instances to run.
+
 ### `instanceCPU` (number, optional)
 
 - The amount of CPU to allocate to each Fargate instance.
@@ -66,11 +70,19 @@ To use the PrerenderFargate construct, you can instantiate it with suitable Prer
 
 ### `enableS3Endpoint` (boolean, optional)
 
-- Whether to enable the S3 endpoint for the VPC.
+- Whether to enable the [VPC endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/create-interface-endpoint.html) for S3.
 
 ### `tokenUrlAssociation` (PrerenderTokenUrlAssociationOptions, optional)
 
 - Configuration for associating tokens with specific domain URLs. During the recaching process, these tokens will be used to validate the request.
+
+### `prerenderFargateScalingOptions` (PrerenderFargateScalingOptions, optional)
+
+- This allows to alter the scaling behavior. The default configuration should be sufficient for most of the cases.
+
+### `prerenderFargateRecachingOptions` (PrerenderFargateRecachingOptions, optional)
+
+- This allows to alter the re-caching behavior. The default configuration should be sufficient.
 
 ## Example
 
@@ -105,9 +117,23 @@ export class RagPrerenderStackStack extends Stack {
         token2: ["https://example1.com", "https:acme.example1.com"],
       },
       ssmPathPrefix: "/prerender/recache/tokens",
+      prerenderFargateRecachingOptions: {
+        maxConcurrentExecutions: 1,
+      },
+      prerenderFargateScalingOptions: {
+        healthCheckGracePeriod: 20,
+        healthCheckInterval: 30,
+        unhealthyThresholdCount: 3,
+        scaleInCooldown: 120,
+        scaleOutCooldown: 60,
+      },
     });
   }
 }
 ```
+
+## Acknowledgements
+
+- [prerender.io](https://prerender.io/) - The Prerender service.
 
 [Prerender]:https://github.com/prerender/prerender
