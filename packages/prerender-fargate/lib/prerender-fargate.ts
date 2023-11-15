@@ -101,8 +101,8 @@ export class PrerenderFargate extends Construct {
       minInstanceCount,
       prerenderFargateScalingOptions,
       prerenderFargateRecachingOptions,
+      tokenUrlAssociation,
     } = props;
-    let { tokenUrlAssociation } = props;
 
     // Create bucket for prerender storage
     this.bucket = new Bucket(this, `${prerenderName}-bucket`, {
@@ -140,40 +140,32 @@ export class PrerenderFargate extends Construct {
      */
 
     let tokenList;
-
+    let tokenUrlAssociationValue; // Placeholder for supplementary stack creation
     if (tokenUrlSSMParameter) {
-      ////
       let paramValue = ssm.StringParameter.valueForStringParameter(
         this,
         tokenUrlSSMParameter
       );
-      // if (paramValue.startsWith("dummy-value")) return;
-
+      // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ssm.StringParameter.html#static-valuewbrforwbrsecurewbrstringwbrparameterscope-parametername-versionspan-classapi-icon-api-icon-deprecated-titlethis-api-element-is-deprecated-its-use-is-not-recommended%EF%B8%8Fspan
+      // ssm.StringParameter.valueForStringParameter in the block above returns a token (in the format of "${Token[TOKEN.xxx]}") that will resolve to a string during deployment, not before.
+      // Passing a token to JSON.parse would fail, hence this dummy parameter value to pass upon synth stage.
       const dummyParam = `
       {
         "tokenUrlAssociation": {
-           "token1": [ "https://dummy1.com"],
-           "token2": [ "https://dummy2.com"]
+           "dummytoken1": [ "https://dummyurl1.com"],
+           "dummytoken2": [ "https://dummyurl2.com"]
          },
          "ssmPathPrefix": "/prerender/recache/tokens"
       }
       `;
       if (paramValue[0] === "$") paramValue = dummyParam;
 
-      console.log("#################");
-      // console.log(Lazy.string({ produce: () => paramValue }));
-      console.log(paramValue);
-      console.log("#################");
-      ////
-      const tokenUrlSSMParameterValue = JSON.parse(
-        // ssm.StringParameter.valueFromLookup(this, tokenUrlSSMParameter)
-        // Use valueForStringParameter (read at deployment time) vs valueFromLookup(read at synthesis time with help of context) to keep the value
-        paramValue
-      );
-      tokenUrlAssociation = tokenUrlSSMParameterValue;
+      const tokenUrlSSMParameterValue = JSON.parse(paramValue);
       tokenList = Object.keys(tokenUrlSSMParameterValue.tokenUrlAssociation);
+      tokenUrlAssociationValue = tokenUrlSSMParameterValue;
     } else if (tokenUrlAssociation) {
       tokenList = Object.keys(tokenUrlAssociation.tokenUrlAssociation);
+      tokenUrlAssociationValue = tokenUrlAssociation;
     } else if (props.tokenList) {
       tokenList = props.tokenList;
     } else {
@@ -181,7 +173,6 @@ export class PrerenderFargate extends Construct {
         "Either one of tokenUrlSSMParameter, tokenUrlAssociation, or tokenList must be provided."
       );
     }
-    // TO-DO: let PrerenderTokenUrlAssociation stack be created. Currently the main stack doesn't create the parameters.
 
     // Create a load-balanced Fargate service
     const fargateService =
@@ -274,28 +265,29 @@ export class PrerenderFargate extends Construct {
      * Recache API
      * Recaching is enable by default
      */
-    if (tokenUrlAssociation) {
+    if (tokenUrlAssociationValue) {
       /**
-       * Create the token-url association
+       * Create stack for token-url association SSM parameter.
        * This is used for managing prerender tokens in prerender re-caching
        */
       new PrerenderTokenUrlAssociation(
         this,
         `${prerenderName}-token-url-association`,
         {
-          tokenUrlAssociation: tokenUrlAssociation.tokenUrlAssociation,
-          ssmPathPrefix: tokenUrlAssociation.ssmPathPrefix,
+          tokenUrlAssociation: tokenUrlAssociationValue.tokenUrlAssociation,
+          ssmPathPrefix: tokenUrlAssociationValue.ssmPathPrefix,
         }
       );
 
       /**
-       * Create the recache API
-       * This would create the API that is used to trigger recaching of the URLs
+       * Create stack for recache API
+       * This would create the API G/W that is used to trigger recaching of the URLs
        */
       new PrerenderRecacheApi(this, `${prerenderName}-recache-api`, {
         prerenderS3Bucket: this.bucket,
-        tokenList: Object.keys(tokenUrlAssociation.tokenUrlAssociation),
+        tokenList: Object.keys(tokenUrlAssociationValue.tokenUrlAssociation),
         maxConcurrentExecutions:
+          // Default to one to avoid prerender service from being overloaded by many concurrent requests
           prerenderFargateRecachingOptions?.maxConcurrentExecutions || 1,
       });
     }
