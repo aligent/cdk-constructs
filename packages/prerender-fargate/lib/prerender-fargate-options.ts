@@ -65,7 +65,7 @@ export interface PrerenderFargateOptions {
   enableS3Endpoint?: boolean;
   /**
    * Read Prerender token-URL associations from a pre-defined AWS SSM Parameter, which is the the preferred way of token-URL association.
-   * Mutually exclusive with tokenUrlSSMParameter.
+   * Mutually exclusive with tokenUrlAssociation.
    * Either one of tokenList, tokenUrlSSMParameter, or tokenUrlAssociation must be specified.
    * ### SSM Parameter Example:
    * ```

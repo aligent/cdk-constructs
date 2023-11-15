@@ -51,17 +51,18 @@ import { PrerenderFargateOptions } from "./prerender-fargate-options";
  *     maxInstanceCount: 2,
  *     enableS3Endpoint: true,
  *     tokenUrlAssociation: {
- *        token1: [
- *          "https://example.com",
- *          "https://acme.example.com"
- *        ],
- *        token2: [
- *          "https://example1.com",
- *          "https://acme.example1.com"
- *        ]
- *    },
- *    ssmPathPrefix: "/prerender/recache/tokens"
- * }
+ *        tokenUrlAssociation: {
+ *           token1: [
+ *             "https://example.com",
+ *             "https://acme.example.com"
+ *           ],
+ *           token2: [
+ *             "https://example1.com",
+ *             "https://acme.example1.com"
+ *           ]
+ *       },
+ *       ssmPathPrefix: "/prerender/recache/tokens"
+ *    }
  * });
  * ```
  *
