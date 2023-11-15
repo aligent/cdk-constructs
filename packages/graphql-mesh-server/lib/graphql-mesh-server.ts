@@ -7,6 +7,8 @@ import { Repository } from "aws-cdk-lib/aws-ecr";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import { CfnCacheCluster } from "aws-cdk-lib/aws-elasticache";
 import * as ssm from "aws-cdk-lib/aws-ssm";
+import { AWSManagedRule } from "./web-application-firewall";
+import { CfnWebACL } from "aws-cdk-lib/aws-wafv2";
 
 export type MeshHostingProps = {
   /**
@@ -60,6 +62,23 @@ export type MeshHostingProps = {
    * ARN of the SNS Topic to send deployment notifications to
    */
   notificationArn?: string;
+  /**
+   * List of IP addresses to block (currently only support IPv4)
+   */
+  blockedIps?: string[];
+  /**
+   * List of AWS Managed rules to add to the WAF
+   */
+  wafManagedRules?: AWSManagedRule[];
+  /**
+   * List of custom rules
+   */
+  wafRules?: CfnWebACL.RuleProperty[];
+  /**
+   * The limit on requests per 5-minute period
+   * If provided, rate limiting will be enabled
+   */
+  rateLimit?: number;
 };
 
 export class MeshHosting extends Construct {
