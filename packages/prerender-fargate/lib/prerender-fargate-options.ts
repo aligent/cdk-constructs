@@ -1,4 +1,4 @@
-import { PrerenderTokenUrlAssociationOptions } from "./recaching/prerender-tokens";
+import { PrerenderTokenUrlAssociationOptions } from "./generateTokensUrlAssociation";
 
 /**
  * Options for configuring the Prerender Fargate construct.
@@ -27,10 +27,10 @@ export interface PrerenderFargateOptions {
   /**
    * A list of tokens to use for authentication with the Prerender service.
    * This parameter is deprecated and will be removed in a future release.
-   * Please use the `tokenUrlAssociation` parameter instead.
-   * *If `tokenUrlAssociation` is provided, `tokenList` will be ignored*
+   * Please use the `tokenUrlSSMParamPrefix` or `tokenUrlAssociation` parameter instead.
+   * *If either `tokenUrlSSMParamPrefix` or `tokenUrlAssociation` is provided, `tokenList` will be ignored.
    */
-  tokenList: Array<string>;
+  tokenList?: Array<string>;
   /**
    * The ARN of the SSL certificate to use for HTTPS connections.
    */
@@ -64,9 +64,31 @@ export interface PrerenderFargateOptions {
    */
   enableS3Endpoint?: boolean;
   /**
-   * Configuration for associating tokens with specific domain URLs.
-   * During the reacaching process, these tokens will be used to validate the request.
-   * ### Example:
+   * Read Prerender token-URL associations from a pre-defined AWS SSM Parameter, which is the the preferred way of token-URL association.
+   * Mutually exclusive with tokenUrlSSMParameter.
+   * Either one of tokenList, tokenUrlSSMParameter, or tokenUrlAssociation must be specified.
+   * ### SSM Parameter Example:
+   * ```
+   * {
+   *    tokenUrlAssociation: {
+   *      token1: [
+   *        "https://example.com",
+   *        "https://acme.example.com"],
+   *      token2: [
+   *        "https://example1.com",
+   *        "https://acme.example1.com"]
+   *    },
+   *    ssmPathPrefix: "/prerender/recache/tokens"
+   * }
+   * ```
+   * This results in generate two AWS SSM Parameters that associates tokens with specific domain URLs for domain validation.
+   */
+  tokenUrlSSMParameter?: string;
+  /**
+   * Generate AWS SSM Parameters that associates tokens with specific domain URLs for domain validation.
+   * Mutually exclusive with tokenUrlSSMParameter.
+   * Either one of tokenList, tokenUrlSSMParameter, or tokenUrlAssociation must be specified.
+   * ### Typescript Example:
    * ```typescript
    * {
    *    tokenUrlAssociation: {

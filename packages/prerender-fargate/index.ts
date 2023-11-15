@@ -4,7 +4,7 @@ import {
   PrerenderFargateRecachingOptions,
   PrerenderFargateScalingOptions,
 } from "./lib/prerender-fargate-options";
-import { PrerenderTokenUrlAssociationOptions } from "./lib/recaching/prerender-tokens";
+import { PrerenderTokenUrlAssociationOptions } from "./lib/generateTokensUrlAssociation";
 
 export {
   PrerenderFargate,

@@ -1,14 +1,15 @@
 import { Construct } from "constructs";
 import * as ecs from "aws-cdk-lib/aws-ecs";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as ecsPatterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import { HostedZone } from "aws-cdk-lib/aws-route53";
 import { Bucket, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import * as ecrAssets from "aws-cdk-lib/aws-ecr-assets";
-import { Duration, RemovalPolicy, Stack } from "aws-cdk-lib";
+import { Duration, RemovalPolicy, Stack, Lazy } from "aws-cdk-lib";
 import * as path from "path";
-import { PrerenderTokenUrlAssociation } from "./recaching/prerender-tokens";
+import { PrerenderTokenUrlAssociation } from "./generateTokensUrlAssociation";
 import { PrerenderRecacheApi } from "./recaching/prerender-recache-api-construct";
 import { PrerenderFargateOptions } from "./prerender-fargate-options";
 
@@ -50,7 +51,6 @@ import { PrerenderFargateOptions } from "./prerender-fargate-options";
  *     maxInstanceCount: 2,
  *     enableS3Endpoint: true,
  *     tokenUrlAssociation: {
- *     tokenUrlAssociation: {
  *        token1: [
  *          "https://example.com",
  *          "https://acme.example.com"
@@ -85,7 +85,7 @@ export class PrerenderFargate extends Construct {
     super(scope, id);
 
     const {
-      tokenUrlAssociation,
+      tokenUrlSSMParameter,
       certificateArn,
       vpcId,
       maxInstanceCount,
@@ -102,6 +102,7 @@ export class PrerenderFargate extends Construct {
       prerenderFargateScalingOptions,
       prerenderFargateRecachingOptions,
     } = props;
+    let { tokenUrlAssociation } = props;
 
     // Create bucket for prerender storage
     this.bucket = new Bucket(this, `${prerenderName}-bucket`, {
@@ -134,12 +135,53 @@ export class PrerenderFargate extends Construct {
     );
 
     /**
-     * This provide backward compatibility for the tokenList property
-     * If tokenUrlAssociation is provided, tokenList will be ignored
+     * This provide backward compatibility for the tokenList property.
+     * If tokenUrlSSMParamPrefix or tokenUrlAssociation is provided, tokenList will be ignored
      */
-    const tokenList = tokenUrlAssociation
-      ? Object.keys(tokenUrlAssociation.tokenUrlAssociation)
-      : props.tokenList.toString();
+
+    let tokenList;
+
+    if (tokenUrlSSMParameter) {
+      ////
+      let paramValue = ssm.StringParameter.valueForStringParameter(
+        this,
+        tokenUrlSSMParameter
+      );
+      // if (paramValue.startsWith("dummy-value")) return;
+
+      const dummyParam = `
+      {
+        "tokenUrlAssociation": {
+           "token1": [ "https://dummy1.com"],
+           "token2": [ "https://dummy2.com"]
+         },
+         "ssmPathPrefix": "/prerender/recache/tokens"
+      }
+      `;
+      if (paramValue[0] === "$") paramValue = dummyParam;
+
+      console.log("#################");
+      // console.log(Lazy.string({ produce: () => paramValue }));
+      console.log(paramValue);
+      console.log("#################");
+      ////
+      const tokenUrlSSMParameterValue = JSON.parse(
+        // ssm.StringParameter.valueFromLookup(this, tokenUrlSSMParameter)
+        // Use valueForStringParameter (read at deployment time) vs valueFromLookup(read at synthesis time with help of context) to keep the value
+        paramValue
+      );
+      tokenUrlAssociation = tokenUrlSSMParameterValue;
+      tokenList = Object.keys(tokenUrlSSMParameterValue.tokenUrlAssociation);
+    } else if (tokenUrlAssociation) {
+      tokenList = Object.keys(tokenUrlAssociation.tokenUrlAssociation);
+    } else if (props.tokenList) {
+      tokenList = props.tokenList;
+    } else {
+      throw new Error(
+        "Either one of tokenUrlSSMParameter, tokenUrlAssociation, or tokenList must be provided."
+      );
+    }
+    // TO-DO: let PrerenderTokenUrlAssociation stack be created. Currently the main stack doesn't create the parameters.
 
     // Create a load-balanced Fargate service
     const fargateService =
@@ -219,7 +261,7 @@ export class PrerenderFargate extends Construct {
 
     /**
      * Enable VPC Endpoints for S3
-     * This would  create S3 endpoints in all the PUBLIC subnets of the VPC
+     * This would create S3 endpoints in all the PUBLIC subnets of the VPC
      */
     if (enableS3Endpoint) {
       vpc.addGatewayEndpoint("S3Endpoint", {
