@@ -11,10 +11,12 @@ import * as auto_scaling from "aws-cdk-lib/aws-autoscaling";
 import { Port, SecurityGroup, IVpc, Vpc } from "aws-cdk-lib/aws-ec2";
 import { RedisService } from "./redis-construct";
 import {
+  AWSManagedRule,
   ManagedRule,
   Scope,
   WebApplicationFirewall,
 } from "./web-application-firewall";
+import { CfnIPSet, CfnWebACL } from "aws-cdk-lib/aws-wafv2";
 
 export interface MeshServiceProps {
   /**
@@ -56,6 +58,23 @@ export interface MeshServiceProps {
    * SSM values to pass through to the container as secrets
    */
   secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
+  /**
+   * List of IP addresses to block (currently only support IPv4)
+   */
+  blockedIps?: string[];
+  /**
+   * List of AWS Managed rules to add to the WAF
+   */
+  wafManagedRules?: AWSManagedRule[];
+  /**
+   * List of custom rules
+   */
+  wafRules?: CfnWebACL.RuleProperty[];
+  /**
+   * The limit on requests per 5-minute period
+   * If provided, rate limiting will be enabled
+   */
+  rateLimit?: number;
 }
 
 export class MeshService extends Construct {
@@ -174,6 +193,48 @@ export class MeshService extends Construct {
 
     this.service = fargateService.service;
 
+    const blockedIpList = new CfnIPSet(this, "BlockedIpList", {
+      addresses: props.blockedIps || [],
+      ipAddressVersion: "IPV4",
+      scope: "CLOUDFRONT",
+      description: "List of IPs blocked by WAF",
+    });
+
+    const defaultRules: CfnWebACL.RuleProperty[] = [
+      {
+        name: "IPBlockList",
+        priority: 2,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: blockedIpList.attrArn,
+          },
+        },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "IPBlockList",
+          sampledRequestsEnabled: true,
+        },
+      },
+    ];
+
+    if (props.rateLimit) {
+      defaultRules.push({
+        name: "RateLimit",
+        priority: 3,
+        statement: {
+          rateBasedStatement: {
+            aggregateKeyType: 'FORWARDED_IP',
+            limit: props.rateLimit,
+          },
+        },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "RateLimit",
+          sampledRequestsEnabled: true,
+        },
+      });
+    }
+
     this.firewall = new WebApplicationFirewall(this, "waf", {
       scope: Scope.REGIONAL,
       visibilityConfig: {
@@ -193,7 +254,9 @@ export class MeshService extends Construct {
         {
           name: ManagedRule.KNOWN_BAD_INPUTS_RULE_SET,
         },
+        ...(props.wafManagedRules || []),
       ],
+      rules: [...defaultRules, ...(props.wafRules || [])],
     });
 
     this.firewall.addAssociation(
