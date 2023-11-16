@@ -59,7 +59,7 @@ export interface MeshServiceProps {
    */
   secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
   /**
-   * List of IP addresses to block (currently only support IPv4)
+   * List of IPv4 addresses to block
    */
   blockedIps?: string[];
   /**
@@ -67,6 +67,15 @@ export interface MeshServiceProps {
    * Defaults to 2
    */
   blockedIpPriority?: number;
+  /**
+   * List of IPv6 addresses to block
+   */
+  blockedIpv6s?: string[];
+  /**
+   * The waf rule priority.
+   * Defaults to 3
+   */
+  blockedIpv6Priority?: number;
   /**
    * List of AWS Managed rules to add to the WAF
    */
@@ -220,6 +229,13 @@ export class MeshService extends Construct {
       description: "List of IPs blocked by WAF",
     });
 
+    const blockedIpv6List = new CfnIPSet(this, "BlockedIpv6List", {
+      addresses: props.blockedIpv6s || [],
+      ipAddressVersion: "IPV6",
+      scope: "REGIONAL",
+      description: "List of IPv6s blocked by WAF",
+    });
+
     const defaultRules: CfnWebACL.RuleProperty[] = [
       {
         name: "IPBlockList",
@@ -232,6 +248,23 @@ export class MeshService extends Construct {
         visibilityConfig: {
           cloudWatchMetricsEnabled: true,
           metricName: "IPBlockList",
+          sampledRequestsEnabled: true,
+        },
+        action: {
+          block: {},
+        },
+      },
+      {
+        name: "IPv6BlockList",
+        priority: 3 || props.blockedIpPriority,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: blockedIpv6List.attrArn,
+          },
+        },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "IPv6BlockList",
           sampledRequestsEnabled: true,
         },
         action: {
