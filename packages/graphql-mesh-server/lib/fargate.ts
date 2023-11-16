@@ -7,7 +7,6 @@ import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ecsPatterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as ssm from "aws-cdk-lib/aws-ssm";
-import * as auto_scaling from "aws-cdk-lib/aws-autoscaling";
 import { Port, SecurityGroup, IVpc, Vpc } from "aws-cdk-lib/aws-ec2";
 import { RedisService } from "./redis-construct";
 import {
@@ -17,6 +16,7 @@ import {
   WebApplicationFirewall,
 } from "./web-application-firewall";
 import { CfnIPSet, CfnWebACL } from "aws-cdk-lib/aws-wafv2";
+import { ScalingInterval, AdjustmentType } from "aws-cdk-lib/aws-autoscaling";
 
 export interface MeshServiceProps {
   /**
@@ -85,6 +85,16 @@ export interface MeshServiceProps {
    * Defaults to 10
    */
   rateLimitPriority?: number;
+  /**
+   * Pass custom cpu scaling steps
+   * Default value:
+   * [
+   *    { upper: 30, change: -1 },
+   *    { lower: 50, change: +1 },
+   *    { lower: 85, change: +3 },
+   * ]
+   */
+  cpuScalingSteps?: ScalingInterval[];
 }
 
 export class MeshService extends Construct {
@@ -294,15 +304,17 @@ export class MeshService extends Construct {
       maxCapacity: props.maxCapacity || 5,
     });
 
+    const cpuScalingSteps = props.cpuScalingSteps || [
+      { upper: 30, change: -1 },
+      { lower: 50, change: +1 },
+      { lower: 85, change: +3 },
+    ];
+
     const cpuUtilization = fargateService.service.metricCpuUtilization();
     scaling.scaleOnMetric("auto-scale-cpu", {
       metric: cpuUtilization,
-      scalingSteps: [
-        { upper: 30, change: -1 },
-        { lower: 50, change: +1 },
-        { lower: 85, change: +3 },
-      ],
-      adjustmentType: auto_scaling.AdjustmentType.CHANGE_IN_CAPACITY,
+      scalingSteps: cpuScalingSteps,
+      adjustmentType: AdjustmentType.CHANGE_IN_CAPACITY,
     });
   }
 }
