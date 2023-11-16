@@ -223,14 +223,21 @@ export class MeshService extends Construct {
         priority: 3,
         statement: {
           rateBasedStatement: {
-            aggregateKeyType: 'FORWARDED_IP',
+            aggregateKeyType: "FORWARDED_IP",
             limit: props.rateLimit,
+            forwardedIpConfig: {
+              fallbackBehavior: "MATCH",
+              headerName: "X-Forwarded-For",
+            },
           },
         },
         visibilityConfig: {
           cloudWatchMetricsEnabled: true,
           metricName: "RateLimit",
           sampledRequestsEnabled: true,
+        },
+        action: {
+          block: {},
         },
       });
     }
