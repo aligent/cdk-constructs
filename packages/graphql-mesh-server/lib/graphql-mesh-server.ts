@@ -7,6 +7,7 @@ import { Repository } from "aws-cdk-lib/aws-ecr";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import { CfnCacheCluster } from "aws-cdk-lib/aws-elasticache";
 import * as ssm from "aws-cdk-lib/aws-ssm";
+import { ScalingInterval } from "aws-cdk-lib/aws-autoscaling";
 
 export type MeshHostingProps = {
   /**
@@ -56,6 +57,16 @@ export type MeshHostingProps = {
    * SSM values to pass through to the container as secrets
    */
   secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
+  /**
+   * Pass custom cpu scaling steps
+   * Default value:
+   * [
+   *    { upper: 30, change: -1 },
+   *    { lower: 50, change: +1 },
+   *    { lower: 85, change: +3 },
+   * ]
+   */
+  cpuScalingSteps: ScalingInterval[]
   /**
    * ARN of the SNS Topic to send deployment notifications to
    */
