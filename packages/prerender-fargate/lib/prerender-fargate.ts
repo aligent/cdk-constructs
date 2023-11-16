@@ -3,6 +3,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as ecsPatterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as cr from "aws-cdk-lib/custom-resources";
 import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import { HostedZone } from "aws-cdk-lib/aws-route53";
 import { Bucket, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
@@ -143,23 +144,50 @@ export class PrerenderFargate extends Construct {
     let tokenList;
     let tokenUrlAssociationValue; // Placeholder for supplementary stack creation
     if (tokenUrlSSMParameter) {
-      let paramValue = ssm.StringParameter.valueForStringParameter(
+      // Experiment - fetch SSM param using AwsCustomResource
+      const getSsmParameter = new cr.AwsCustomResource(
         this,
-        tokenUrlSSMParameter
+        "SSMGetParameter",
+        {
+          onCreate: {
+            service: "SSM",
+            action: "getParameter",
+            parameters: {
+              Name: props.tokenUrlSSMParameter,
+            },
+            physicalResourceId: cr.PhysicalResourceId.of(
+              `getParameter${Date.now().toString()}`
+            ),
+          },
+          //Will ignore any resource and use the assumedRoleArn as resource and 'sts:AssumeRole' for service:action
+          policy: cr.AwsCustomResourcePolicy.fromSdkCalls({
+            resources: cr.AwsCustomResourcePolicy.ANY_RESOURCE,
+          }),
+        }
       );
+
+      let paramValue = getSsmParameter.getResponseField("Parameter.Value");
+      // Experiment - fetch SSM param
+
+      // let paramValue = ssm.StringParameter.valueForStringParameter(
+      //   this,
+      //   tokenUrlSSMParameter
+      // );
+
       // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ssm.StringParameter.html#static-valuewbrforwbrsecurewbrstringwbrparameterscope-parametername-versionspan-classapi-icon-api-icon-deprecated-titlethis-api-element-is-deprecated-its-use-is-not-recommended%EF%B8%8Fspan
       // ssm.StringParameter.valueForStringParameter in the block above returns a token (in the format of "${Token[TOKEN.xxx]}") that will resolve to a string during deployment, not before.
       // Passing a token to JSON.parse would fail, hence this dummy parameter value to pass upon synth stage.
-      const dummyParam = `
-      {
-        "tokenUrlAssociation": {
-           "dummytoken1": [ "https://dummyurl1.com"],
-           "dummytoken2": [ "https://dummyurl2.com"]
-         },
-         "ssmPathPrefix": "/prerender/recache/tokens"
-      }
-      `;
-      if (paramValue[0] === "$") paramValue = dummyParam;
+
+      // const dummyParam = `
+      // {
+      //   "tokenUrlAssociation": {
+      //      "dummytoken1": [ "https://dummyurl1.com"],
+      //      "dummytoken2": [ "https://dummyurl2.com"]
+      //    },
+      //    "ssmPathPrefix": "/prerender/recache/tokens"
+      // }
+      // `;
+      // if (paramValue[0] === "$") paramValue = dummyParam;
 
       const tokenUrlSSMParameterValue = JSON.parse(paramValue);
       tokenList = Object.keys(tokenUrlSSMParameterValue.tokenUrlAssociation);
