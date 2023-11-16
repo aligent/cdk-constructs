@@ -10,10 +10,12 @@ import * as ssm from "aws-cdk-lib/aws-ssm";
 import { Port, SecurityGroup, IVpc, Vpc } from "aws-cdk-lib/aws-ec2";
 import { RedisService } from "./redis-construct";
 import {
+  AWSManagedRule,
   ManagedRule,
   Scope,
   WebApplicationFirewall,
 } from "./web-application-firewall";
+import { CfnIPSet, CfnWebACL } from "aws-cdk-lib/aws-wafv2";
 import { ScalingInterval, AdjustmentType } from "aws-cdk-lib/aws-autoscaling";
 
 export interface MeshServiceProps {
@@ -57,6 +59,33 @@ export interface MeshServiceProps {
    */
   secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
   /**
+   * List of IP addresses to block (currently only support IPv4)
+   */
+  blockedIps?: string[];
+  /**
+   * The waf rule priority.
+   * Defaults to 2
+   */
+  blockedIpPriority?: number;
+  /**
+   * List of AWS Managed rules to add to the WAF
+   */
+  wafManagedRules?: AWSManagedRule[];
+  /**
+   * List of custom rules
+   */
+  wafRules?: CfnWebACL.RuleProperty[];
+  /**
+   * The limit on requests per 5-minute period
+   * If provided, rate limiting will be enabled
+   */
+  rateLimit?: number;
+  /**
+   * The waf rule priority. Only used when a rateLimit value is provided.
+   * Defaults to 10
+   */
+  rateLimitPriority?: number;
+  /**
    * Pass custom cpu scaling steps
    * Default value:
    * [
@@ -65,7 +94,7 @@ export interface MeshServiceProps {
    *    { lower: 85, change: +3 },
    * ]
    */
-  cpuScalingSteps: ScalingInterval[];
+  cpuScalingSteps?: ScalingInterval[];
 }
 
 export class MeshService extends Construct {
@@ -184,6 +213,58 @@ export class MeshService extends Construct {
 
     this.service = fargateService.service;
 
+    const blockedIpList = new CfnIPSet(this, "BlockedIpList", {
+      addresses: props.blockedIps || [],
+      ipAddressVersion: "IPV4",
+      scope: "REGIONAL",
+      description: "List of IPs blocked by WAF",
+    });
+
+    const defaultRules: CfnWebACL.RuleProperty[] = [
+      {
+        name: "IPBlockList",
+        priority: 2 || props.blockedIpPriority,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: blockedIpList.attrArn,
+          },
+        },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "IPBlockList",
+          sampledRequestsEnabled: true,
+        },
+        action: {
+          block: {},
+        },
+      },
+    ];
+
+    if (props.rateLimit) {
+      defaultRules.push({
+        name: "RateLimit",
+        priority: 10 || props.rateLimitPriority,
+        statement: {
+          rateBasedStatement: {
+            aggregateKeyType: "FORWARDED_IP",
+            limit: props.rateLimit,
+            forwardedIpConfig: {
+              fallbackBehavior: "MATCH",
+              headerName: "X-Forwarded-For",
+            },
+          },
+        },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "RateLimit",
+          sampledRequestsEnabled: true,
+        },
+        action: {
+          block: {},
+        },
+      });
+    }
+
     this.firewall = new WebApplicationFirewall(this, "waf", {
       scope: Scope.REGIONAL,
       visibilityConfig: {
@@ -203,7 +284,9 @@ export class MeshService extends Construct {
         {
           name: ManagedRule.KNOWN_BAD_INPUTS_RULE_SET,
         },
+        ...(props.wafManagedRules || []),
       ],
+      rules: [...defaultRules, ...(props.wafRules || [])],
     });
 
     this.firewall.addAssociation(
