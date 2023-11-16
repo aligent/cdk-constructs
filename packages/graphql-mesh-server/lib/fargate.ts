@@ -65,7 +65,7 @@ export interface MeshServiceProps {
    *    { lower: 85, change: +3 },
    * ]
    */
-  cpuScalingSteps: ScalingInterval[]
+  cpuScalingSteps: ScalingInterval[];
 }
 
 export class MeshService extends Construct {
@@ -222,10 +222,10 @@ export class MeshService extends Construct {
     });
 
     const cpuScalingSteps = props.cpuScalingSteps || [
-        { upper: 30, change: -1 },
-        { lower: 50, change: +1 },
-        { lower: 85, change: +3 },
-    ]
+      { upper: 30, change: -1 },
+      { lower: 50, change: +1 },
+      { lower: 85, change: +3 },
+    ];
 
     const cpuUtilization = fargateService.service.metricCpuUtilization();
     scaling.scaleOnMetric("auto-scale-cpu", {

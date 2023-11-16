@@ -66,7 +66,7 @@ export type MeshHostingProps = {
    *    { lower: 85, change: +3 },
    * ]
    */
-  cpuScalingSteps: ScalingInterval[]
+  cpuScalingSteps: ScalingInterval[];
   /**
    * ARN of the SNS Topic to send deployment notifications to
    */
