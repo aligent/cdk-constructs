@@ -63,6 +63,15 @@ export type MeshHostingProps = {
    */
   notificationArn?: string;
   /**
+   * List of IP addresses to block (currently only support IPv4)
+   */
+  blockedIps?: string[];
+  /**
+   * The waf rule priority.
+   * Defaults to 2 
+   */
+  blockedIpPriority?: number
+  /**
    * List of AWS Managed rules to add to the WAF
    */
   wafManagedRules?: AWSManagedRule[];

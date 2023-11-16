@@ -59,6 +59,15 @@ export interface MeshServiceProps {
    */
   secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
   /**
+   * List of IP addresses to block (currently only support IPv4)
+   */
+  blockedIps?: string[];
+  /**
+   * The waf rule priority.
+   * Defaults to 2 
+   */
+  blockedIpPriority?: number
+  /**
    * List of AWS Managed rules to add to the WAF
    */
   wafManagedRules?: AWSManagedRule[];
@@ -73,7 +82,7 @@ export interface MeshServiceProps {
   rateLimit?: number;
   /**
    * The waf rule priority. Only used when a rateLimit value is provided.
-   * Defaults to 10 
+   * Defaults to 10
    */
   rateLimitPriority?: number;
 }
@@ -194,7 +203,32 @@ export class MeshService extends Construct {
 
     this.service = fargateService.service;
 
-    const defaultRules: CfnWebACL.RuleProperty[] = [];
+    const blockedIpList = new CfnIPSet(this, "BlockedIpList", {
+      addresses: props.blockedIps || [],
+      ipAddressVersion: "IPV4",
+      scope: "REGIONAL",
+      description: "List of IPs blocked by WAF",
+    });
+
+    const defaultRules: CfnWebACL.RuleProperty[] = [
+      {
+        name: "IPBlockList",
+        priority: 2 || props.blockedIpPriority,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: blockedIpList.attrArn,
+          },
+        },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "IPBlockList",
+          sampledRequestsEnabled: true,
+        },
+        action: {
+          block: {},
+        },
+      },
+    ];
 
     if (props.rateLimit) {
       defaultRules.push({
