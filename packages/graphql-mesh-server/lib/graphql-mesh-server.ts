@@ -63,10 +63,6 @@ export type MeshHostingProps = {
    */
   notificationArn?: string;
   /**
-   * List of IP addresses to block (currently only support IPv4)
-   */
-  blockedIps?: string[];
-  /**
    * List of AWS Managed rules to add to the WAF
    */
   wafManagedRules?: AWSManagedRule[];
@@ -79,6 +75,11 @@ export type MeshHostingProps = {
    * If provided, rate limiting will be enabled
    */
   rateLimit?: number;
+  /**
+   * The waf rule priority. Only used when a rateLimit value is provided.
+   * Defaults to 10 
+   */
+  rateLimitPriority?: number;
 };
 
 export class MeshHosting extends Construct {
