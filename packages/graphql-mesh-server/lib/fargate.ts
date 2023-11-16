@@ -64,9 +64,9 @@ export interface MeshServiceProps {
   blockedIps?: string[];
   /**
    * The waf rule priority.
-   * Defaults to 2 
+   * Defaults to 2
    */
-  blockedIpPriority?: number
+  blockedIpPriority?: number;
   /**
    * List of AWS Managed rules to add to the WAF
    */
