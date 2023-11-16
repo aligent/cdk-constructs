@@ -1,4 +1,4 @@
-import { Stack, StackProps } from "aws-cdk-lib";
+import { NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { StringListParameter } from "aws-cdk-lib/aws-ssm";
 
@@ -12,7 +12,7 @@ interface TokenUrlAssociation {
 /**
  * Interface for associating a token with a URL for prerendering.
  */
-export interface PrerenderTokenUrlAssociationOptions extends StackProps {
+export interface PrerenderTokenUrlAssociationOptions extends NestedStackProps {
   /**
    * Object containing the token and its associated URL.
    * ### Example
@@ -42,7 +42,7 @@ export interface PrerenderTokenUrlAssociationOptions extends StackProps {
  * The constructor loops through the tokenUrlAssociation object and
  * creates an SSM parameter for each token.
  */
-export class PrerenderTokenUrlAssociation extends Stack {
+export class PrerenderTokenUrlAssociation extends NestedStack {
   constructor(
     scope: Construct,
     id: string,
