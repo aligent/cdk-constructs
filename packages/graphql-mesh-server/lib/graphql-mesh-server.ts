@@ -109,6 +109,11 @@ export type MeshHostingProps = {
    * Defaults to 10
    */
   rateLimitPriority?: number;
+  /**
+   * Enable / disable container insights
+   * Defaults to true
+   */
+  containerInsights?: boolean;
 };
 
 export class MeshHosting extends Construct {
