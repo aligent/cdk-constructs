@@ -181,7 +181,8 @@ export class MeshService extends Construct {
 
     const cluster = new ecs.Cluster(this, `cluster`, {
       vpc: this.vpc,
-      containerInsights: props.containerInsights || true,
+      containerInsights:
+        props.containerInsights !== undefined ? props.containerInsights : true,
     });
 
     const environment: { [key: string]: string } = {};
