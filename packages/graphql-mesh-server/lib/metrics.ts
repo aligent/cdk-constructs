@@ -108,8 +108,7 @@ export class PerformanceMetrics extends Construct {
         namespace: "AWS/WAFV2",
         metricName: "AllowedRequests",
         dimensionsMap: {
-          WebACL:
-            props.firewall.acl.ref.split('|')[0],
+          WebACL: props.firewall.acl.ref.split("|")[0],
           Rule: "ALL",
           Region: Stack.of(this).region, // assumes waf is in the same region
         },

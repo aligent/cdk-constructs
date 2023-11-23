@@ -7,7 +7,10 @@ import { Repository } from "aws-cdk-lib/aws-ecr";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import { CfnCacheCluster } from "aws-cdk-lib/aws-elasticache";
 import * as ssm from "aws-cdk-lib/aws-ssm";
-import { AWSManagedRule, WebApplicationFirewall } from "./web-application-firewall";
+import {
+  AWSManagedRule,
+  WebApplicationFirewall,
+} from "./web-application-firewall";
 import { CfnWebACL } from "aws-cdk-lib/aws-wafv2";
 import { ScalingInterval } from "aws-cdk-lib/aws-autoscaling";
 import { PerformanceMetrics } from "./metrics";

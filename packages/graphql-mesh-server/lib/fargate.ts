@@ -218,9 +218,9 @@ export class MeshService extends Construct {
     // Configure a custom log driver and group
     this.logGroup = new LogGroup(this, "graphql-server-log", {});
     const logDriver = ecs.LogDrivers.awsLogs({
-      streamPrefix: props.logStreamPrefix || 'graphql-server',
+      streamPrefix: props.logStreamPrefix || "graphql-server",
       logGroup: this.logGroup,
-    })
+    });
     // Create a load-balanced Fargate service and make it public
     const fargateService =
       new ecsPatterns.ApplicationLoadBalancedFargateService(this, `fargate`, {
