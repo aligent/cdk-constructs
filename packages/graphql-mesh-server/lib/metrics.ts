@@ -20,6 +20,7 @@ import {
 import { WebApplicationFirewall } from "./web-application-firewall";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 import { Topic } from "aws-cdk-lib/aws-sns";
+import { Stack } from "aws-cdk-lib";
 
 export interface PerformanceMetricsProps {
   service: FargateService;
@@ -107,10 +108,9 @@ export class PerformanceMetrics extends Construct {
         metricName: "AllowedRequests",
         dimensionsMap: {
           WebACL:
-            props.firewall.acl.name ||
-            "MeshHostingmeshwafWebAclD163A31D-b4zo3YLl9rkw", // TODO: get the name automatically
+            props.firewall.acl.ref.split('|')[0],
           Rule: "ALL",
-          Region: "ap-southeast-2", // TODO: get the region automatically
+          Region: Stack.of(this).region, // assumes waf is in the same region
         },
       }),
     ];
@@ -179,6 +179,7 @@ export class PerformanceMetrics extends Construct {
       }),
     ];
 
+    // Alert when 0 tasks are running
     alarms.push(
       new Alarm(this, "currentActiveTasksAlarm", {
         metric: currentActiveTasksMetric[0],
@@ -201,6 +202,7 @@ export class PerformanceMetrics extends Construct {
       }),
     ];
 
+    // Alert when average CPU is above 70%
     alarms.push(
       new Alarm(this, "taskCPUAlarm", {
         metric: taskCPUMetrics[2],
@@ -224,6 +226,7 @@ export class PerformanceMetrics extends Construct {
       }),
     ];
 
+    // Alert when average memory is above 70%
     alarms.push(
       new Alarm(this, "taskMemoryAlarm", {
         metric: taskMemoryMetrics[2],
