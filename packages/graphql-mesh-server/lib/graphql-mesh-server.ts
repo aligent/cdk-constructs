@@ -10,7 +10,7 @@ import * as ssm from "aws-cdk-lib/aws-ssm";
 import { AWSManagedRule, WebApplicationFirewall } from "./web-application-firewall";
 import { CfnWebACL } from "aws-cdk-lib/aws-wafv2";
 import { ScalingInterval } from "aws-cdk-lib/aws-autoscaling";
-import { Dashboard } from "./dashboard";
+import { PerformanceMetrics } from "./metrics";
 import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 
@@ -175,7 +175,7 @@ export class MeshHosting extends Construct {
       notificationArn: props.notificationArn,
     });
 
-    new Dashboard(this, "cloudwatch", {
+    new PerformanceMetrics(this, "cloudwatch", {
       ...props,
       service: this.service,
       loadBalancer: this.loadBalancer,

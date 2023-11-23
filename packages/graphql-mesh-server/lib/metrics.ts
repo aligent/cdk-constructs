@@ -5,7 +5,7 @@ import {
   SingleValueWidget,
   GraphWidget,
   LegendPosition,
-  Dashboard as CWDashboard,
+  Dashboard,
   Column,
   LogQueryWidget,
 } from "aws-cdk-lib/aws-cloudwatch";
@@ -18,16 +18,15 @@ import {
 import { WebApplicationFirewall } from "./web-application-firewall";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface DashboardProps {
+export interface PerformanceMetricsProps {
   service: FargateService;
   loadBalancer: ApplicationLoadBalancer;
   firewall: WebApplicationFirewall;
   logGroup: LogGroup;
 }
 
-export class Dashboard extends Construct {
-  constructor(scope: Construct, id: string, props: DashboardProps) {
+export class PerformanceMetrics extends Construct {
+  constructor(scope: Construct, id: string, props: PerformanceMetricsProps) {
     super(scope, id);
 
     // Load balancer metrics and widgets
@@ -258,7 +257,7 @@ export class Dashboard extends Construct {
     });
 
     // Create the dashboard
-    new CWDashboard(this, "dashboard", {
+    new Dashboard(this, "dashboard", {
       dashboardName: "Mesh-Dashboard",
       widgets: [
         [new Column(...loadBalancerWidgets), new Column(...wafWidgets)],
