@@ -8,6 +8,8 @@ import {
   Dashboard,
   Column,
   LogQueryWidget,
+  Alarm,
+  ComparisonOperator,
 } from "aws-cdk-lib/aws-cloudwatch";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import {
@@ -17,17 +19,21 @@ import {
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { WebApplicationFirewall } from "./web-application-firewall";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
+import { Topic } from "aws-cdk-lib/aws-sns";
 
 export interface PerformanceMetricsProps {
   service: FargateService;
   loadBalancer: ApplicationLoadBalancer;
   firewall: WebApplicationFirewall;
   logGroup: LogGroup;
+  snsTopic?: Topic;
 }
 
 export class PerformanceMetrics extends Construct {
   constructor(scope: Construct, id: string, props: PerformanceMetricsProps) {
     super(scope, id);
+
+    const alarms: Alarm[] = [];
 
     // Load balancer metrics and widgets
     const requestCountMetrics: Metric[] = [
@@ -173,6 +179,16 @@ export class PerformanceMetrics extends Construct {
       }),
     ];
 
+    alarms.push(
+      new Alarm(this, "currentActiveTasksAlarm", {
+        metric: currentActiveTasksMetric[0],
+        threshold: 0,
+        comparisonOperator: ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
+        evaluationPeriods: 1,
+        datapointsToAlarm: 1,
+      })
+    );
+
     const taskCPUMetrics: Metric[] = [
       props.service.metricCpuUtilization({
         statistic: "min",
@@ -185,6 +201,17 @@ export class PerformanceMetrics extends Construct {
       }),
     ];
 
+    alarms.push(
+      new Alarm(this, "taskCPUAlarm", {
+        metric: taskCPUMetrics[2],
+        threshold: 70,
+        comparisonOperator:
+          ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        evaluationPeriods: 3,
+        datapointsToAlarm: 2,
+      })
+    );
+
     const taskMemoryMetrics: Metric[] = [
       props.service.metricMemoryUtilization({
         statistic: "min",
@@ -196,6 +223,17 @@ export class PerformanceMetrics extends Construct {
         statistic: "avg",
       }),
     ];
+
+    alarms.push(
+      new Alarm(this, "taskMemoryAlarm", {
+        metric: taskMemoryMetrics[2],
+        threshold: 70,
+        comparisonOperator:
+          ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        evaluationPeriods: 3,
+        datapointsToAlarm: 2,
+      })
+    );
 
     const meshPerformanceLabel = new TextWidget({
       markdown: "# Mesh Performance",
@@ -251,9 +289,7 @@ export class PerformanceMetrics extends Construct {
       height: 12,
       queryString:
         "fields @timestamp, @message\n| sort @timestamp desc\n| limit 25",
-      logGroupNames: [
-        props.logGroup.logGroupName,
-      ],
+      logGroupNames: [props.logGroup.logGroupName],
     });
 
     // Create the dashboard
@@ -265,9 +301,14 @@ export class PerformanceMetrics extends Construct {
         [
           new Column(...currentTaskWidgets),
           new Column(...meshPerformanceMetrics),
-          new Column(taskLogsWidget)
+          new Column(taskLogsWidget),
         ],
       ],
     });
+
+    // Notify SNS topic on all alarm triggers (if SNS topic is provided)
+    if (props.snsTopic) {
+      alarms.forEach(alarm => alarm.addAlarmAction);
+    }
   }
 }

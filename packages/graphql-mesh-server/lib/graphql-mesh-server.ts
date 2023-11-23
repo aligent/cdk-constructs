@@ -13,6 +13,7 @@ import { ScalingInterval } from "aws-cdk-lib/aws-autoscaling";
 import { PerformanceMetrics } from "./metrics";
 import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
+import { Topic } from "aws-cdk-lib/aws-sns";
 
 export type MeshHostingProps = {
   /**
@@ -122,6 +123,10 @@ export type MeshHostingProps = {
    * Defaults to 'graphql-server'
    */
   logStreamPrefix?: string;
+  /**
+   * Optional sns topic to subscribe all alarms to
+   */
+  snsTopic?: Topic;
 };
 
 export class MeshHosting extends Construct {
