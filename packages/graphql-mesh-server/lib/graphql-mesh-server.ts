@@ -14,6 +14,7 @@ import { PerformanceMetrics } from "./metrics";
 import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 import { Topic } from "aws-cdk-lib/aws-sns";
+import { Alarm } from "aws-cdk-lib/aws-cloudwatch";
 
 export type MeshHostingProps = {
   /**
@@ -127,6 +128,10 @@ export type MeshHostingProps = {
    * Optional sns topic to subscribe all alarms to
    */
   snsTopic?: Topic;
+  /**
+   * Any additional custom alarms
+   */
+  additionalAlarms?: Alarm[];
 };
 
 export class MeshHosting extends Construct {

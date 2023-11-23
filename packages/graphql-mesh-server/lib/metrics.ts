@@ -28,13 +28,14 @@ export interface PerformanceMetricsProps {
   firewall: WebApplicationFirewall;
   logGroup: LogGroup;
   snsTopic?: Topic;
+  additionalAlarms?: Alarm[];
 }
 
 export class PerformanceMetrics extends Construct {
   constructor(scope: Construct, id: string, props: PerformanceMetricsProps) {
     super(scope, id);
 
-    const alarms: Alarm[] = [];
+    const alarms: Alarm[] = props.additionalAlarms || [];
 
     // Load balancer metrics and widgets
     const requestCountMetrics: Metric[] = [
