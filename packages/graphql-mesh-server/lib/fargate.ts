@@ -17,6 +17,8 @@ import {
 } from "./web-application-firewall";
 import { CfnIPSet, CfnWebACL } from "aws-cdk-lib/aws-wafv2";
 import { ScalingInterval, AdjustmentType } from "aws-cdk-lib/aws-autoscaling";
+import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 
 export interface MeshServiceProps {
   /**
@@ -109,12 +111,19 @@ export interface MeshServiceProps {
    * Defaults to true
    */
   containerInsights?: boolean;
+  /**
+   * Log stream prefix
+   * Defaults to 'graphql-server'
+   */
+  logStreamPrefix?: string;
 }
 
 export class MeshService extends Construct {
   public readonly vpc: IVpc;
   public readonly repository: ecr.Repository;
   public readonly service: ecs.FargateService;
+  public readonly loadBalancer: ApplicationLoadBalancer;
+  public readonly logGroup: LogGroup;
   public readonly firewall: WebApplicationFirewall;
 
   constructor(scope: Construct, id: string, props: MeshServiceProps) {
@@ -205,6 +214,13 @@ export class MeshService extends Construct {
     for (const [key, ssm] of Object.entries(props.secrets)) {
       secrets[key] = ecs.Secret.fromSsmParameter(ssm);
     }
+
+    // Configure a custom log driver and group
+    this.logGroup = new LogGroup(this, "graphql-server-log", {});
+    const logDriver = ecs.LogDrivers.awsLogs({
+      streamPrefix: props.logStreamPrefix || "graphql-server",
+      logGroup: this.logGroup,
+    });
     // Create a load-balanced Fargate service and make it public
     const fargateService =
       new ecsPatterns.ApplicationLoadBalancedFargateService(this, `fargate`, {
@@ -219,6 +235,7 @@ export class MeshService extends Construct {
           containerPort: 4000, // graphql mesh gateway port
           secrets: secrets,
           environment: environment,
+          logDriver: logDriver,
         },
         publicLoadBalancer: true, // default,
         taskSubnets: {
@@ -228,6 +245,7 @@ export class MeshService extends Construct {
       });
 
     this.service = fargateService.service;
+    this.loadBalancer = fargateService.loadBalancer;
 
     const blockedIpList = new CfnIPSet(this, "BlockedIpList", {
       addresses: props.blockedIps || [],

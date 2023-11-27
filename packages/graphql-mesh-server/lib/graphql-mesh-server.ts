@@ -7,9 +7,17 @@ import { Repository } from "aws-cdk-lib/aws-ecr";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import { CfnCacheCluster } from "aws-cdk-lib/aws-elasticache";
 import * as ssm from "aws-cdk-lib/aws-ssm";
-import { AWSManagedRule } from "./web-application-firewall";
+import {
+  AWSManagedRule,
+  WebApplicationFirewall,
+} from "./web-application-firewall";
 import { CfnWebACL } from "aws-cdk-lib/aws-wafv2";
 import { ScalingInterval } from "aws-cdk-lib/aws-autoscaling";
+import { PerformanceMetrics } from "./metrics";
+import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
+import { Topic } from "aws-cdk-lib/aws-sns";
+import { Alarm } from "aws-cdk-lib/aws-cloudwatch";
 
 export type MeshHostingProps = {
   /**
@@ -114,14 +122,30 @@ export type MeshHostingProps = {
    * Defaults to true
    */
   containerInsights?: boolean;
+  /**
+   * Log stream prefix
+   * Defaults to 'graphql-server'
+   */
+  logStreamPrefix?: string;
+  /**
+   * Optional sns topic to subscribe all alarms to
+   */
+  snsTopic?: Topic;
+  /**
+   * Any additional custom alarms
+   */
+  additionalAlarms?: Alarm[];
 };
 
 export class MeshHosting extends Construct {
   public readonly vpc: IVpc;
   public readonly repository: Repository;
   public readonly service: FargateService;
+  public readonly loadBalancer: ApplicationLoadBalancer;
+  public readonly logGroup: LogGroup;
   public readonly cacheCluster: CfnCacheCluster;
   public readonly securityGroup: SecurityGroup;
+  public readonly firewall: WebApplicationFirewall;
 
   constructor(scope: Construct, id: string, props: MeshHostingProps) {
     super(scope, id);
@@ -153,12 +177,23 @@ export class MeshHosting extends Construct {
     });
 
     this.service = mesh.service;
+    this.firewall = mesh.firewall;
+    this.loadBalancer = mesh.loadBalancer;
+    this.logGroup = mesh.logGroup;
     this.repository = mesh.repository;
 
     new CodePipelineService(this, "pipeline", {
       repository: this.repository,
       service: this.service,
       notificationArn: props.notificationArn,
+    });
+
+    new PerformanceMetrics(this, "cloudwatch", {
+      ...props,
+      service: this.service,
+      loadBalancer: this.loadBalancer,
+      logGroup: this.logGroup,
+      firewall: this.firewall,
     });
   }
 }
