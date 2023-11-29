@@ -149,7 +149,7 @@ export class PrerenderFargate extends Construct {
        * tokenParam is the name of the SSM Parameter that has a stringList of tokens as its value.
        */
       secrets = {
-        TOKEN_LIST: ecs.Secret.fromSsmParameter(
+        TOKEN_LIST_SSM: ecs.Secret.fromSsmParameter(
           ssm.StringListParameter.fromStringListParameterName(
             this,
             "token",

@@ -22,7 +22,7 @@ const server = prerender({
 });
 
 
-const tokens = process.env.TOKEN_PARAM ? process.env.TOKEN_PARAM : process.env.TOKEN_LIST;
+const tokens = process.env.TOKEN_LIST_SSM ? process.env.TOKEN_LIST_SSM : process.env.TOKEN_LIST;
 const tokenAllowList = tokens.toString().split(',');
 
 server.use({
