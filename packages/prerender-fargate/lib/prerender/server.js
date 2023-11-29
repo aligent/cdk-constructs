@@ -21,6 +21,10 @@ const server = prerender({
     chromeLocation: '/usr/bin/chromium-browser'
 });
 
+
+const tokens = process.env.TOKEN_PARAM ? process.env.TOKEN_PARAM : process.env.TOKEN_LIST;
+const tokenAllowList = tokens.toString().split(',');
+
 server.use({
     requestReceived: (req, res, next) => {
         // Log "x-prerender-user-agent" value forwarded from CloudFront/Lambda@edge that contains the original User-Agent value. If not present, e.g. requests from ELB, default to "user-agent" value.
@@ -34,7 +38,6 @@ server.use({
         }
 
         // compare credentials in header to list of allowed credentials
-        const tokenAllowList = process.env.TOKEN_LIST.toString().split(',');
 
         let authenticated = false;
         for (const token of tokenAllowList) {

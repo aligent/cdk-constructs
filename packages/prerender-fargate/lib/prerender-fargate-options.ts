@@ -73,6 +73,13 @@ export interface PrerenderFargateOptions {
    */
   enableS3Endpoint?: boolean;
   /**
+   * A pre-configured AWS SSM Parameter Store parameter can be used for Prerender API tokens.
+   * Prerender ECS service checks the [token] value to validate the requests.
+   * Parameter type: StringList
+   * Value: Comma-separated token list
+   */
+  tokenParam?: string;
+  /**
    * Configuration for associating tokens with specific domain URLs.
    * During the reacaching process, these tokens will be used to validate the request.
    * ### Example:

@@ -2,6 +2,7 @@ import { Construct } from "constructs";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecsPatterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import { HostedZone } from "aws-cdk-lib/aws-route53";
 import { Bucket, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
@@ -85,6 +86,7 @@ export class PrerenderFargate extends Construct {
     super(scope, id);
 
     const {
+      tokenParam,
       tokenUrlAssociation,
       certificateArn,
       vpcId,
@@ -133,13 +135,42 @@ export class PrerenderFargate extends Construct {
       }
     );
 
-    /**
-     * This provide backward compatibility for the tokenList property
-     * If tokenUrlAssociation is provided, tokenList will be ignored
-     */
-    const tokenList = tokenUrlAssociation
-      ? Object.keys(tokenUrlAssociation.tokenUrlAssociation)
-      : props.tokenList.toString();
+    // Build ECS service taskImageOptions
+    let secrets = {};
+    let environment = {
+      S3_BUCKET_NAME: this.bucket.bucketName,
+      AWS_REGION: Stack.of(this).region,
+      ENABLE_REDIRECT_CACHE: enableRedirectCache || "false",
+      TOKEN_LIST: "",
+    };
+    if (tokenParam) {
+      /**
+       * Override tokenList and/or tokenUrlAssociation if tokenParam is present for better security practice.
+       * tokenParam is the name of the SSM Parameter that has a stringList of tokens as its value.
+       */
+      secrets = {
+        TOKEN_LIST: ecs.Secret.fromSsmParameter(
+          ssm.StringListParameter.fromStringListParameterName(
+            this,
+            "token",
+            tokenParam
+          )
+        ),
+      };
+    } else if (tokenUrlAssociation || props.tokenList) {
+      /**
+       * This provide backward compatibility for the tokenList property and tokenUrlAssociation.
+       * If tokenUrlAssociation is provided, tokenList will be ignored
+       */
+      const tokenList = tokenUrlAssociation
+        ? Object.keys(tokenUrlAssociation.tokenUrlAssociation)
+        : props.tokenList;
+      environment.TOKEN_LIST = tokenList.toString();
+    } else {
+      console.error(
+        "Either one of tokenParam, tokenUrlAssociation, or tokenList must be provided."
+      );
+    }
 
     // Create a load-balanced Fargate service
     const fargateService =
@@ -156,12 +187,8 @@ export class PrerenderFargate extends Construct {
             image: ecs.ContainerImage.fromDockerImageAsset(asset),
             enableLogging: true,
             containerPort: 3000,
-            environment: {
-              S3_BUCKET_NAME: this.bucket.bucketName,
-              AWS_REGION: Stack.of(this).region,
-              ENABLE_REDIRECT_CACHE: enableRedirectCache || "false",
-              TOKEN_LIST: tokenList.toString(),
-            },
+            environment,
+            secrets,
           },
           publicLoadBalancer: true,
           assignPublicIp: true,
