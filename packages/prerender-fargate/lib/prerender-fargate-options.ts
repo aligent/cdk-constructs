@@ -32,7 +32,7 @@ export interface PrerenderFargateOptions {
    * Please use the `tokenUrlAssociation` parameter instead.
    * *If `tokenUrlAssociation` is provided, `tokenList` will be ignored*
    */
-  tokenList: Array<string>;
+  tokenList?: Array<string>;
   /**
    * The ARN of the SSL certificate to use for HTTPS connections.
    */
