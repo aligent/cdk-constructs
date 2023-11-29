@@ -162,9 +162,10 @@ export class PrerenderFargate extends Construct {
        * This provide backward compatibility for the tokenList property and tokenUrlAssociation.
        * If tokenUrlAssociation is provided, tokenList will be ignored
        */
-      const tokenList = tokenUrlAssociation
+      let tokenList = tokenUrlAssociation
         ? Object.keys(tokenUrlAssociation.tokenUrlAssociation)
         : props.tokenList;
+      if (!tokenList) tokenList = [""]; // To suppress the error in the next line about this value is possibly undefined.
       environment.TOKEN_LIST = tokenList.toString();
     } else {
       console.error(
