@@ -27,7 +27,7 @@
     "@aligent/esbuild": "^2.0"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.97.0",
+    "aws-cdk-lib": "2.113.0",
     "constructs": "^10.0.0",
     "source-map-support": "^0.5.21"
   }
