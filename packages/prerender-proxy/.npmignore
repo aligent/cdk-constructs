@@ -1,0 +1,11 @@
+*.ts
+!lib/handlers/*.ts
+!*.d.ts
+!*.js
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+# Samples
+sample/
