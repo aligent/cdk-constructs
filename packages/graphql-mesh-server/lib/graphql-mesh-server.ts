@@ -82,6 +82,10 @@ export type MeshHostingProps = {
    */
   notificationArn?: string;
   /**
+   * Region of the SNS Topic that deployment notifications are sent to
+   */
+  notificationRegion?: string;
+  /**
    * List of IPv4 addresses to block
    */
   blockedIps?: string[];
@@ -186,6 +190,7 @@ export class MeshHosting extends Construct {
       repository: this.repository,
       service: this.service,
       notificationArn: props.notificationArn,
+      notificationRegion: props.notificationRegion,
     });
 
     new PerformanceMetrics(this, "cloudwatch", {
