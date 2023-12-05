@@ -1,7 +1,7 @@
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 import { SNSEvent } from "aws-lambda";
 
-const client = new SNSClient({ region: process.env.AWS_REGION });
+const client = new SNSClient({ region: process.env.REGION });
 
 export const handler = async (event: SNSEvent): Promise<void> => {
   const record = event.Records[0];
