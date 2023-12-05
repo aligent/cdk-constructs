@@ -1,4 +1,5 @@
 import { PrerenderTokenUrlAssociationOptions } from "./recaching/prerender-tokens";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 /**
  * Options for configuring the Prerender Fargate construct.
@@ -15,8 +16,14 @@ export interface PrerenderFargateOptions {
   /**
    * The ID of the VPC to deploy the Fargate service in.
    * @default - The default VPC will be used
+   * @deprecated Use vpc instead and perform the lookup outside of the construct if needed.
    */
   vpcId?: string;
+  /**
+   * The VPC to deploy the Fargate service in.
+   * @default - The default VPC will be used
+   */
+  vpc?: ec2.IVpc;
   /**
    * The name of the S3 bucket to store prerendered pages in.
    */
