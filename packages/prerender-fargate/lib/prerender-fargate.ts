@@ -135,18 +135,20 @@ export class PrerenderFargate extends Construct {
       }
     );
 
-    // Build ECS service taskImageOptions
-    let secrets = {};
+    // Build ECS service taskImageOption
+    let secrets = {}; // for ECS service taskImageOption
     let environment = {
       S3_BUCKET_NAME: this.bucket.bucketName,
       AWS_REGION: Stack.of(this).region,
       ENABLE_REDIRECT_CACHE: enableRedirectCache || "false",
       TOKEN_LIST: "",
-    };
+    }; // for ECS service taskImageOption
+    let recacheTokens: string[] = []; // for Recache API G/W tokens
     if (tokenParam) {
       /**
-       * Override tokenList and/or tokenUrlAssociation if tokenParam is present for better security practice.
        * tokenParam is the name of the SSM Parameter that has a stringList of tokens as its value.
+       * If tokenParam is present, which is the better security practice,
+       * it will override tokenList and/or tokenUrlAssociation for both Prerender Fargate service and Recache API G/W,
        */
       secrets = {
         TOKEN_LIST_SSM: ecs.Secret.fromSsmParameter(
@@ -157,6 +159,11 @@ export class PrerenderFargate extends Construct {
           )
         ),
       };
+      recacheTokens = ssm.StringListParameter.valueForTypedListParameter(
+        this,
+        tokenParam,
+        ssm.ParameterValueType.STRING
+      );
     } else if (tokenUrlAssociation || props.tokenList) {
       /**
        * This provide backward compatibility for the tokenList property and tokenUrlAssociation.
@@ -165,8 +172,9 @@ export class PrerenderFargate extends Construct {
       let tokenList = tokenUrlAssociation
         ? Object.keys(tokenUrlAssociation.tokenUrlAssociation)
         : props.tokenList;
-      if (!tokenList) tokenList = [""]; // To suppress the error in the next line about this value is possibly undefined.
+      if (!tokenList) tokenList = [""]; // To suppress the error in the next line about this value being potentially undefined.
       environment.TOKEN_LIST = tokenList.toString();
+      recacheTokens = tokenList;
     } else {
       console.error(
         "Either one of tokenParam, tokenUrlAssociation, or tokenList must be provided."
@@ -185,6 +193,7 @@ export class PrerenderFargate extends Construct {
           cpu: instanceCPU || 512, // 0.5 vCPU default
           memoryLimitMiB: instanceMemory || 1024, // 1 GB default to give Chrome enough memory
           taskImageOptions: {
+            containerName: `${prerenderName}-container`,
             image: ecs.ContainerImage.fromDockerImageAsset(asset),
             enableLogging: true,
             containerPort: 3000,
@@ -256,10 +265,6 @@ export class PrerenderFargate extends Construct {
       });
     }
 
-    /**
-     * Recache API
-     * Recaching is enable by default
-     */
     if (tokenUrlAssociation) {
       /**
        * Create the token-url association
@@ -273,14 +278,16 @@ export class PrerenderFargate extends Construct {
           ssmPathPrefix: tokenUrlAssociation.ssmPathPrefix,
         }
       );
+    }
 
-      /**
-       * Create the recache API
-       * This would create the API that is used to trigger recaching of the URLs
-       */
+    /**
+     * Recache API is enable by default
+     * This would create the API that is used to trigger recaching of the URLs
+     */
+    if (props.enableRecache === undefined || props.enableRecache) {
       new PrerenderRecacheApi(this, `${prerenderName}-recache-api`, {
         prerenderS3Bucket: this.bucket,
-        tokenList: Object.keys(tokenUrlAssociation.tokenUrlAssociation),
+        tokenList: recacheTokens,
         maxConcurrentExecutions:
           prerenderFargateRecachingOptions?.maxConcurrentExecutions || 1,
       });

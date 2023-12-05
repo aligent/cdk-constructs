@@ -21,7 +21,7 @@ const server = prerender({
     chromeLocation: '/usr/bin/chromium-browser'
 });
 
-
+// Prefer tokens defined via SSM
 const tokens = process.env.TOKEN_LIST_SSM ? process.env.TOKEN_LIST_SSM : process.env.TOKEN_LIST;
 const tokenAllowList = tokens.toString().split(',');
 

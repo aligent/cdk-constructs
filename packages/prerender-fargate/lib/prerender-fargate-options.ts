@@ -27,13 +27,6 @@ export interface PrerenderFargateOptions {
    */
   expirationDays?: number;
   /**
-   * A list of tokens to use for authentication with the Prerender service.
-   * This parameter is deprecated and will be removed in a future release.
-   * Please use the `tokenUrlAssociation` parameter instead.
-   * *If `tokenUrlAssociation` is provided, `tokenList` will be ignored*
-   */
-  tokenList?: Array<string>;
-  /**
    * The ARN of the SSL certificate to use for HTTPS connections.
    */
   certificateArn: string;
@@ -99,6 +92,13 @@ export interface PrerenderFargateOptions {
    */
   tokenUrlAssociation?: PrerenderTokenUrlAssociationOptions;
   /**
+   * A list of tokens to use for authentication with the Prerender service.
+   * This parameter is deprecated and will be removed in a future release.
+   * Please use the `tokenUrlAssociation` parameter instead.
+   * *If `tokenUrlAssociation` is provided, `tokenList` will be ignored*
+   */
+  tokenList?: Array<string>;
+  /**
    * Prerender Fargate Scaling option
    * This allows to alter the scaling behavior. The default configuration should be sufficient
    * for most of the cases.
@@ -110,6 +110,11 @@ export interface PrerenderFargateOptions {
    * @default - { maxConcurrentExecutions: 1 }
    */
   prerenderFargateRecachingOptions?: PrerenderFargateRecachingOptions;
+  /**
+   * Enable Re-caching API
+   * @default - true
+   */
+  enableRecache?: boolean;
 }
 
 /**
