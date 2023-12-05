@@ -35,10 +35,15 @@ export class PrerenderFunction extends Construct {
             local: new Esbuild({
               entryPoints: [join(__dirname, "handlers/prerender.ts")],
               define: {
-                "process.env.PRERENDER_TOKEN": options.prerenderToken,
-                "process.env.PATH_PREFIX": options.pathPrefix ?? "",
-                "process.env.PRERENDER_URL":
-                  options.prerenderUrl ?? "service.prerender.io",
+                "process.env.PRERENDER_TOKEN": JSON.stringify(
+                  options.prerenderToken
+                ),
+                "process.env.PATH_PREFIX": JSON.stringify(
+                  options.pathPrefix ?? ""
+                ),
+                "process.env.PRERENDER_URL": JSON.stringify(
+                  options.prerenderUrl ?? "service.prerender.io"
+                ),
               },
             }),
           },
