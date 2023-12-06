@@ -37,7 +37,7 @@ export const handler = (
     // Fetch default page and return body
     return instance
       .get(`https://${FRONTEND_HOST}${PATH_PREFIX}/index.html`)
-      .then(res => {
+      .then(_res => {
         // Commenting this as there is body is not defined in the CloudFrontResponse type
         // response.body = res.data;
 
@@ -53,7 +53,7 @@ export const handler = (
 
         return response;
       })
-      .catch(err => {
+      .catch(_err => {
         return response;
       });
   }
