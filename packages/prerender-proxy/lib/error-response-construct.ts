@@ -7,6 +7,7 @@ import { Esbuild } from "@aligent/cdk-esbuild";
 
 export interface ErrorResponseFunctionOptions {
   pathPrefix?: string;
+  frontendHost: string;
 }
 
 export class ErrorResponseFunction extends Construct {
@@ -37,7 +38,12 @@ export class ErrorResponseFunction extends Construct {
             local: new Esbuild({
               entryPoints: [join(__dirname, "handlers/error-response.ts")],
               define: {
-                "process.env.PATH_PREFIX": options.pathPrefix ?? "",
+                "process.env.PATH_PREFIX": JSON.stringify(
+                  options.pathPrefix ?? ""
+                ),
+                "process.env.FRONTEND_HOST": JSON.stringify(
+                  options.frontendHost
+                ),
               },
             }),
           },

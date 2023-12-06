@@ -38,10 +38,12 @@ export class CloudFrontCacheControl extends Construct {
             local: new Esbuild({
               entryPoints: [join(__dirname, "handlers/cache-control.ts")],
               define: {
-                "process.env.PRERENDER_CACHE_KEY":
-                  options?.cacheKey ?? "x-prerender-requestid",
-                "process.env.PRERENDER_CACHE_MAX_AGE":
-                  String(options?.maxAge) ?? "0",
+                "process.env.PRERENDER_CACHE_KEY": JSON.stringify(
+                  options?.cacheKey ?? "x-prerender-requestid"
+                ),
+                "process.env.PRERENDER_CACHE_MAX_AGE": JSON.stringify(
+                  String(options?.maxAge) ?? "0"
+                ),
               },
             }),
           },
