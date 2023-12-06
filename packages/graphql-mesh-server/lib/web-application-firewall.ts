@@ -150,7 +150,7 @@ export class WebApplicationFirewall extends Construct {
     }
 
     this.acl = new CfnWebACL(this, "WebAcl", {
-      name: props.name || 'graphql-mesh-web-acl',
+      name: props.name || "graphql-mesh-web-acl",
       defaultAction,
       scope: props.scope || Scope.REGIONAL,
       visibilityConfig: props.visibilityConfig,
