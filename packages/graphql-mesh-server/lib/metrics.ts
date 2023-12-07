@@ -11,7 +11,6 @@ import {
   Alarm,
   ComparisonOperator,
   IMetric,
-  MathExpression,
 } from "aws-cdk-lib/aws-cloudwatch";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import {
