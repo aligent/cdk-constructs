@@ -22,7 +22,7 @@ export class Esbuild implements ILocalBundling {
     });
   }
 
-  tryBundle(outputDir: string, options: BundlingOptions): boolean {
+  tryBundle(outputDir: string, _options: BundlingOptions): boolean {
     try {
       this.options.outdir = outputDir;
       buildSync(this.options);
