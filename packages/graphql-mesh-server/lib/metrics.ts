@@ -10,6 +10,7 @@ import {
   LogQueryWidget,
   Alarm,
   ComparisonOperator,
+  IMetric,
 } from "aws-cdk-lib/aws-cloudwatch";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import {
@@ -103,15 +104,72 @@ export class PerformanceMetrics extends Construct {
     ];
 
     // WAF metrics and widgets
-    const wafRequestMetrics: Metric[] = [
+    const wafWebACL = props.firewall.acl.name || "no-waf-name";
+    const wafRegion = Stack.of(this).region; // assumes waf is in the same region
+
+    const wafRequestMetrics: IMetric[] = [
+      // fixme: cdk doesn't support the "id" property so this doesn't show correctly
+      //       it also doesn't allow metrics to be hidden so again, this wouldn't work...
+      //       you can theoretically override these properties manually so that could work?
+      //       for now though this works well enough
+      // new MathExpression({
+      //   expression: "REMOVE_EMPTY(METRICS())",
+      //   label: "WAF Requests",
+      // }),
       new Metric({
         namespace: "AWS/WAFV2",
         metricName: "AllowedRequests",
+        label: "Allowed Requests",
         dimensionsMap: {
-          WebACL: props.firewall.acl.ref.split("|")[0],
+          WebACL: wafWebACL,
           Rule: "ALL",
-          Region: Stack.of(this).region, // assumes waf is in the same region
+          Region: wafRegion,
         },
+        statistic: "sum",
+      }),
+      new Metric({
+        namespace: "AWS/WAFV2",
+        metricName: "BlockedRequests",
+        label: "Blocked Requests",
+        dimensionsMap: {
+          WebACL: wafWebACL,
+          Rule: "ALL",
+          Region: wafRegion,
+        },
+        statistic: "sum",
+      }),
+      new Metric({
+        namespace: "AWS/WAFV2",
+        metricName: "BlockedRequests",
+        label: "Blocked IPv6 Requests",
+        dimensionsMap: {
+          WebACL: wafWebACL,
+          Rule: "BlockIPv6",
+          Region: wafRegion,
+        },
+        statistic: "sum",
+      }),
+      new Metric({
+        namespace: "AWS/WAFV2",
+        metricName: "BlockedRequests",
+        label: "Blocked IPv4 Requests",
+        dimensionsMap: {
+          WebACL: wafWebACL,
+          Rule: "BlockIPv4",
+          Region: wafRegion,
+        },
+        statistic: "sum",
+      }),
+      new Metric({
+        namespace: "AWS/WAFV2",
+        metricName: "BlockedRequests",
+        label: "Blocked by Rate Limiting Requests",
+        dimensionsMap: {
+          WebACL: wafWebACL,
+          Rule: "RateLimit",
+          Region: wafRegion,
+        },
+        statistic: "sum",
       }),
     ];
 
