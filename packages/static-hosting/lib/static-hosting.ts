@@ -108,9 +108,13 @@ export interface StaticHostingProps {
   overrideLogicalId?: string;
 
   /**
-   *
+   * A Request policy used on the default behavior
    */
   defaultBehaviorRequestPolicy?: OriginRequestPolicy;
+
+  /**
+   * A Cache policy used on the default behavior
+   */
   defaultBehaviorCachePolicy?: CachePolicy;
 }
 
