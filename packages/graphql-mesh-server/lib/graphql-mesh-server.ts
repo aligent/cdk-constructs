@@ -39,7 +39,7 @@ export type MeshHostingProps = {
   /**
    * ARN of the certificate to add to the load balancer
    */
-  certificateArn: string;
+  certificateArn?: string;
   /**
    * Minimum number of Fargate instances
    */
