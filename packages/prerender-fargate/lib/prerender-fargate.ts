@@ -143,12 +143,14 @@ export class PrerenderFargate extends Construct {
       ENABLE_REDIRECT_CACHE: enableRedirectCache || "false",
       TOKEN_LIST: "",
     }; // for ECS service taskImageOption
-    let recacheTokens: string[] = []; // for Recache API G/W tokens
+    // let recacheTokens: string[] = []; // for Recache API G/W tokens
+    let tokenList;
     if (tokenParam) {
       /**
        * tokenParam is the name of the SSM Parameter that has a stringList of tokens as its value.
        * If tokenParam is present, which is the better security practice,
-       * it will override tokenList and/or tokenUrlAssociation for both Prerender Fargate service and Recache API G/W,
+       * it will override tokenList and/or tokenUrlAssociation for both Prerender Fargate service and Recache API G/W.
+       * Tokens for Recache API doesn't need to be fed, as it should be self-contained with its own parameter value.
        */
       secrets = {
         TOKEN_LIST_SSM: ecs.Secret.fromSsmParameter(
@@ -159,22 +161,17 @@ export class PrerenderFargate extends Construct {
           )
         ),
       };
-      recacheTokens = ssm.StringListParameter.valueForTypedListParameter(
-        this,
-        tokenParam,
-        ssm.ParameterValueType.STRING
-      );
     } else if (tokenUrlAssociation || props.tokenList) {
       /**
-       * This provide backward compatibility for the tokenList property and tokenUrlAssociation.
+       * This provide backward compatibility for the tokenList and tokenUrlAssociation properties.
        * If tokenUrlAssociation is provided, tokenList will be ignored
        */
-      let tokenList = tokenUrlAssociation
+      tokenList = tokenUrlAssociation
         ? Object.keys(tokenUrlAssociation.tokenUrlAssociation)
         : props.tokenList;
       if (!tokenList) tokenList = [""]; // To suppress the error in the next line about this value being potentially undefined.
       environment.TOKEN_LIST = tokenList.toString();
-      recacheTokens = tokenList;
+      // recacheTokens = tokenList;
     } else {
       console.error(
         "Either one of tokenParam, tokenUrlAssociation, or tokenList must be provided."
@@ -287,7 +284,7 @@ export class PrerenderFargate extends Construct {
     if (props.enableRecache === undefined || props.enableRecache) {
       new PrerenderRecacheApi(this, `${prerenderName}-recache-api`, {
         prerenderS3Bucket: this.bucket,
-        tokenList: recacheTokens,
+        tokenList,
         maxConcurrentExecutions:
           prerenderFargateRecachingOptions?.maxConcurrentExecutions || 1,
       });
