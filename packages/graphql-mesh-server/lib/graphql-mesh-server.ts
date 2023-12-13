@@ -18,6 +18,7 @@ import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2"
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 import { Topic } from "aws-cdk-lib/aws-sns";
 import { Alarm } from "aws-cdk-lib/aws-cloudwatch";
+import { Tags } from "aws-cdk-lib";
 
 export type MeshHostingProps = {
   /**
@@ -200,5 +201,7 @@ export class MeshHosting extends Construct {
       logGroup: this.logGroup,
       firewall: this.firewall,
     });
+
+    Tags.of(this).add("construct", "graphql-mesh-server");
   }
 }

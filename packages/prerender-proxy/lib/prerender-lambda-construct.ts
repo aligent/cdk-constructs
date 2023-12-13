@@ -12,6 +12,7 @@ import {
   ErrorResponseFunction,
   ErrorResponseFunctionOptions,
 } from "./error-response-construct";
+import { Tags } from "aws-cdk-lib";
 
 export interface PrerenderLambdaProps {
   prerenderProps: PrerenderFunctionOptions;
@@ -50,5 +51,7 @@ export class PrerenderLambda extends Construct {
       "PrerenderCloudFrontCacheControl",
       props.cacheControlProps
     );
+
+    Tags.of(this).add("construct", "prerender-proxy");
   }
 }

@@ -1,4 +1,4 @@
-import { aws_wafv2 } from "aws-cdk-lib";
+import { Tags, aws_wafv2 } from "aws-cdk-lib";
 import { Construct } from "constructs";
 
 export const REGIONAL = "REGIONAL";
@@ -368,5 +368,7 @@ export class WebApplicationFirewall extends Construct {
         });
       });
     }
+
+    Tags.of(this).add("construct", "waf");
   }
 }

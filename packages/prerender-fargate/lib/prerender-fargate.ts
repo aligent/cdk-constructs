@@ -11,6 +11,7 @@ import * as path from "path";
 import { PrerenderTokenUrlAssociation } from "./recaching/prerender-tokens";
 import { PrerenderRecacheApi } from "./recaching/prerender-recache-api-construct";
 import { PrerenderFargateOptions } from "./prerender-fargate-options";
+import { Tags } from "aws-cdk-lib";
 
 /**
  * `PrerenderFargate` construct sets up an AWS Fargate service to run a
@@ -263,5 +264,7 @@ export class PrerenderFargate extends Construct {
           prerenderFargateRecachingOptions?.maxConcurrentExecutions || 1,
       });
     }
+
+    Tags.of(this).add("construct", "prerender-fargate");
   }
 }

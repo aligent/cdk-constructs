@@ -1,7 +1,7 @@
 import { Construct } from "constructs";
 import { experimental } from "aws-cdk-lib/aws-cloudfront";
 import { Esbuild } from "@aligent/cdk-esbuild";
-import { AssetHashType, DockerImage } from "aws-cdk-lib";
+import { AssetHashType, DockerImage, Tags } from "aws-cdk-lib";
 import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
 import { join } from "path";
 
@@ -44,6 +44,8 @@ export class BasicAuthFunction extends Construct {
         handler: "basic-auth.handler",
       }
     );
+
+    Tags.of(this).add("construct", "basic-auth");
   }
 
   public getFunctionVersion(): IVersion {

@@ -1,4 +1,4 @@
-import { AssetHashType, DockerImage } from "aws-cdk-lib";
+import { AssetHashType, DockerImage, Tags } from "aws-cdk-lib";
 import { experimental } from "aws-cdk-lib/aws-cloudfront";
 import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
@@ -49,6 +49,8 @@ export class RedirectFunction extends Construct {
         handler: "redirect.handler",
       }
     );
+
+    Tags.of(this).add("construct", "geoip-redirect");
   }
 
   public getFunctionVersion(): IVersion {

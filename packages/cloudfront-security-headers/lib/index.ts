@@ -1,4 +1,4 @@
-import { AssetHashType, DockerImage } from "aws-cdk-lib";
+import { AssetHashType, DockerImage, Tags } from "aws-cdk-lib";
 import { experimental } from "aws-cdk-lib/aws-cloudfront";
 import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
@@ -54,6 +54,8 @@ export class SecurityHeaderFunction extends Construct {
         handler: "security-header.handler",
       }
     );
+
+    Tags.of(this).add("construct", "cloudfront-security-headers");
   }
 
   public getFunctionVersion(): IVersion {

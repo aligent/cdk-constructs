@@ -1,5 +1,5 @@
 import { Construct } from "constructs";
-import { CfnOutput, Duration, RemovalPolicy } from "aws-cdk-lib";
+import { Aws, CfnOutput, Duration, RemovalPolicy, Stage, Tags } from "aws-cdk-lib";
 import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import {
   Distribution,
@@ -431,6 +431,10 @@ export class StaticHosting extends Construct {
         zone: zone,
       });
     }
+
+    Tags.of(this).add("construct", 'static-hosting');
+    Tags.of(this).add("stack", Aws.STACK_NAME);
+    Tags.of(this).add("stage", Stage.of(this)?.stageName || 'unknown');
   }
 
   private createRemapBehavior(from: string, to: string): EdgeLambda[] {

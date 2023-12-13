@@ -1,5 +1,5 @@
 import { Construct } from "constructs";
-import { CfnOutput } from "aws-cdk-lib";
+import { CfnOutput, Tags } from "aws-cdk-lib";
 import { SecurityGroup, Vpc, Port } from "aws-cdk-lib/aws-ec2";
 import { CfnBrokerProps, CfnBroker } from "aws-cdk-lib/aws-amazonmq";
 
@@ -64,5 +64,7 @@ export class RabbitMQ extends Construct {
       value: rabbitMQ.attrArn,
       exportName: rabbitMQ.brokerName + "Arn",
     });
+
+    Tags.of(this).add("construct", "rabbitmq");
   }
 }

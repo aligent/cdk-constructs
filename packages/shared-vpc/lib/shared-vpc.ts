@@ -130,5 +130,7 @@ export class SharedVpc extends Construct {
         exportName: `${vpcName}-hosted-zone`,
       });
     }
+
+    Tags.of(this).add("construct", "shared-vpc");
   }
 }
