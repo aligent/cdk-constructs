@@ -91,7 +91,7 @@ export class PrerenderFargate extends Construct {
       minInstanceCount,
       prerenderFargateScalingOptions,
       prerenderFargateRecachingOptions,
-      enableRecache
+      enableRecache,
     } = props;
 
     // Create bucket for prerender storage
