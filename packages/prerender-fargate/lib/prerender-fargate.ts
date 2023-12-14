@@ -126,7 +126,7 @@ export class PrerenderFargate extends Construct {
 
     // Build ECS service taskImageOption
     let secrets = {};
-    let environment = {
+    const environment = {
       S3_BUCKET_NAME: this.bucket.bucketName,
       AWS_REGION: Stack.of(this).region,
       ENABLE_REDIRECT_CACHE: enableRedirectCache || "false",
