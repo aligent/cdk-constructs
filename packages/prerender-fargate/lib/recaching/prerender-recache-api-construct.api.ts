@@ -11,6 +11,10 @@ import {
   SendMessageBatchRequestEntry,
 } from "@aws-sdk/client-sqs";
 import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
+import {
+  SecretsManagerClient,
+  GetSecretValueCommand,
+} from "@aws-sdk/client-secrets-manager";
 import { md5hash } from "aws-cdk-lib/core/lib/helpers-internal";
 
 /**
@@ -31,11 +35,35 @@ interface PreRenderRequestBody {
   urls?: string[];
 }
 
+/**
+const secret_name = "prerender/tokens";
+
+const client = new SecretsManagerClient({
+  region: "ap-southeast-2",
+});
+
+let response;
+
+try {
+  response = await client.send(
+    new GetSecretValueCommand({
+      SecretId: secret_name,
+    })
+  );
+} catch (error) {
+  // For a list of exceptions thrown, see
+  // https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+  throw error;
+}
+
+const secret = response.SecretString;
+*/
+
 const QueueUrl = process.env.SQS_QUEUE_URL;
 const Bucket = process.env.PRERENDER_CACHE_BUCKET;
 
 export const MAX_URLS = 1000;
-export const PARAM_PREFIX = "prerender/recache/tokens";
+export const PARAM_PREFIX = "prerender/recache/tokens"; // TO-DO: parse TOKEN_LIST_SECRET into tokens and URLs
 
 const sqsClient = new SQSClient({});
 const s3Client = new S3Client({});

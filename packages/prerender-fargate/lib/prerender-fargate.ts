@@ -3,6 +3,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecsPatterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ssm from "aws-cdk-lib/aws-ssm";
+import * as sm from "aws-cdk-lib/aws-secretsmanager";
 import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import { HostedZone } from "aws-cdk-lib/aws-route53";
 import { Bucket, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
@@ -74,6 +75,7 @@ export class PrerenderFargate extends Construct {
     super(scope, id);
 
     const {
+      tokenSecret,
       tokenParam,
       tokenUrlAssociation,
       certificateArn,
@@ -130,9 +132,9 @@ export class PrerenderFargate extends Construct {
       S3_BUCKET_NAME: this.bucket.bucketName,
       AWS_REGION: Stack.of(this).region,
       ENABLE_REDIRECT_CACHE: enableRedirectCache || "false",
-      TOKEN_LIST: "",
+      TOKEN_LIST: "", // TO-DO: remove this and use [] instead of . later.
     };
-    if (tokenParam) {
+    if (tokenSecret) {
       /**
        * tokenParam is the name of the SSM Parameter that has a stringList of tokens as its value.
        * If tokenParam is present, which is the better security practice, it will override tokenList and/or tokenUrlAssociation.
@@ -143,13 +145,16 @@ export class PrerenderFargate extends Construct {
          * secrets and environment properties of taskImageOption can't have the same env var name defined, hence TOKEN_LIST_SSM is used here.
          * TOKEN_LIST_SSM and TOKEN_LIST are handled within the application, i.e. server.js
          */
-        TOKEN_LIST_SSM: ecs.Secret.fromSsmParameter(
-          ssm.StringListParameter.fromStringListParameterName(
-            this,
-            "token",
-            tokenParam
-          )
+        TOKEN_LIST_SECRET: ecs.Secret.fromSecretsManager(
+          sm.Secret.fromSecretNameV2(this, "secrets", tokenSecret)
         ),
+        // TOKEN_LIST_SSM: ecs.Secret.fromSsmParameter(
+        //   ssm.StringListParameter.fromStringListParameterName(
+        //     this,
+        //     "token",
+        //     tokenParam
+        //   )
+        // ),
       };
     } else if (tokenUrlAssociation || props.tokenList) {
       /**

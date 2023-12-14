@@ -66,6 +66,12 @@ export interface PrerenderFargateOptions {
    */
   enableS3Endpoint?: boolean;
   /**
+   * A pre-configured AWS Secrets Manager secret name for Prerender and Recache API authentication.
+   * The format of the secret is: Map<string, string[]>, e.g.,
+   * { "tokenABC": "https://URL_A,https://URL_B,...", ..., "tokenXYZ":"https://URL_Y,https://URL_Z" }
+   */
+  tokenSecret?: string;
+  /**
    * A pre-configured AWS SSM Parameter Store parameter can be used for Prerender API tokens.
    * Prerender ECS service checks the [token] value to validate the requests.
    * Parameter type: StringList

@@ -21,8 +21,21 @@ const server = prerender({
     chromeLocation: '/usr/bin/chromium-browser'
 });
 
-// Prefer tokens defined via SSM
-const tokens = process.env.TOKEN_LIST_SSM ? process.env.TOKEN_LIST_SSM : process.env.TOKEN_LIST;
+// TO-DO: parse TOKEN_LIST_SECRET into tokens and URLs
+
+// Prefer tokens defined via Secrets Manager
+/**
+ * {
+ *  "secrettoken1":"https://www.aligent.com.au,https://www.yd.com.au",
+ *  "secrettoken2":"https://www.yd.com.au,https://www.connor.com.au"
+ * }
+ */
+
+
+const tokenJson = JSON.parse(process.env.TOKEN_LIST_SECRET);
+const tokens = Object.keys(tokenJson);
+
+// const tokens = process.env.TOKEN_LIST_SSM ? process.env.TOKEN_LIST_SSM : process.env.TOKEN_LIST;
 const tokenAllowList = tokens.toString().split(',');
 
 server.use({
@@ -38,11 +51,14 @@ server.use({
         }
 
         // compare credentials in header to list of allowed credentials
-
         let authenticated = false;
         for (const token of tokenAllowList) {
-            authenticated = auth === token;
-
+            let domains = tokenJson[token].split(',')
+            for (const domain of domains) {
+                // Use req.get('host') instead of req.hostname to include port number notation
+                authenticated = (auth === token && `${req.protocol}://${req.get('host')}`.startsWith(domain) );
+                if (authenticated) break;
+            }
             if (authenticated) break;
         }
         if (!authenticated) {
