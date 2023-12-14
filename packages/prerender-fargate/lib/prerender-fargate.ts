@@ -50,19 +50,7 @@ import { PrerenderFargateOptions } from "./prerender-fargate-options";
  *     enableRedirectCache: 'false',
  *     maxInstanceCount: 2,
  *     enableS3Endpoint: true,
- *     tokenUrlAssociation: {
- *     tokenUrlAssociation: {
- *        token1: [
- *          "https://example.com",
- *          "https://acme.example.com"
- *        ],
- *        token2: [
- *          "https://example1.com",
- *          "https://acme.example1.com"
- *        ]
- *    },
- *    ssmPathPrefix: "/prerender/recache/tokens"
- * }
+ *     tokenParam: '/prerender/tokens'
  * });
  * ```
  *
@@ -103,6 +91,7 @@ export class PrerenderFargate extends Construct {
       minInstanceCount,
       prerenderFargateScalingOptions,
       prerenderFargateRecachingOptions,
+      enableRecache
     } = props;
 
     // Create bucket for prerender storage
@@ -136,23 +125,24 @@ export class PrerenderFargate extends Construct {
     );
 
     // Build ECS service taskImageOption
-    let secrets = {}; // for ECS service taskImageOption
+    let secrets = {};
     let environment = {
       S3_BUCKET_NAME: this.bucket.bucketName,
       AWS_REGION: Stack.of(this).region,
       ENABLE_REDIRECT_CACHE: enableRedirectCache || "false",
       TOKEN_LIST: "",
-    }; // for ECS service taskImageOption
-    // let recacheTokens: string[] = []; // for Recache API G/W tokens
-    let tokenList;
+    };
     if (tokenParam) {
       /**
        * tokenParam is the name of the SSM Parameter that has a stringList of tokens as its value.
-       * If tokenParam is present, which is the better security practice,
-       * it will override tokenList and/or tokenUrlAssociation for both Prerender Fargate service and Recache API G/W.
-       * Tokens for Recache API doesn't need to be fed, as it should be self-contained with its own parameter value.
+       * If tokenParam is present, which is the better security practice, it will override tokenList and/or tokenUrlAssociation.
+       * Tokens for Recache API doesn't need to be fed via Stack, as it should have its own SSM parameter(s).
        */
       secrets = {
+        /**
+         * secrets and environment properties of taskImageOption can't have the same env var name defined, hence TOKEN_LIST_SSM is used here.
+         * TOKEN_LIST_SSM and TOKEN_LIST are handled within the application, i.e. server.js
+         */
         TOKEN_LIST_SSM: ecs.Secret.fromSsmParameter(
           ssm.StringListParameter.fromStringListParameterName(
             this,
@@ -166,12 +156,11 @@ export class PrerenderFargate extends Construct {
        * This provide backward compatibility for the tokenList and tokenUrlAssociation properties.
        * If tokenUrlAssociation is provided, tokenList will be ignored
        */
-      tokenList = tokenUrlAssociation
+      let tokenList = tokenUrlAssociation
         ? Object.keys(tokenUrlAssociation.tokenUrlAssociation)
         : props.tokenList;
       if (!tokenList) tokenList = [""]; // To suppress the error in the next line about this value being potentially undefined.
       environment.TOKEN_LIST = tokenList.toString();
-      // recacheTokens = tokenList;
     } else {
       console.error(
         "Either one of tokenParam, tokenUrlAssociation, or tokenList must be provided."
@@ -281,10 +270,9 @@ export class PrerenderFargate extends Construct {
      * Recache API is enable by default
      * This would create the API that is used to trigger recaching of the URLs
      */
-    if (props.enableRecache === undefined || props.enableRecache) {
+    if (enableRecache === undefined || enableRecache) {
       new PrerenderRecacheApi(this, `${prerenderName}-recache-api`, {
         prerenderS3Bucket: this.bucket,
-        tokenList,
         maxConcurrentExecutions:
           prerenderFargateRecachingOptions?.maxConcurrentExecutions || 1,
       });
