@@ -50,13 +50,12 @@ server.use({
             return res.send(401);
         }
 
-        // compare credentials in header to list of allowed credentials
+        // compare credentials in header to list of allowed credentials and corresponding domains
         let authenticated = false;
         for (const token of tokenAllowList) {
             let domains = tokenJson[token].split(',')
             for (const domain of domains) {
-                // Use req.get('host') instead of req.hostname to include port number notation
-                authenticated = (auth === token && `${req.protocol}://${req.get('host')}`.startsWith(domain) );
+                authenticated = (auth === token && req.url.startsWith(`/${domain}`) );
                 if (authenticated) break;
             }
             if (authenticated) break;
