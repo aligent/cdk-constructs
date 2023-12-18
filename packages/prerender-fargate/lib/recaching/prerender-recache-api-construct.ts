@@ -18,6 +18,11 @@ export interface PrerenderRecacheApiOptions {
    * Maximum number of concurrent executions of the Prerender Recache API.
    */
   maxConcurrentExecutions: number;
+  /**
+   * Secrets Manager secret name having Map<string, string[]> as its value, e.g.,
+   * { "tokenABC": "https://URL_A,https://URL_B,...", ..., "tokenXYZ":"https://URL_Y,https://URL_Z" }
+   */
+  tokenSecret: string;
 }
 
 /**
@@ -73,6 +78,8 @@ const createApiLambdaFunction = (
     "PRERENDER_CACHE_BUCKET",
     options.prerenderS3Bucket.bucketName
   );
+
+  apiHandler.addEnvironment("TOKEN_SECRET", options.tokenSecret);
 
   const ssmGetParameterPolicy = new iam.PolicyStatement({
     actions: ["ssm:GetParameter"],

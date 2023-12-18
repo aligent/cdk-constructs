@@ -35,41 +35,17 @@ interface PreRenderRequestBody {
   urls?: string[];
 }
 
-/**
-const secret_name = "prerender/tokens";
-
-const client = new SecretsManagerClient({
-  region: "ap-southeast-2",
-});
-
-let response;
-
-try {
-  response = await client.send(
-    new GetSecretValueCommand({
-      SecretId: secret_name,
-    })
-  );
-} catch (error) {
-  // For a list of exceptions thrown, see
-  // https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
-  throw error;
-}
-
-const secret = response.SecretString;
-*/
-
 const QueueUrl = process.env.SQS_QUEUE_URL;
 const Bucket = process.env.PRERENDER_CACHE_BUCKET;
 
 export const MAX_URLS = 1000;
-export const PARAM_PREFIX = "prerender/recache/tokens"; // TO-DO: parse TOKEN_LIST_SECRET into tokens and URLs
+// export const PARAM_PREFIX = "prerender/recache/tokens"; // TO-DO: parse TOKEN_SECRET into tokens and URLs
 
 const sqsClient = new SQSClient({});
 const s3Client = new S3Client({});
 const ssmClient = new SSMClient({});
 
-const tokens: Map<string, string[]> = new Map();
+let tokens: Map<string, string[]> = new Map();
 
 /**
  * Handles the recaching of URLs and returns a response with the recached URLs.
@@ -147,31 +123,67 @@ const getUrlsToRecache = async (body: string): Promise<string[]> => {
     urls = [];
   }
 
+  // Use SecretsManager
+  const secret_name = process.env.TOKEN_SECRET;
+  const smClient = new SecretsManagerClient({
+    region: "ap-southeast-2",
+  });
+
+  let response;
+
+  try {
+    response = await smClient.send(
+      new GetSecretValueCommand({
+        SecretId: secret_name,
+      })
+    );
+  } catch (error) {
+    // For a list of exceptions thrown, see
+    // https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+    throw error;
+  }
+
+  const secret = response.SecretString;
+  // Use SecretsManager
+
   const token = requestBody.prerenderToken;
 
-  if (!tokens.has(token)) {
-    const Name = `/${PARAM_PREFIX}/${token}`;
-    console.log(`Looking for allowed urls in ssm:${Name}`);
+  //  { "tokenABC": "https://URL_A,https://URL_B,...", ..., "tokenXYZ":"https://URL_Y,https://URL_Z" }
 
-    const getAllowedUrls = new GetParameterCommand({ Name });
+  if (!tokens.has(token)) {
+    // const Name = `/${PARAM_PREFIX}/${token}`;
+    // console.log(`Looking for allowed urls in ssm:${Name}`);
+    // const Name = `/${PARAM_PREFIX}/${token}`;
+    console.log(`Looking for allowed urls in secretsmanager:${secret_name}`);
+
+    // const getAllowedUrls = new GetParameterCommand({ Name });
+    const getAllowedUrls = new GetSecretValueCommand({
+      SecretId: secret_name,
+    });
     console.log(getAllowedUrls);
 
-    const ssmResponse = await ssmClient.send(getAllowedUrls);
-
-    if (ssmResponse.Parameter === undefined) {
-      throw "No parameters returned";
+    // const ssmResponse = await ssmClient.send(getAllowedUrls);
+    const smResponse = await smClient.send(getAllowedUrls);
+    // if (ssmResponse.Parameter === undefined) {
+    //   throw "No parameters returned";
+    // }
+    if (smResponse.SecretString === undefined) {
+      throw "No secret found";
     }
 
-    const allowedUrlsResult = ssmResponse.Parameter;
+    // const allowedUrlsResult = ssmResponse.Parameter;
+    const allowedUrlsResult = JSON.parse(smResponse.SecretString); // Map<string, string[]>
     if (allowedUrlsResult.Type === undefined) {
-      throw "Token not valid";
+      // throw "Token not valid";
+      throw "Secret is empty";
     }
 
-    if (allowedUrlsResult.Type !== "StringList") {
-      throw `Token data is not a string list, ${Name} is ${allowedUrlsResult.Type}`;
-    }
+    // if (allowedUrlsResult.Type !== "StringList") {
+    //   throw `Token data is not a string list, ${Name} is ${allowedUrlsResult.Type}`;
+    // }
 
-    tokens.set(token, allowedUrlsResult.Value?.split(",") || []);
+    // tokens.set(token, allowedUrlsResult.Value?.split(",") || []);
+    tokens = allowedUrlsResult;
   }
 
   const allowedUrls = tokens.get(token) || [];
