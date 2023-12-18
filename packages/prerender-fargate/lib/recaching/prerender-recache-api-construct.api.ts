@@ -43,9 +43,6 @@ export const MAX_URLS = 1000;
 
 const sqsClient = new SQSClient({});
 const s3Client = new S3Client({});
-const ssmClient = new SSMClient({});
-
-let tokens: Map<string, string[]> = new Map();
 
 /**
  * Handles the recaching of URLs and returns a response with the recached URLs.
@@ -95,7 +92,7 @@ export const handler = async (
   }
 
   console.log(await deleteCacheContentForUrls(urlsToRecache));
-  await queueRecachineUrls(urlsToRecache);
+  await queueRecachingUrls(urlsToRecache);
 
   return {
     statusCode: 200,
@@ -105,6 +102,9 @@ export const handler = async (
   };
 };
 
+// Use SecretsManager
+const secret_name = process.env.TOKEN_SECRET;
+const smClient = new SecretsManagerClient({});
 /**
  * Parses the given request body and returns an array of URLs to recache.
  * @param body - The request body to parse.
@@ -124,69 +124,50 @@ const getUrlsToRecache = async (body: string): Promise<string[]> => {
   }
 
   // Use SecretsManager
-  const secret_name = process.env.TOKEN_SECRET;
-  const smClient = new SecretsManagerClient({
-    region: "ap-southeast-2",
-  });
-
-  let response;
-
-  try {
-    response = await smClient.send(
-      new GetSecretValueCommand({
-        SecretId: secret_name,
-      })
-    );
-  } catch (error) {
-    // For a list of exceptions thrown, see
-    // https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
-    throw error;
-  }
-
-  const secret = response.SecretString;
-  // Use SecretsManager
 
   const token = requestBody.prerenderToken;
 
   //  { "tokenABC": "https://URL_A,https://URL_B,...", ..., "tokenXYZ":"https://URL_Y,https://URL_Z" }
 
-  if (!tokens.has(token)) {
-    // const Name = `/${PARAM_PREFIX}/${token}`;
-    // console.log(`Looking for allowed urls in ssm:${Name}`);
-    // const Name = `/${PARAM_PREFIX}/${token}`;
-    console.log(`Looking for allowed urls in secretsmanager:${secret_name}`);
-
-    // const getAllowedUrls = new GetParameterCommand({ Name });
-    const getAllowedUrls = new GetSecretValueCommand({
-      SecretId: secret_name,
-    });
-    console.log(getAllowedUrls);
-
-    // const ssmResponse = await ssmClient.send(getAllowedUrls);
-    const smResponse = await smClient.send(getAllowedUrls);
-    // if (ssmResponse.Parameter === undefined) {
-    //   throw "No parameters returned";
-    // }
-    if (smResponse.SecretString === undefined) {
-      throw "No secret found";
-    }
-
-    // const allowedUrlsResult = ssmResponse.Parameter;
-    const allowedUrlsResult = JSON.parse(smResponse.SecretString); // Map<string, string[]>
-    if (allowedUrlsResult.Type === undefined) {
-      // throw "Token not valid";
-      throw "Secret is empty";
-    }
-
-    // if (allowedUrlsResult.Type !== "StringList") {
-    //   throw `Token data is not a string list, ${Name} is ${allowedUrlsResult.Type}`;
-    // }
-
-    // tokens.set(token, allowedUrlsResult.Value?.split(",") || []);
-    tokens = allowedUrlsResult;
+  interface TokenSecret {
+    [key: string]: string;
   }
 
-  const allowedUrls = tokens.get(token) || [];
+  // const prerenderToken = "tokenabc" // passed into recache function
+  // const recacheUrl = "" // url to be recached
+
+  // var secretsString = "{\"token11233\": \"https\", \"tokenabc\": \"https://aligent.com,https://example.com\"}"; // value from secrets manager
+
+  console.log(`Looking for allowed urls in secretsmanager:${secret_name}`);
+
+  const getAllowedUrls = new GetSecretValueCommand({
+    SecretId: secret_name,
+  });
+  console.log(getAllowedUrls);
+
+  // const ssmResponse = await ssmClient.send(getAllowedUrls);
+  const smResponse = await smClient.send(getAllowedUrls);
+
+  if (smResponse.SecretString === undefined) {
+    throw "No secret found";
+  }
+
+  const secretsString = JSON.parse(smResponse.SecretString);
+  var secretsData: TokenSecret = JSON.parse(secretsString); // parse data and define it as token secret
+
+  const allowedUrls = secretsData[token].split(","); // get comma delimited urls from string
+
+  // for (const url of urls) {
+  //   for (const allowedUrl of allowedUrls) {
+  //     if (allowedUrls && url.startsWith(allowedUrl)) {
+  //       // checks that allowedUrls is not undefined or empty and that it includes the requested url
+  //       // TODO: allow recache
+  //     }
+  //   }
+  // }
+
+  // allowedURLs : https://www.aligent.com.au,https://staging.aligent.com.au
+  // urls: https://www.aligent.com.au/abc,https://testing.aligent.com.au/abc
 
   console.log(`Allowed urls for ${token}: ${allowedUrls.join(", ")}`);
 
@@ -225,7 +206,7 @@ const deleteCacheContentForUrls = async (
  * Queues the given URLs for recaching.
  * @param urlsToRecache An array of URLs to recache.
  */
-const queueRecachineUrls = async (urlsToRecache: string[]) => {
+const queueRecachingUrls = async (urlsToRecache: string[]) => {
   const generateEntry = (url: string): SendMessageBatchRequestEntry => {
     return {
       DelaySeconds: 1,

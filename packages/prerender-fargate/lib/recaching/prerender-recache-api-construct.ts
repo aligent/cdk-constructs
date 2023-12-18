@@ -81,14 +81,24 @@ const createApiLambdaFunction = (
 
   apiHandler.addEnvironment("TOKEN_SECRET", options.tokenSecret);
 
-  const ssmGetParameterPolicy = new iam.PolicyStatement({
-    actions: ["ssm:GetParameter"],
-    resources: ["*"],
-  }); // should be arn:aws:ssm:::parameter/prerender/recache/tokens/*, but can't make that work
+  // const ssmGetParameterPolicy = new iam.PolicyStatement({
+  //   actions: ["ssm:GetParameter"],
+  //   resources: ["*"],
+  // }); // should be arn:aws:ssm:::parameter/prerender/recache/tokens/*, but can't make that work
 
-  const ssmDescribeParameterPolicy = new iam.PolicyStatement({
-    actions: ["ssm:DescribeParameters"],
-    resources: ["*"],
+  // const ssmDescribeParameterPolicy = new iam.PolicyStatement({
+  //   actions: ["ssm:DescribeParameters"],
+  //   resources: ["*"],
+  // });
+
+  const smGetSecretPolicy = new iam.PolicyStatement({
+    actions: ["ssm:GetSecretValue"],
+    resources: ["*"], // TODO: use `arn:aws:secretsmanager:Region:AccountId:secret:${options.tokenSecret}`
+  });
+
+  const smDescribeSecretPolicy = new iam.PolicyStatement({
+    actions: ["ssm:DescribeSecret"],
+    resources: ["*"], // TODO: use `arn:aws:secretsmanager:Region:AccountId:secret:${options.tokenSecret}`
   });
 
   const s3DeleteObjectPolicy = new iam.PolicyStatement({
@@ -96,8 +106,8 @@ const createApiLambdaFunction = (
     resources: [`${options.prerenderS3Bucket.bucketArn}/*`],
   });
 
-  apiHandler.addToRolePolicy(ssmGetParameterPolicy);
-  apiHandler.addToRolePolicy(ssmDescribeParameterPolicy);
+  apiHandler.addToRolePolicy(smGetSecretPolicy);
+  apiHandler.addToRolePolicy(smDescribeSecretPolicy);
   apiHandler.addToRolePolicy(s3DeleteObjectPolicy);
 
   return apiHandler;
