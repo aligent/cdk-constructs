@@ -2,6 +2,7 @@ import { Construct } from "constructs";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecsPatterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import { HostedZone } from "aws-cdk-lib/aws-route53";
 import { Bucket, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
@@ -49,19 +50,7 @@ import { PrerenderFargateOptions } from "./prerender-fargate-options";
  *     enableRedirectCache: 'false',
  *     maxInstanceCount: 2,
  *     enableS3Endpoint: true,
- *     tokenUrlAssociation: {
- *     tokenUrlAssociation: {
- *        token1: [
- *          "https://example.com",
- *          "https://acme.example.com"
- *        ],
- *        token2: [
- *          "https://example1.com",
- *          "https://acme.example1.com"
- *        ]
- *    },
- *    ssmPathPrefix: "/prerender/recache/tokens"
- * }
+ *     tokenParam: '/prerender/tokens'
  * });
  * ```
  *
@@ -85,6 +74,7 @@ export class PrerenderFargate extends Construct {
     super(scope, id);
 
     const {
+      tokenParam,
       tokenUrlAssociation,
       certificateArn,
       maxInstanceCount,
@@ -100,6 +90,7 @@ export class PrerenderFargate extends Construct {
       minInstanceCount,
       prerenderFargateScalingOptions,
       prerenderFargateRecachingOptions,
+      enableRecache,
     } = props;
 
     // Create bucket for prerender storage
@@ -139,13 +130,48 @@ export class PrerenderFargate extends Construct {
       }
     );
 
-    /**
-     * This provide backward compatibility for the tokenList property
-     * If tokenUrlAssociation is provided, tokenList will be ignored
-     */
-    const tokenList = tokenUrlAssociation
-      ? Object.keys(tokenUrlAssociation.tokenUrlAssociation)
-      : props.tokenList.toString();
+    // Build ECS service taskImageOption
+    let secrets = {};
+    const environment = {
+      S3_BUCKET_NAME: this.bucket.bucketName,
+      AWS_REGION: Stack.of(this).region,
+      ENABLE_REDIRECT_CACHE: enableRedirectCache || "false",
+      TOKEN_LIST: "",
+    };
+    if (tokenParam) {
+      /**
+       * tokenParam is the name of the SSM Parameter that has a stringList of tokens as its value.
+       * If tokenParam is present, which is the better security practice, it will override tokenList and/or tokenUrlAssociation.
+       * Tokens for Recache API doesn't need to be fed via Stack, as it should have its own SSM parameter(s).
+       */
+      secrets = {
+        /**
+         * secrets and environment properties of taskImageOption can't have the same env var name defined, hence TOKEN_LIST_SSM is used here.
+         * TOKEN_LIST_SSM and TOKEN_LIST are handled within the application, i.e. server.js
+         */
+        TOKEN_LIST_SSM: ecs.Secret.fromSsmParameter(
+          ssm.StringListParameter.fromStringListParameterName(
+            this,
+            "token",
+            tokenParam
+          )
+        ),
+      };
+    } else if (tokenUrlAssociation || props.tokenList) {
+      /**
+       * This provide backward compatibility for the tokenList and tokenUrlAssociation properties.
+       * If tokenUrlAssociation is provided, tokenList will be ignored
+       */
+      let tokenList = tokenUrlAssociation
+        ? Object.keys(tokenUrlAssociation.tokenUrlAssociation)
+        : props.tokenList;
+      if (!tokenList) tokenList = [""]; // To suppress the error in the next line about this value being potentially undefined.
+      environment.TOKEN_LIST = tokenList.toString();
+    } else {
+      console.error(
+        "Either one of tokenParam, tokenUrlAssociation, or tokenList must be provided."
+      );
+    }
 
     // Create a load-balanced Fargate service
     const fargateService =
@@ -159,15 +185,12 @@ export class PrerenderFargate extends Construct {
           cpu: instanceCPU || 512, // 0.5 vCPU default
           memoryLimitMiB: instanceMemory || 1024, // 1 GB default to give Chrome enough memory
           taskImageOptions: {
+            containerName: `${prerenderName}-container`,
             image: ecs.ContainerImage.fromDockerImageAsset(asset),
             enableLogging: true,
             containerPort: 3000,
-            environment: {
-              S3_BUCKET_NAME: this.bucket.bucketName,
-              AWS_REGION: Stack.of(this).region,
-              ENABLE_REDIRECT_CACHE: enableRedirectCache || "false",
-              TOKEN_LIST: tokenList.toString(),
-            },
+            environment,
+            secrets,
           },
           publicLoadBalancer: true,
           assignPublicIp: true,
@@ -234,10 +257,6 @@ export class PrerenderFargate extends Construct {
       });
     }
 
-    /**
-     * Recache API
-     * Recaching is enable by default
-     */
     if (tokenUrlAssociation) {
       /**
        * Create the token-url association
@@ -251,14 +270,15 @@ export class PrerenderFargate extends Construct {
           ssmPathPrefix: tokenUrlAssociation.ssmPathPrefix,
         }
       );
+    }
 
-      /**
-       * Create the recache API
-       * This would create the API that is used to trigger recaching of the URLs
-       */
+    /**
+     * Recache API is enable by default
+     * This would create the API that is used to trigger recaching of the URLs
+     */
+    if (enableRecache === undefined || enableRecache) {
       new PrerenderRecacheApi(this, `${prerenderName}-recache-api`, {
         prerenderS3Bucket: this.bucket,
-        tokenList: Object.keys(tokenUrlAssociation.tokenUrlAssociation),
         maxConcurrentExecutions:
           prerenderFargateRecachingOptions?.maxConcurrentExecutions || 1,
       });

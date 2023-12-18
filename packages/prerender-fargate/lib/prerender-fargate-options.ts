@@ -34,13 +34,6 @@ export interface PrerenderFargateOptions {
    */
   expirationDays?: number;
   /**
-   * A list of tokens to use for authentication with the Prerender service.
-   * This parameter is deprecated and will be removed in a future release.
-   * Please use the `tokenUrlAssociation` parameter instead.
-   * *If `tokenUrlAssociation` is provided, `tokenList` will be ignored*
-   */
-  tokenList: Array<string>;
-  /**
    * The ARN of the SSL certificate to use for HTTPS connections.
    */
   certificateArn: string;
@@ -80,6 +73,13 @@ export interface PrerenderFargateOptions {
    */
   enableS3Endpoint?: boolean;
   /**
+   * A pre-configured AWS SSM Parameter Store parameter can be used for Prerender API tokens.
+   * Prerender ECS service checks the [token] value to validate the requests.
+   * Parameter type: StringList
+   * Value: Comma-separated token list
+   */
+  tokenParam?: string;
+  /**
    * Configuration for associating tokens with specific domain URLs.
    * During the reacaching process, these tokens will be used to validate the request.
    * ### Example:
@@ -99,6 +99,13 @@ export interface PrerenderFargateOptions {
    */
   tokenUrlAssociation?: PrerenderTokenUrlAssociationOptions;
   /**
+   * A list of tokens to use for authentication with the Prerender service.
+   * This parameter is deprecated and will be removed in a future release.
+   * Please use the `tokenUrlAssociation` parameter instead.
+   * *If `tokenUrlAssociation` is provided, `tokenList` will be ignored*
+   */
+  tokenList?: Array<string>;
+  /**
    * Prerender Fargate Scaling option
    * This allows to alter the scaling behavior. The default configuration should be sufficient
    * for most of the cases.
@@ -110,6 +117,11 @@ export interface PrerenderFargateOptions {
    * @default - { maxConcurrentExecutions: 1 }
    */
   prerenderFargateRecachingOptions?: PrerenderFargateRecachingOptions;
+  /**
+   * Enable Re-caching API
+   * @default - true
+   */
+  enableRecache?: boolean;
 }
 
 /**

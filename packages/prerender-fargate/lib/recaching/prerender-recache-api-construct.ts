@@ -15,10 +15,6 @@ export interface PrerenderRecacheApiOptions {
    */
   prerenderS3Bucket: Bucket;
   /**
-   * A list of tokens used to authenticate API requests.
-   */
-  tokenList: string[];
-  /**
    * Maximum number of concurrent executions of the Prerender Recache API.
    */
   maxConcurrentExecutions: number;
@@ -43,8 +39,6 @@ export class PrerenderRecacheApi extends Construct {
       handler: apiHandler,
       proxy: false,
     });
-
-    options.tokenList.forEach(k => this.api.addApiKey(k));
 
     const recache = this.api.root.addResource("recache");
     recache.addMethod("POST");
