@@ -39,7 +39,6 @@ const QueueUrl = process.env.SQS_QUEUE_URL;
 const Bucket = process.env.PRERENDER_CACHE_BUCKET;
 
 export const MAX_URLS = 1000;
-// export const PARAM_PREFIX = "prerender/recache/tokens"; // TO-DO: parse TOKEN_SECRET into tokens and URLs
 
 const sqsClient = new SQSClient({});
 const s3Client = new S3Client({});
@@ -124,50 +123,25 @@ const getUrlsToRecache = async (body: string): Promise<string[]> => {
   }
 
   // Use SecretsManager
-
   const token = requestBody.prerenderToken;
-
-  //  { "tokenABC": "https://URL_A,https://URL_B,...", ..., "tokenXYZ":"https://URL_Y,https://URL_Z" }
-
   interface TokenSecret {
     [key: string]: string;
   }
-
-  // const prerenderToken = "tokenabc" // passed into recache function
-  // const recacheUrl = "" // url to be recached
-
-  // var secretsString = "{\"token11233\": \"https\", \"tokenabc\": \"https://aligent.com,https://example.com\"}"; // value from secrets manager
 
   console.log(`Looking for allowed urls in secretsmanager:${secret_name}`);
 
   const getAllowedUrls = new GetSecretValueCommand({
     SecretId: secret_name,
   });
-  console.log(getAllowedUrls);
 
-  // const ssmResponse = await ssmClient.send(getAllowedUrls);
   const smResponse = await smClient.send(getAllowedUrls);
 
   if (smResponse.SecretString === undefined) {
     throw "No secret found";
   }
 
-  const secretsString = JSON.parse(smResponse.SecretString);
-  var secretsData: TokenSecret = JSON.parse(secretsString); // parse data and define it as token secret
-
+  const secretsData: TokenSecret = JSON.parse(smResponse.SecretString);
   const allowedUrls = secretsData[token].split(","); // get comma delimited urls from string
-
-  // for (const url of urls) {
-  //   for (const allowedUrl of allowedUrls) {
-  //     if (allowedUrls && url.startsWith(allowedUrl)) {
-  //       // checks that allowedUrls is not undefined or empty and that it includes the requested url
-  //       // TODO: allow recache
-  //     }
-  //   }
-  // }
-
-  // allowedURLs : https://www.aligent.com.au,https://staging.aligent.com.au
-  // urls: https://www.aligent.com.au/abc,https://testing.aligent.com.au/abc
 
   console.log(`Allowed urls for ${token}: ${allowedUrls.join(", ")}`);
 

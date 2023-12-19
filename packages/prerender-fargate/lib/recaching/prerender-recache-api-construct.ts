@@ -4,7 +4,7 @@ import { LambdaToSqsToLambda } from "@aws-solutions-constructs/aws-lambda-sqs-la
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Bucket } from "aws-cdk-lib/aws-s3";
-import { Duration } from "aws-cdk-lib";
+import { Stack, Duration } from "aws-cdk-lib";
 
 /**
  * Options for the Prerender Recache API.
@@ -28,6 +28,9 @@ export interface PrerenderRecacheApiOptions {
 /**
  * Represents an API for recaching prerendered pages.
  */
+let region: string;
+let account: string;
+
 export class PrerenderRecacheApi extends Construct {
   readonly api: LambdaRestApi;
 
@@ -58,6 +61,8 @@ export class PrerenderRecacheApi extends Construct {
       queueProps: { visibilityTimeout: Duration.minutes(60) },
     });
   }
+  region = Stack.of(this).region;
+  account = Stack.of(this).account;
 }
 
 /**
@@ -92,13 +97,17 @@ const createApiLambdaFunction = (
   // });
 
   const smGetSecretPolicy = new iam.PolicyStatement({
-    actions: ["ssm:GetSecretValue"],
-    resources: ["*"], // TODO: use `arn:aws:secretsmanager:Region:AccountId:secret:${options.tokenSecret}`
+    actions: ["secretsmanager:GetSecretValue"],
+    resources: [
+      `arn:aws:secretsmanager:${region}:${account}:secret:${options.tokenSecret}`,
+    ],
   });
 
   const smDescribeSecretPolicy = new iam.PolicyStatement({
-    actions: ["ssm:DescribeSecret"],
-    resources: ["*"], // TODO: use `arn:aws:secretsmanager:Region:AccountId:secret:${options.tokenSecret}`
+    actions: ["secretsmanager:DescribeSecret"],
+    resources: [
+      `arn:aws:secretsmanager:${region}:${account}:secret:${options.tokenSecret}`,
+    ],
   });
 
   const s3DeleteObjectPolicy = new iam.PolicyStatement({
