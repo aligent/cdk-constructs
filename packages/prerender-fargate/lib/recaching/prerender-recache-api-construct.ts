@@ -46,7 +46,7 @@ export class PrerenderRecacheApi extends Construct {
       resources: [
         `arn:aws:secretsmanager:${Stack.of(this).region}:${
           Stack.of(this).account
-        }:secret:${options.tokenSecret}`,
+        }:secret:${options.tokenSecret}-*`,
       ],
     });
 
@@ -55,7 +55,7 @@ export class PrerenderRecacheApi extends Construct {
       resources: [
         `arn:aws:secretsmanager:${Stack.of(this).region}:${
           Stack.of(this).account
-        }:secret:${options.tokenSecret}`,
+        }:secret:${options.tokenSecret}-*`,
       ],
     });
 
