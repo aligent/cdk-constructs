@@ -28,8 +28,6 @@ export interface PrerenderRecacheApiOptions {
 /**
  * Represents an API for recaching prerendered pages.
  */
-let region: string;
-let account: string;
 
 export class PrerenderRecacheApi extends Construct {
   readonly api: LambdaRestApi;
@@ -42,6 +40,33 @@ export class PrerenderRecacheApi extends Construct {
     super(scope, id);
 
     const apiHandler = createApiLambdaFunction(this, options);
+
+    const smGetSecretPolicy = new iam.PolicyStatement({
+      actions: ["secretsmanager:GetSecretValue"],
+      resources: [
+        `arn:aws:secretsmanager:${Stack.of(this).region}:${
+          Stack.of(this).account
+        }:secret:${options.tokenSecret}`,
+      ],
+    });
+
+    const smDescribeSecretPolicy = new iam.PolicyStatement({
+      actions: ["secretsmanager:DescribeSecret"],
+      resources: [
+        `arn:aws:secretsmanager:${Stack.of(this).region}:${
+          Stack.of(this).account
+        }:secret:${options.tokenSecret}`,
+      ],
+    });
+
+    const s3DeleteObjectPolicy = new iam.PolicyStatement({
+      actions: ["s3:DeleteObject"],
+      resources: [`${options.prerenderS3Bucket.bucketArn}/*`],
+    });
+
+    apiHandler.addToRolePolicy(smGetSecretPolicy);
+    apiHandler.addToRolePolicy(smDescribeSecretPolicy);
+    apiHandler.addToRolePolicy(s3DeleteObjectPolicy);
 
     this.api = new LambdaRestApi(this, "prerenderRecacheApi", {
       handler: apiHandler,
@@ -61,8 +86,6 @@ export class PrerenderRecacheApi extends Construct {
       queueProps: { visibilityTimeout: Duration.minutes(60) },
     });
   }
-  region = Stack.of(this).region;
-  account = Stack.of(this).account;
 }
 
 /**
@@ -85,39 +108,6 @@ const createApiLambdaFunction = (
   );
 
   apiHandler.addEnvironment("TOKEN_SECRET", options.tokenSecret);
-
-  // const ssmGetParameterPolicy = new iam.PolicyStatement({
-  //   actions: ["ssm:GetParameter"],
-  //   resources: ["*"],
-  // }); // should be arn:aws:ssm:::parameter/prerender/recache/tokens/*, but can't make that work
-
-  // const ssmDescribeParameterPolicy = new iam.PolicyStatement({
-  //   actions: ["ssm:DescribeParameters"],
-  //   resources: ["*"],
-  // });
-
-  const smGetSecretPolicy = new iam.PolicyStatement({
-    actions: ["secretsmanager:GetSecretValue"],
-    resources: [
-      `arn:aws:secretsmanager:${region}:${account}:secret:${options.tokenSecret}`,
-    ],
-  });
-
-  const smDescribeSecretPolicy = new iam.PolicyStatement({
-    actions: ["secretsmanager:DescribeSecret"],
-    resources: [
-      `arn:aws:secretsmanager:${region}:${account}:secret:${options.tokenSecret}`,
-    ],
-  });
-
-  const s3DeleteObjectPolicy = new iam.PolicyStatement({
-    actions: ["s3:DeleteObject"],
-    resources: [`${options.prerenderS3Bucket.bucketArn}/*`],
-  });
-
-  apiHandler.addToRolePolicy(smGetSecretPolicy);
-  apiHandler.addToRolePolicy(smDescribeSecretPolicy);
-  apiHandler.addToRolePolicy(s3DeleteObjectPolicy);
 
   return apiHandler;
 };
