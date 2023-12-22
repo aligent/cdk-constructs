@@ -228,7 +228,7 @@ export class PrerenderFargate extends Construct {
         prerenderS3Bucket: this.bucket,
         maxConcurrentExecutions:
           prerenderFargateRecachingOptions?.maxConcurrentExecutions || 1,
-        tokenSecret: tokenSecret ? tokenSecret : "",
+        tokenSecret,
       });
     }
   }
