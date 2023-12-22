@@ -2,7 +2,6 @@ import { Construct } from "constructs";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecsPatterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as sm from "aws-cdk-lib/aws-secretsmanager";
 import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import { HostedZone } from "aws-cdk-lib/aws-route53";
@@ -10,7 +9,6 @@ import { Bucket, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import * as ecrAssets from "aws-cdk-lib/aws-ecr-assets";
 import { Duration, RemovalPolicy, Stack } from "aws-cdk-lib";
 import * as path from "path";
-import { PrerenderTokenUrlAssociation } from "./recaching/prerender-tokens";
 import { PrerenderRecacheApi } from "./recaching/prerender-recache-api-construct";
 import { PrerenderFargateOptions } from "./prerender-fargate-options";
 
@@ -76,8 +74,6 @@ export class PrerenderFargate extends Construct {
 
     const {
       tokenSecret,
-      tokenParam,
-      tokenUrlAssociation,
       certificateArn,
       vpcId,
       maxInstanceCount,
@@ -127,50 +123,17 @@ export class PrerenderFargate extends Construct {
     );
 
     // Build ECS service taskImageOption
-    let secrets = {};
     const environment = {
       S3_BUCKET_NAME: this.bucket.bucketName,
       AWS_REGION: Stack.of(this).region,
-      ENABLE_REDIRECT_CACHE: enableRedirectCache || "false",
-      TOKEN_LIST: "", // TO-DO: remove this and use [] instead of . later.
+      ENABLE_REDIRECT_CACHE: enableRedirectCache?.toString() || "false",
     };
-    if (tokenSecret) {
-      /**
-       * tokenParam is the name of the SSM Parameter that has a stringList of tokens as its value.
-       * If tokenParam is present, which is the better security practice, it will override tokenList and/or tokenUrlAssociation.
-       * Tokens for Recache API doesn't need to be fed via Stack, as it should have its own SSM parameter(s).
-       */
-      secrets = {
-        /**
-         * secrets and environment properties of taskImageOption can't have the same env var name defined, hence TOKEN_LIST_SSM is used here.
-         * TOKEN_LIST_SSM and TOKEN_LIST are handled within the application, i.e. server.js
-         */
-        TOKEN_LIST_SECRET: ecs.Secret.fromSecretsManager(
-          sm.Secret.fromSecretNameV2(this, "secrets", tokenSecret)
-        ),
-        // TOKEN_LIST_SSM: ecs.Secret.fromSsmParameter(
-        //   ssm.StringListParameter.fromStringListParameterName(
-        //     this,
-        //     "token",
-        //     tokenParam
-        //   )
-        // ),
-      };
-    } else if (tokenUrlAssociation || props.tokenList) {
-      /**
-       * This provide backward compatibility for the tokenList and tokenUrlAssociation properties.
-       * If tokenUrlAssociation is provided, tokenList will be ignored
-       */
-      let tokenList = tokenUrlAssociation
-        ? Object.keys(tokenUrlAssociation.tokenUrlAssociation)
-        : props.tokenList;
-      if (!tokenList) tokenList = [""]; // To suppress the error in the next line about this value being potentially undefined.
-      environment.TOKEN_LIST = tokenList.toString();
-    } else {
-      console.error(
-        "Either one of tokenParam, tokenUrlAssociation, or tokenList must be provided."
-      );
-    }
+
+    const secrets = {
+      TOKEN_LIST_SECRET: ecs.Secret.fromSecretsManager(
+        sm.Secret.fromSecretNameV2(this, "secrets", tokenSecret)
+      ),
+    };
 
     // Create a load-balanced Fargate service
     const fargateService =
@@ -254,21 +217,6 @@ export class PrerenderFargate extends Construct {
         service: ec2.GatewayVpcEndpointAwsService.S3,
         subnets: [{ subnetType: ec2.SubnetType.PUBLIC }],
       });
-    }
-
-    if (tokenUrlAssociation) {
-      /**
-       * Create the token-url association
-       * This is used for managing prerender tokens in prerender re-caching
-       */
-      new PrerenderTokenUrlAssociation(
-        this,
-        `${prerenderName}-token-url-association`,
-        {
-          tokenUrlAssociation: tokenUrlAssociation.tokenUrlAssociation,
-          ssmPathPrefix: tokenUrlAssociation.ssmPathPrefix,
-        }
-      );
     }
 
     /**

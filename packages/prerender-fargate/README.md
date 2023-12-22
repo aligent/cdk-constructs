@@ -23,6 +23,9 @@ To use the PrerenderFargate construct, you can instantiate it with suitable Prer
 ### `domainName` (string)
 
 - The domain name to prerender.
+### `tokenSecret` (strings)
+
+- A pre-configured AWS SecretsManager Secret name with the value being in the format of `Map<String: String[]>`, for example, `{"token1": "https://www.example1.com,https://www.mydomain1.com", "token2":"https://www.example2.com,https://www.mydomain2.com"}`. This map is referenced for Prerender and Recaching service authentication.
 
 ### `vpcId` (string, optional)
 
@@ -35,10 +38,6 @@ To use the PrerenderFargate construct, you can instantiate it with suitable Prer
 ### `expirationDays` (number, optional)
 
 - The number of days to keep prerendered pages in the S3 bucket before expiring them.
-
-### `tokenList` (Array of strings, deprecated)
-
-- A list of tokens to use for authentication with the Prerender service. (This parameter is deprecated and will be removed in a future release. Please use the `tokenUrlAssociation` parameter instead. If `tokenUrlAssociation` is provided, `tokenList` will be ignored.)
 
 ### `certificateArn` (string)
 
@@ -72,10 +71,6 @@ To use the PrerenderFargate construct, you can instantiate it with suitable Prer
 
 - Whether to enable the [VPC endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/create-interface-endpoint.html) for S3.
 
-### `tokenUrlAssociation` (PrerenderTokenUrlAssociationOptions, optional)
-
-- Configuration for associating tokens with specific domain URLs. During the recaching process, these tokens will be used to validate the request.
-
 ### `prerenderFargateScalingOptions` (PrerenderFargateScalingOptions, optional)
 
 - This allows to alter the scaling behavior. The default configuration should be sufficient for most of the cases.
@@ -83,6 +78,13 @@ To use the PrerenderFargate construct, you can instantiate it with suitable Prer
 ### `prerenderFargateRecachingOptions` (PrerenderFargateRecachingOptions, optional)
 
 - This allows to alter the re-caching behavior. The default configuration should be sufficient.
+### `tokenList` (Array of strings, deprecated)
+
+- A list of tokens to use for authentication with the Prerender service. (This parameter is deprecated and removed as of 2.3.0. Please use the `tokenSecret` parameter instead.)
+
+### `tokenUrlAssociation` (PrerenderTokenUrlAssociationOptions, deprecated)
+
+- Configuration for associating tokens with specific domain URLs. During the recaching process, these tokens will be used to validate the request. (This parameter is deprecated and removed as of 2.3.0. Please use the `tokenSecret` parameter instead.)
 
 ## Example
 
@@ -112,11 +114,6 @@ export class RagPrerenderStackStack extends Stack {
       enableRedirectCache: "false",
       maxInstanceCount: 2,
       enableS3Endpoint: true,
-      tokenUrlAssociation: {
-        token1: ["https://example.com", "https://acme.example.com"],
-        token2: ["https://example1.com", "https:acme.example1.com"],
-      },
-      ssmPathPrefix: "/prerender/recache/tokens",
       prerenderFargateRecachingOptions: {
         maxConcurrentExecutions: 1,
       },
