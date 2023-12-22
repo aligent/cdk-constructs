@@ -210,7 +210,7 @@ export class PrerenderFargate extends Construct {
 
     /**
      * Enable VPC Endpoints for S3
-     * This would  create S3 endpoints in all the PUBLIC subnets of the VPC
+     * This would create S3 endpoints in all the PUBLIC subnets of the VPC
      */
     if (enableS3Endpoint) {
       vpc.addGatewayEndpoint("S3Endpoint", {

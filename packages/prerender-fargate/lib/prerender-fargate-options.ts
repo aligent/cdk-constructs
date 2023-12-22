@@ -16,11 +16,11 @@ export interface PrerenderFargateOptions {
    */
   vpcId?: string;
   /**
-   * The name of the S3 bucket to store prerendered pages in.
+   * The name of the S3 bucket to store pre-rendered pages in.
    */
   bucketName?: string;
   /**
-   * The number of days to keep prerendered pages in the S3 bucket before expiring them.
+   * The number of days to keep pre-rendered pages in the S3 bucket before expiring them.
    * @default - 10 days
    */
   expirationDays?: number;
@@ -63,7 +63,7 @@ export interface PrerenderFargateOptions {
    * Whether to enable caching of HTTP redirects.
    * @default - false
    */
-  enableRedirectCache?: string;
+  enableRedirectCache?: boolean;
   /**
    * Whether to enable the S3 endpoint for the VPC.
    * @default - false
@@ -143,5 +143,5 @@ export interface PrerenderFargateRecachingOptions {
    * The maximum number of concurrent executions of the Prerender Re-cache API.
    * @default - 1
    */
-  maxConcurrentExecutions: number;
+  maxConcurrentExecutions?: number;
 }
