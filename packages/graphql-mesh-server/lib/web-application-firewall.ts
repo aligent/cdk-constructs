@@ -71,6 +71,7 @@ export interface AWSManagedRule {
 export interface WebApplicationFirewallProps {
   /**
    * Name of the WAF
+   * Defaults to 'graphql-mesh-web-acl'
    */
   name?: string;
 
@@ -149,7 +150,7 @@ export class WebApplicationFirewall extends Construct {
     }
 
     this.acl = new CfnWebACL(this, "WebAcl", {
-      name: props.name,
+      name: props.name || "graphql-mesh-web-acl",
       defaultAction,
       scope: props.scope || Scope.REGIONAL,
       visibilityConfig: props.visibilityConfig,

@@ -1,4 +1,4 @@
-import { Duration } from "aws-cdk-lib";
+import { Duration, Stack } from "aws-cdk-lib";
 import { Artifact, Pipeline } from "aws-cdk-lib/aws-codepipeline";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
@@ -38,6 +38,11 @@ export interface CodePipelineServiceProps {
    * ARN of the SNS Topic to send deployment notifications to
    */
   notificationArn?: string;
+
+  /**
+   * AWS Region the SNS topic is deployed in
+   */
+  notificationRegion?: string;
 }
 
 export class CodePipelineService extends Construct {
@@ -115,6 +120,7 @@ export class CodePipelineService extends Construct {
         timeout: Duration.seconds(10),
         environment: {
           SNS_TOPIC: props.notificationArn,
+          REGION: props.notificationRegion || Stack.of(this).region,
         },
       });
 

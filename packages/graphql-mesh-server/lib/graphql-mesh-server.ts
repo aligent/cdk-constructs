@@ -39,7 +39,7 @@ export type MeshHostingProps = {
   /**
    * ARN of the certificate to add to the load balancer
    */
-  certificateArn: string;
+  certificateArn?: string;
   /**
    * Minimum number of Fargate instances
    */
@@ -81,6 +81,10 @@ export type MeshHostingProps = {
    * ARN of the SNS Topic to send deployment notifications to
    */
   notificationArn?: string;
+  /**
+   * Region of the SNS Topic that deployment notifications are sent to
+   */
+  notificationRegion?: string;
   /**
    * List of IPv4 addresses to block
    */
@@ -186,6 +190,7 @@ export class MeshHosting extends Construct {
       repository: this.repository,
       service: this.service,
       notificationArn: props.notificationArn,
+      notificationRegion: props.notificationRegion,
     });
 
     new PerformanceMetrics(this, "cloudwatch", {

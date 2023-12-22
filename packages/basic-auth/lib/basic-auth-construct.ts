@@ -1,6 +1,6 @@
 import { Construct } from "constructs";
-import { EdgeFunction } from "aws-cdk-lib/aws-cloudfront/lib/experimental";
-import { Esbuild } from "@aligent/esbuild";
+import { experimental } from "aws-cdk-lib/aws-cloudfront";
+import { Esbuild } from "@aligent/cdk-esbuild";
 import { AssetHashType, DockerImage } from "aws-cdk-lib";
 import { Code, IVersion, Runtime, Version } from "aws-cdk-lib/aws-lambda";
 import { join } from "path";
@@ -11,7 +11,7 @@ export interface BasicAuthFunctionOptions {
 }
 
 export class BasicAuthFunction extends Construct {
-  readonly edgeFunction: EdgeFunction;
+  readonly edgeFunction: experimental.EdgeFunction;
 
   constructor(scope: Construct, id: string, options: BasicAuthFunctionOptions) {
     super(scope, id);
@@ -22,24 +22,28 @@ export class BasicAuthFunction extends Construct {
       'echo "Docker build not supported. Please install esbuild."',
     ];
 
-    this.edgeFunction = new EdgeFunction(this, `${id}-basic-auth-fn`, {
-      code: Code.fromAsset(join(__dirname, "handlers"), {
-        assetHashType: AssetHashType.OUTPUT,
-        bundling: {
-          command,
-          image: DockerImage.fromRegistry("busybox"),
-          local: new Esbuild({
-            entryPoints: [join(__dirname, "handlers/basic-auth.ts")],
-            define: {
-              "process.env.AUTH_USERNAME": options.username,
-              "process.env.AUTH_PASSWORD": options.password,
-            },
-          }),
-        },
-      }),
-      runtime: Runtime.NODEJS_18_X,
-      handler: "basic-auth.handler",
-    });
+    this.edgeFunction = new experimental.EdgeFunction(
+      this,
+      `${id}-basic-auth-fn`,
+      {
+        code: Code.fromAsset(join(__dirname, "handlers"), {
+          assetHashType: AssetHashType.OUTPUT,
+          bundling: {
+            command,
+            image: DockerImage.fromRegistry("busybox"),
+            local: new Esbuild({
+              entryPoints: [join(__dirname, "handlers/basic-auth.ts")],
+              define: {
+                "process.env.AUTH_USERNAME": options.username,
+                "process.env.AUTH_PASSWORD": options.password,
+              },
+            }),
+          },
+        }),
+        runtime: Runtime.NODEJS_18_X,
+        handler: "basic-auth.handler",
+      }
+    );
   }
 
   public getFunctionVersion(): IVersion {

@@ -106,6 +106,16 @@ export interface StaticHostingProps {
    * https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_cloudfront-readme.html#migrating-from-the-original-cloudfrontwebdistribution-to-the-newer-distribution-construct.
    */
   overrideLogicalId?: string;
+
+  /**
+   * A Request policy used on the default behavior
+   */
+  defaultBehaviorRequestPolicy?: OriginRequestPolicy;
+
+  /**
+   * A Cache policy used on the default behavior
+   */
+  defaultBehaviorCachePolicy?: CachePolicy;
 }
 
 interface remapPath {
@@ -255,20 +265,20 @@ export class StaticHosting extends Construct {
     });
     let backendOrigin = undefined;
 
-    const originRequestPolicy = new OriginRequestPolicy(
-      this,
-      "S3OriginRequestPolicy",
-      {
+    const originRequestPolicy =
+      props.defaultBehaviorRequestPolicy ||
+      new OriginRequestPolicy(this, "S3OriginRequestPolicy", {
         headerBehavior:
           OriginRequestHeaderBehavior.allowList("x-forwarded-host"),
-      }
-    );
+      });
 
-    const originCachePolicy = new CachePolicy(this, "S3OriginCachePolicy", {
-      headerBehavior: CacheHeaderBehavior.allowList("x-forwarded-host"),
-      enableAcceptEncodingBrotli: true,
-      enableAcceptEncodingGzip: true,
-    });
+    const originCachePolicy =
+      props.defaultBehaviorCachePolicy ||
+      new CachePolicy(this, "S3OriginCachePolicy", {
+        headerBehavior: CacheHeaderBehavior.allowList("x-forwarded-host"),
+        enableAcceptEncodingBrotli: true,
+        enableAcceptEncodingGzip: true,
+      });
 
     const errorResponses: ErrorResponse[] = [
       {
@@ -383,10 +393,11 @@ export class StaticHosting extends Construct {
       errorResponses: props.enableErrorConfig ? errorResponses : [],
     };
 
-    const distribution = new Distribution(this, "BucketCdn", distributionProps);
+    this.distribution = new Distribution(this, "BucketCdn", distributionProps);
 
     if (props.overrideLogicalId) {
-      const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
+      const cfnDistribution = this.distribution.node
+        .defaultChild as CfnDistribution;
       cfnDistribution.overrideLogicalId(props.overrideLogicalId);
     }
 
@@ -403,14 +414,10 @@ export class StaticHosting extends Construct {
         ],
       });
 
-      const cloudFrontInvalidationPolicy = new Policy(
-        this,
-        "CloudFrontInvalidationPolicy",
-        {
-          groups: [publisherGroup],
-          statements: [cloudFrontInvalidationPolicyStatement],
-        }
-      );
+      new Policy(this, "CloudFrontInvalidationPolicy", {
+        groups: [publisherGroup],
+        statements: [cloudFrontInvalidationPolicyStatement],
+      });
     }
     new CfnOutput(this, "DistributionId", {
       description: "DistributionId",

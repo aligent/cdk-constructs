@@ -40,7 +40,7 @@ import { PrerenderFargateOptions } from "./prerender-fargate-options";
  *     prerenderName: 'myPrerender',
  *     bucketName: 'myPrerenderBucket',
  *     expirationDays: 7,
- *     vpcId: 'vpc-xxxxxxxx',
+ *     vpc: vpc,
  *     desiredInstanceCount: 1,
  *     instanceCPU: 512,
  *     instanceMemory: 1024,
@@ -75,7 +75,6 @@ export class PrerenderFargate extends Construct {
     const {
       tokenSecret,
       certificateArn,
-      vpcId,
       maxInstanceCount,
       instanceMemory,
       instanceCPU,
@@ -106,8 +105,15 @@ export class PrerenderFargate extends Construct {
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
     });
 
-    const vpcLookup = vpcId ? { vpcId: vpcId } : { isDefault: true };
-    const vpc = ec2.Vpc.fromLookup(this, "vpc", vpcLookup);
+    // If a VPC is not provided then deploy to the default VPC
+    let vpc: ec2.IVpc;
+    if (props.vpc) {
+      vpc = props.vpc;
+    } else if (props.vpcId) {
+      vpc = ec2.Vpc.fromLookup(this, "vpc", { vpcId: props.vpcId });
+    } else {
+      vpc = ec2.Vpc.fromLookup(this, "vpc", { isDefault: true });
+    }
 
     const cluster = new ecs.Cluster(this, `${prerenderName}-cluster`, {
       vpc: vpc,

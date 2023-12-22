@@ -4,7 +4,7 @@ import {
   CfnSubnetGroup,
   CfnParameterGroup,
 } from "aws-cdk-lib/aws-elasticache";
-import { CfnOutput, Reference, Token } from "aws-cdk-lib";
+import { CfnOutput, Token } from "aws-cdk-lib";
 import { Construct } from "constructs";
 
 export interface RedisServiceProps {

@@ -32,7 +32,7 @@ export interface MeshServiceProps {
   /**
    * ARN of the certificate to add to the load balancer
    */
-  certificateArn: string;
+  certificateArn?: string;
   /**
    * Minimum number of Fargate instances
    */
@@ -129,11 +129,13 @@ export class MeshService extends Construct {
   constructor(scope: Construct, id: string, props: MeshServiceProps) {
     super(scope, id);
 
-    const certificate = acm.Certificate.fromCertificateArn(
-      this,
-      `certificate`,
-      props.certificateArn
-    );
+    const certificate = props.certificateArn
+      ? acm.Certificate.fromCertificateArn(
+          this,
+          `certificate`,
+          props.certificateArn
+        )
+      : undefined;
 
     this.vpc =
       props.vpc ||
