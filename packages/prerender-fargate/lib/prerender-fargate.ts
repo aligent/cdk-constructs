@@ -130,7 +130,7 @@ export class PrerenderFargate extends Construct {
     };
 
     const secrets = {
-      TOKEN_LIST_SECRET: ecs.Secret.fromSecretsManager(
+      TOKEN_SECRET: ecs.Secret.fromSecretsManager(
         sm.Secret.fromSecretNameV2(this, "secrets", tokenSecret)
       ),
     };

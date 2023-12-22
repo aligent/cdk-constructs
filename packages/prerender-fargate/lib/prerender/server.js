@@ -21,21 +21,9 @@ const server = prerender({
     chromeLocation: '/usr/bin/chromium-browser'
 });
 
-// TO-DO: parse TOKEN_LIST_SECRET into tokens and URLs
-
-// Prefer tokens defined via Secrets Manager
-/**
- * {
- *  "secrettoken1":"https://www.aligent.com.au,https://www.yd.com.au",
- *  "secrettoken2":"https://www.yd.com.au,https://www.connor.com.au"
- * }
- */
-
-
-const tokenJson = JSON.parse(process.env.TOKEN_LIST_SECRET);
+const tokenJson = JSON.parse(process.env.TOKEN_SECRET);
 const tokens = Object.keys(tokenJson);
 
-// const tokens = process.env.TOKEN_LIST_SSM ? process.env.TOKEN_LIST_SSM : process.env.TOKEN_LIST;
 const tokenAllowList = tokens.toString().split(',');
 
 server.use({
