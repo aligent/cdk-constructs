@@ -10,7 +10,6 @@ import {
   SendMessageBatchCommand,
   SendMessageBatchRequestEntry,
 } from "@aws-sdk/client-sqs";
-import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 import {
   SecretsManagerClient,
   GetSecretValueCommand,
