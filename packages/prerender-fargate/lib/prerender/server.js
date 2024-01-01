@@ -65,7 +65,7 @@ server.use({
 server.use(prerender.blacklist());
 
 // Send 'X-Prerender': '1'
-server.use(prerender.sendPrerenderHeader());
+// server.use(prerender.sendPrerenderHeader());
 
 if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
     var he = require('he');
