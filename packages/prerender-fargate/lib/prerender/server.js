@@ -87,7 +87,7 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
                 }, function (err, result) {
 
                     if (!err && result) {
-                        console.log("Found cached object: " + key);
+                        console.log(`Found cached object: ${key}`);
                         if (result.Metadata.location){
                             res.setHeader('Location', result.Metadata.location);
                         }
