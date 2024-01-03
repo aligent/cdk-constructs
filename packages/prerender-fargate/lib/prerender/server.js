@@ -92,7 +92,7 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
                             res.setHeader('Location', result.Metadata.location);
                         }
                         // default 200 for legacy objects that do not have Metadata.httpreturncode defined
-                        return res.send(result.Metadata.httpreturncode || 200, result.Body);
+                        req.prerender.statusCode = result.Metadata.httpreturncode || 200
                     } else {
                         console.error(err);
                     }
