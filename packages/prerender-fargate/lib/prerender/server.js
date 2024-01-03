@@ -64,9 +64,6 @@ server.use({
 
 server.use(prerender.blacklist());
 
-// Send 'X-Prerender': '1'
-// server.use(prerender.sendPrerenderHeader());
-
 if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
     var he = require('he');
     var s3 = new (require('aws-sdk')).S3({params:{Bucket: process.env.S3_BUCKET_NAME}});
