@@ -120,7 +120,7 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
 
                 let headerMatch = headerMatchRegex.exec(head)
                 while (headerMatch) {
-                    s3Metadata.location = he.decode(headerMatch[2] || headerMatch[4]);
+                    s3Metadata.location = headerMatch[1].toLowerCase() == 'location' ? he.decode(headerMatch[2] || headerMatch[4]) : '';
                     res.setHeader(headerMatch[1] || headerMatch[3], s3Metadata.location);
                     req.prerender.content = req.prerender.content.toString().replace(headerMatch[0], '');
                     headerMatch = headerMatchRegex.exec(head)
