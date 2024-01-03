@@ -85,7 +85,6 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
                 s3.getObject({
                     Key: key
                 }, function (err, result) {
-
                     if (!err && result) {
                         console.log(`Found cached object: ${key}`);
                         if (result.Metadata.location){
@@ -126,33 +125,41 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
                     headerMatch = headerMatchRegex.exec(head)
                 }
 
-                // Skip caching for the http response codes not in the list, such as 404
-                if ( ! statusCodesToCache.includes(req.prerender.statusCode.toString()) ) {
+                if ( statusCodesToCache.includes(req.prerender.statusCode.toString()) ){
+                    s3Metadata.httpreturncode = req.prerender.statusCode.toString()
+
+                    var key = req.prerender.url;
+
+                    if (process.env.S3_PREFIX_KEY) {
+                        key = process.env.S3_PREFIX_KEY + '/' + key;
+                    }
+
+                    s3.getObject({
+                        Key: key
+                    }, function (err, result) {
+                        if (!err && result) {
+                            console.log(`Cached object ${key} already present. Skipping caching...`);
+                        } else {
+                            console.log(`Caching the object ${req.prerender.url} with statusCode ${req.prerender.statusCode}`);
+                            s3.putObject({
+                                Key: key,
+                                ContentType: 'text/html;charset=UTF-8',
+                                StorageClass: 'REDUCED_REDUNDANCY',
+                                Body: req.prerender.content,
+                                Metadata: s3Metadata
+                            }, function(err, result) {
+                                console.log(result);
+                                if (err) console.error(err);
+                            });
+                        }
+                    });
+                } else {
+                    // Skip caching for the http response codes not in the list, such as 404
                     console.log(`StatusCode ${req.prerender.statusCode} for ${req.prerender.url} is not in the cachable code list. Returning without caching the result.`);
-                    return res.send(req.prerender.statusCode, req.prerender.content);
                 }
-            }
-            s3Metadata.httpreturncode = req.prerender.statusCode.toString()
-
-            console.log(`Caching the object ${req.prerender.url} with statusCode ${req.prerender.statusCode}`);
-            var key = req.prerender.url;
-
-            if (process.env.S3_PREFIX_KEY) {
-                key = process.env.S3_PREFIX_KEY + '/' + key;
-            }
-
-            s3.putObject({
-                Key: key,
-                ContentType: 'text/html;charset=UTF-8',
-                StorageClass: 'REDUCED_REDUNDANCY',
-                Body: req.prerender.content,
-                Metadata: s3Metadata
-            }, function(err, result) {
-                console.log(result);
-                if (err) console.error(err);
 
                 next();
-            });
+            }
         }
     });
 } else {
