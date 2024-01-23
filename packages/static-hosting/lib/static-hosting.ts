@@ -22,6 +22,7 @@ import {
   LambdaEdgeEventType,
   OriginAccessIdentity,
   IDistribution,
+  IOriginAccessIdentity,
 } from "aws-cdk-lib/aws-cloudfront";
 import { HttpOrigin, S3Origin } from "aws-cdk-lib/aws-cloudfront-origins";
 import {
@@ -133,6 +134,7 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 export class StaticHosting extends Construct {
   public readonly distribution: IDistribution;
   public readonly bucket: IBucket;
+  public readonly oai: IOriginAccessIdentity;
 
   private staticFiles = [
     "js",
@@ -196,11 +198,11 @@ export class StaticHosting extends Construct {
       ...props.s3ExtendedProps,
     });
 
-    const oai = new OriginAccessIdentity(this, "OriginAccessIdentity", {
+    this.oai = new OriginAccessIdentity(this, "OriginAccessIdentity", {
       comment: "Allow CloudFront to access S3",
     });
 
-    this.bucket.grantRead(oai);
+    this.bucket.grantRead(this.oai);
 
     new CfnOutput(this, "Bucket", {
       description: "BucketName",
@@ -251,7 +253,7 @@ export class StaticHosting extends Construct {
       : undefined;
 
     if (loggingBucket) {
-      loggingBucket.grantWrite(oai);
+      loggingBucket.grantWrite(this.oai);
 
       new CfnOutput(this, "LoggingBucketName", {
         description: "CloudFront Logs",
@@ -261,7 +263,7 @@ export class StaticHosting extends Construct {
     }
 
     const s3Origin = new S3Origin(this.bucket, {
-      originAccessIdentity: oai,
+      originAccessIdentity: this.oai,
     });
     let backendOrigin = undefined;
 
