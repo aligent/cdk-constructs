@@ -64,9 +64,13 @@ server.use({
 
 server.use(prerender.blacklist());
 
-// Let headless chrome send 'X-Prerender: 1' in the request for any specicial handling such as disabling geo-redirection.
-// Ensure that the "access-control-allow-headers" header of any backend systems allows "x-prerender" if CORS is configured.
-server.use(prerender.sendPrerenderHeader());
+if (process.env.ENABLE_PRERENDER_HEADER.toLowerCase() === 'true'){
+
+    // Let headless chrome send 'X-Prerender: 1' in the request for any specicial handling such as disabling geo-redirection.
+    // Ensure that the "access-control-allow-headers" header of any backend systems allows "x-prerender" if CORS is configured.
+
+    server.use(prerender.sendPrerenderHeader());
+}
 
 if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
     var he = require('he');

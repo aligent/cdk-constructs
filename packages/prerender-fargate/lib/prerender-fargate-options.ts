@@ -94,6 +94,12 @@ export interface PrerenderFargateOptions {
    * @default - true
    */
   enableRecache?: boolean;
+  /**
+   * Let Headless Chrome send "x-prerender" header in the request.
+   * Ensure CORS allows the header.
+   * @default - true
+   */
+  enablePrerenderHeader?: boolean;
 }
 
 /**

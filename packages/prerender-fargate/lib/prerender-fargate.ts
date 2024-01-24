@@ -89,6 +89,7 @@ export class PrerenderFargate extends Construct {
       prerenderFargateScalingOptions,
       prerenderFargateRecachingOptions,
       enableRecache,
+      enablePrerenderHeader,
     } = props;
 
     // Create bucket for prerender storage
@@ -133,6 +134,7 @@ export class PrerenderFargate extends Construct {
       S3_BUCKET_NAME: this.bucket.bucketName,
       AWS_REGION: Stack.of(this).region,
       ENABLE_REDIRECT_CACHE: enableRedirectCache?.toString() || "false",
+      ENABLE_PRERENDER_HEADER: enablePrerenderHeader?.toString() || "true",
     };
 
     const secrets = {
