@@ -64,7 +64,7 @@ export interface StaticHostingProps {
   defaultRootObject?: string;
   enforceSSL?: boolean;
   comment?: string;
-  
+
   /**
    * Disable the use of the CSP header. Default value is false.
    */
