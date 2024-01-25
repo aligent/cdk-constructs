@@ -63,6 +63,7 @@ export interface StaticHostingProps {
   remapBackendPaths?: remapPath[];
   defaultRootObject?: string;
   enforceSSL?: boolean;
+  comment?: string;
 
   /**
    * Disable the use of the CSP header. Default value is false.
@@ -376,6 +377,7 @@ export class StaticHosting extends Construct {
     const distributionProps: DistributionProps = {
       domainNames: domainNames,
       webAclId: props.webAclArn,
+      comment: props.comment,
       defaultRootObject: defaultRootObject,
       httpVersion: HttpVersion.HTTP3,
       sslSupportMethod: SSLMethod.SNI,
