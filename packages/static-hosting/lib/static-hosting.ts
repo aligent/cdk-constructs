@@ -386,7 +386,7 @@ export class StaticHosting extends Construct {
       logBucket: props.enableCloudFrontAccessLogging
         ? loggingBucket
         : undefined,
-      minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2018,
+      minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
       certificate: Certificate.fromCertificateArn(
         this,
         "DomainCertificate",
