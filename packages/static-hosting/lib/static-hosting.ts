@@ -306,7 +306,7 @@ export class StaticHosting extends Construct {
       aliasConfiguration: {
         acmCertRef: props.certificateArn,
         names: distributionCnames,
-        securityPolicy: SecurityPolicyProtocol.TLS_V1_2_2018,
+        securityPolicy: SecurityPolicyProtocol.TLS_V1_2_2021,
         sslMethod: SSLMethod.SNI,
       },
       originConfigs,
