@@ -324,8 +324,17 @@ export class MeshService extends Construct {
               headerName: "X-Forwarded-For",
             },
             scopeDownStatement: {
-              ipSetReferenceStatement: {
-                arn: rateLimitBypassList.attrArn,
+              notStatement: {
+                statement: {
+                  ipSetReferenceStatement: {
+                    arn: rateLimitBypassList.attrArn,
+                    ipSetForwardedIpConfig: {
+                      fallbackBehavior: "MATCH",
+                      headerName: "X-Forwarded-For",
+                      position: "FIRST",
+                    },
+                  },
+                },
               },
             },
           },
