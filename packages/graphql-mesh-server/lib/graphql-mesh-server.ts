@@ -122,6 +122,10 @@ export type MeshHostingProps = {
    */
   rateLimitPriority?: number;
   /**
+   * List of IPv4 addresses that can bypass rate limiting.
+   */
+  rateLimitBypassList?: string[];
+  /**
    * Enable / disable container insights
    * Defaults to true
    */

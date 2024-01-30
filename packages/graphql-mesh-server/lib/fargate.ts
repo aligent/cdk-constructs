@@ -97,6 +97,10 @@ export interface MeshServiceProps {
    */
   rateLimitPriority?: number;
   /**
+   * List of IPv4 addresses that can bypass rate limiting.
+   */
+  rateLimitBypassList?: string[];
+  /**
    * Pass custom cpu scaling steps
    * Default value:
    * [
@@ -249,6 +253,13 @@ export class MeshService extends Construct {
     this.service = fargateService.service;
     this.loadBalancer = fargateService.loadBalancer;
 
+    const rateLimitBypassList = new CfnIPSet(this, "RateLimitBypassList", {
+      addresses: props.rateLimitBypassList || [],
+      ipAddressVersion: "IPV4",
+      scope: "REGIONAL",
+      description: "List of IPs that are whitelisted from rate limiting",
+    });
+
     const blockedIpList = new CfnIPSet(this, "BlockedIpList", {
       addresses: props.blockedIps || [],
       ipAddressVersion: "IPV4",
@@ -311,6 +322,11 @@ export class MeshService extends Construct {
             forwardedIpConfig: {
               fallbackBehavior: "MATCH",
               headerName: "X-Forwarded-For",
+            },
+            scopeDownStatement: {
+              ipSetReferenceStatement: {
+                arn: rateLimitBypassList.attrArn,
+              },
             },
           },
         },
