@@ -28,6 +28,7 @@ If notificationArn is set this construct creates a CodeStar notification rule, S
 - `wafRules?`: List of custom rules
 - `rateLimit?`: The limit on requests per 5-minute period. If provided, rate limiting will be enabled
 - `rateLimitPriority?`: The WAF rule priority. Only used when a rateLimit value is provided (defaults to 10)
+- `rateLimitBypassList?`: List of IPv4 addresses that can bypass rate limiting
 - `containerInsights?`: Enable/disable container insights (defaults to true)
 - `logStreamPrefix?`: Log stream prefix (defaults to 'graphql-server')
 - `snsTopic?`: Optional SNS topic to subscribe all alarms to
