@@ -45,56 +45,205 @@ import { CSP } from "../types/csp";
 import { PathRemapFunction } from "./path-remap";
 
 export interface StaticHostingProps {
-  exportPrefix?: string;
+  /**
+   * Domain name for the stack. Combined with the subDomainName it is used as
+   * the name for the S3 origin and an alternative domain name for the
+   * CloudFront distribution
+   */
   domainName: string;
-  subDomainName: string;
-  certificateArn: string;
-  createDnsRecord?: boolean;
-  createPublisherGroup?: boolean;
-  createPublisherUser?: boolean;
-  extraDistributionCnames?: ReadonlyArray<string>;
-  enableCloudFrontAccessLogging?: boolean;
-  enableS3AccessLogging?: boolean;
-  zoneName?: string;
-  enableErrorConfig?: boolean;
-  enableStaticFileRemap?: boolean;
-  remapPaths?: remapPath[];
-  backendHost?: string;
-  remapBackendPaths?: remapPath[];
-  defaultRootObject?: string;
-  enforceSSL?: boolean;
-  comment?: string;
 
   /**
-   * Disable the use of the CSP header. Default value is false.
+   * Subdomain name for the stack. Combined with the domainName it is used as
+   * the name for the S3 origin and an alternative domain name for the
+   * CloudFront distribution
+   */
+  subDomainName: string;
+
+  /**
+   * An array of additional Cloudfront alternative domain names.
+   *
+   * @default undefined
+   */
+  extraDistributionCnames?: ReadonlyArray<string>;
+
+  /**
+   * The arn of the certificate to attach to the CloudFront distribution.
+   * Must be created in us-east-1
+   */
+  certificateArn: string;
+
+  /**
+   * Custom backend host to add as a second origin to the CloudFront distribution
+   *
+   * @default undefined
+   */
+  backendHost?: string;
+
+  /**
+   * The hosted zone name to create a DNS record in.
+   * If not supplied a DNS record will not be created
+   *
+   * @default undefined
+   */
+  zoneName?: string;
+
+  /**
+   * Whether to create a group with permissions to publish to the S3 bucket.
+   *
+   * @default true
+   */
+  createPublisherGroup?: boolean;
+
+  /**
+   * Whether to create a user with permissions to publish to the S3 bucket.
+   * The user will not have permissions unless the publisher group is also created
+   *
+   * @default true
+   */
+  createPublisherUser?: boolean;
+
+  /**
+   * Enable CloudFront access logs
+   *
+   * @default false
+   */
+  enableCloudFrontAccessLogging?: boolean;
+
+  /**
+   * Enable S3 access logging
+   *
+   * @default false
+   */
+  enableS3AccessLogging?: boolean;
+
+  /**
+   * Enable returning the errorResponsePagePath on a 404.
+   * Not required when using Prerender or Feature environment Lambda@Edge functions
+   *
+   * @default false
+   */
+  enableErrorConfig?: boolean;
+
+  /**
+   * Custom error response page path
+   *
+   * @default index.html
+   */
+  errorResponsePagePath?: string;
+
+  /**
+   * Create behaviours for the following file extensions to route straight to the S3 origin
+   * js, css, json, svg, jpg, jpeg, png, gif, ico, woff, woff2, otf
+   * 
+   * @default true
+   */
+  enableStaticFileRemap?: boolean;
+
+  /**
+   * Paths to remap on the default behaviour. For example you might remap deployed_sitemap.xml -> sitemap.xml
+   * Created a behaviour in CloudFront to handle the remap. If the paths are different
+   * it will also deploy a Lambda@Edge function to perform the required remap.
+   *
+   * @default undefined
+   */
+  remapPaths?: remapPath[];
+
+  /**
+   * Functions the same as remapPaths but uses the backendHost as the origin.
+   * Requires a valid backendHost to be configured
+   *
+   * @see remapPaths
+   * @default undefined
+   */
+  remapBackendPaths?: remapPath[];
+
+  /**
+   * Override the default root object
+   *
+   * @default index.html
+   */
+  defaultRootObject?: string;
+
+  /**
+   * Enforce ssl on bucket requests
+   *
+   * @default true
+   */
+  enforceSSL?: boolean;
+
+  /**
+   * Disable the use of the CSP header
+   *
+   * @default false
    */
   disableCSP?: boolean;
 
   /**
+   * Adds custom CSP directives and URLs to the header.
+   *
    * AWS limits the max header size to 1kb, this is too small for complex csp headers.
    * The main purpose of this csp header is to provide a method of setting a report-uri.
+   *
+   * @default undefined
    */
   csp?: CSP;
 
   /**
    * This will generate a csp based *purely* on the provided csp object.
    * Therefore disabling the automatic adding of common use-case properties.
+   *
+   * @default false
    */
   explicitCSP?: boolean;
 
   /**
    * Extend the default props for S3 bucket
+   *
+   * @default undefined
    */
   s3ExtendedProps?: BucketProps;
 
   /**
-   * Optional WAF ARN
+   * Add an external WAF via an arn
+   *
+   * @default undefined
    */
   webAclArn?: string;
+
+  /**
+   * Add response headers policies to the default behaviour
+   *
+   * @default undefined
+   */
   responseHeadersPolicies?: ResponseHeaderMappings;
+
+  /**
+   * Additional behaviours
+   *
+   * @default undefined
+   */
   additionalBehaviors?: Record<string, BehaviorOptions>;
-  errorResponsePagePath?: string;
+
+  /**
+   * Lambda@Edge functions to add to the default behaviour
+   *
+   * @default undefined
+   */
   defaultBehaviorEdgeLambdas?: EdgeLambda[];
+
+  /**
+   * A request policy used on the default behavior
+   *
+   * @default undefined
+   */
+  defaultBehaviorRequestPolicy?: OriginRequestPolicy;
+
+  /**
+   * A cache policy used on the default behavior
+   *
+   * @default undefined
+   */
+  defaultBehaviorCachePolicy?: CachePolicy;
 
   /**
    * After switching constructs, you need to maintain the same logical ID
@@ -105,19 +254,24 @@ export interface StaticHostingProps {
    * the new Distribution construct with the logical ID created by the
    * old construct
    *
-   * https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_cloudfront-readme.html#migrating-from-the-original-cloudfrontwebdistribution-to-the-newer-distribution-construct.
+   * @see https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_cloudfront-readme.html#migrating-from-the-original-cloudfrontwebdistribution-to-the-newer-distribution-construct.
+   * @default undefined
    */
   overrideLogicalId?: string;
 
   /**
-   * A Request policy used on the default behavior
+   * A string to prefix CloudFormation outputs with
+   *
+   * @default undefined
    */
-  defaultBehaviorRequestPolicy?: OriginRequestPolicy;
+  exportPrefix?: string;
 
   /**
-   * A Cache policy used on the default behavior
+   * Add a comment to the CloudFront distribution
+   *
+   * @default undefined
    */
-  defaultBehaviorCachePolicy?: CachePolicy;
+  comment?: string;
 }
 
 interface remapPath {
@@ -211,11 +365,12 @@ export class StaticHosting extends Construct {
       exportName: `${exportPrefix}BucketName`,
     });
 
-    const publisherUser = props.createPublisherUser
-      ? new User(this, "PublisherUser", {
-          userName: `publisher-${siteName}`,
-        })
-      : undefined;
+    const publisherUser =
+      props.createPublisherUser !== false
+        ? new User(this, "PublisherUser", {
+            userName: `publisher-${siteName}`,
+          })
+        : undefined;
 
     if (publisherUser) {
       new CfnOutput(this, "PublisherUserName", {
@@ -225,9 +380,10 @@ export class StaticHosting extends Construct {
       });
     }
 
-    const publisherGroup = props.createPublisherGroup
-      ? new Group(this, "PublisherGroup")
-      : undefined;
+    const publisherGroup =
+      props.createPublisherGroup !== false
+        ? new Group(this, "PublisherGroup")
+        : undefined;
 
     if (publisherGroup) {
       this.bucket.grantReadWrite(publisherGroup);
@@ -434,7 +590,7 @@ export class StaticHosting extends Construct {
       exportName: `${exportPrefix}DistributionName`,
     });
 
-    if (props.createDnsRecord && props.zoneName) {
+    if (props.zoneName) {
       const zone = HostedZone.fromLookup(this, "Zone", {
         domainName: props.zoneName,
       });
