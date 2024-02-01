@@ -197,13 +197,14 @@ const queueRecachineUrls = async (urlsToRecache: string[]) => {
   const urlsToRequest = chunkUrls(urlsToRecache, 10);
 
   const messages = urlsToRequest.map((urls: string[]) => {
-    console.log(
-      `Queuing messages for SQS ${urlsToRecache[0]}, messageEntries: ${messages.entries} }`
-    );
     return new SendMessageBatchCommand({
       QueueUrl,
       Entries: urls.map(generateEntry),
     });
+  });
+  console.log(`Queuing messages for SQS`, {
+    urlsToRecache: urlsToRecache[0],
+    messageEntries: messages[0].input.Entries,
   });
 
   console.log(`Sending ${messages.length} recaching message batches`);
