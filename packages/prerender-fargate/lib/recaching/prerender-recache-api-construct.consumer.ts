@@ -1,4 +1,4 @@
-import { Context, SQSEvent } from "aws-lambda";
+import { Context, SQSEvent, SQSRecord } from "aws-lambda";
 import axios from "axios";
 
 const userAgent = "prerender / Googlebot recaching request";
@@ -9,17 +9,13 @@ const userAgent = "prerender / Googlebot recaching request";
  * @param context - The AWS Lambda context object.
  */
 export const handler = async (event: SQSEvent, _context: Context) => {
-  // Only one item in the message is assumed.
-  const url = event.Records[0].body;
-  console.log(`Fetching ${url} for recaching`);
-  const res = await axios.get(url, {
-    headers: {
-      "User-Agent": userAgent,
-    },
+  event.Records.forEach(async (record: SQSRecord) => {
+    const url = record.body;
+    console.log(`Fetching ${url} for recaching`);
+    await axios.get(url, {
+      headers: {
+        "User-Agent": userAgent,
+      },
+    });
   });
-  console.log(
-    `Requested ${url} recaching, got ${JSON.stringify(
-      res.status
-    )}, response headers: ${JSON.stringify(res.headers)}`
-  );
 };
