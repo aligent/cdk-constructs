@@ -134,7 +134,7 @@ export interface StaticHostingProps {
   /**
    * Create behaviours for the following file extensions to route straight to the S3 origin
    * js, css, json, svg, jpg, jpeg, png, gif, ico, woff, woff2, otf
-   * 
+   *
    * @default true
    */
   enableStaticFileRemap?: boolean;
