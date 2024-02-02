@@ -1,0 +1,26 @@
+{
+  "name": "@aligent/cdk-feature-env-handlers",
+  "version": "0.1.0",
+  "description": "Cloudfront Lambda@Edge handlers to allow feature environments to function",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "echo \"No test specified\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
+  },
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/aligent/cdk-constructs/issues"
+  },
+  "homepage": "https://github.com/aligent/cdk-constructs#readme",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.122"
+  },
+  "dependencies": {
+    "source-map-support": "^0.5.21"
+  }
+}
