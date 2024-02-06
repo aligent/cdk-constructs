@@ -89,7 +89,10 @@ export const handler = async (
     };
   }
 
-  console.log(await deleteCacheContentForUrls(urlsToRecache));
+  const deleteResult = await deleteCacheContentForUrls(urlsToRecache);
+  console.log(
+    `Deletion of ${urlsToRecache} finished with status code ${deleteResult.$metadata.httpStatusCode}`
+  );
   await queueRecachingUrls(urlsToRecache);
 
   return {
