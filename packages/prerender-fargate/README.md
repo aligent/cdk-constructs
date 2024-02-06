@@ -32,6 +32,8 @@ To use the PrerenderFargate construct, you can instantiate it with suitable Prer
 
 - A pre-configured AWS SecretsManager Secret name with the value being in the format of `Map<String: String[]>`, for example, `{"token1": "https://www.example1.com,https://www.mydomain1.com", "token2":"https://www.example2.com,https://www.mydomain2.com"}`. This map is referenced for Prerender and Recaching service authentication.
 
+![Example Secret](./tokenSecret.png "Example Secret")
+
 ### `vpcId` (string, optional)
 
 - The ID of the VPC to deploy the Fargate service in. Default: environment-default VPC.
@@ -74,7 +76,7 @@ To use the PrerenderFargate construct, you can instantiate it with suitable Prer
 
 ### `enableS3Endpoint` (boolean, optional)
 
-- Whether to enable the [VPC endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/create-interface-endpoint.html) for S3. Default: "false"
+- Whether to enable the [VPC endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/create-interface-endpoint.html) for S3. Default: false
 
 ### `prerenderFargateScalingOptions` (PrerenderFargateScalingOptions, optional)
 
