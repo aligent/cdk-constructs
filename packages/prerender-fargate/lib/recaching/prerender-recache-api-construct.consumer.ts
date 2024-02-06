@@ -18,9 +18,7 @@ export const handler = async (event: SQSEvent, _context: Context) => {
       },
     });
     console.log(
-      `Response data: ${JSON.stringify(
-        res.data
-      )}, response headers: ${JSON.stringify(res.headers)}`
+      `Fetched URL: ${url}, Response Code: ${JSON.stringify(res.status)}`
     );
   }
 };
