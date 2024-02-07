@@ -43,7 +43,7 @@ server.use({
         for (const token of tokenAllowList) {
             let domains = tokenJson[token].split(',')
             for (const domain of domains) {
-                authenticated = (auth === token && req.url.startsWith(`/${domain}`) );
+                authenticated = (auth === token && req.url.replace("https%3A%2F%2F", "https://").startsWith(`/${domain}`) );
                 if (authenticated) break;
             }
             if (authenticated) break;
