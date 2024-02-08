@@ -202,6 +202,10 @@ const queueRecachineUrls = async (urlsToRecache: string[]) => {
       Entries: urls.map(generateEntry),
     });
   });
+  console.log(`Queuing messages for SQS`, {
+    urlsToRecache: urlsToRecache[0],
+    messageEntries: messages[0].input.Entries,
+  });
 
   console.log(`Sending ${messages.length} recaching message batches`);
 
