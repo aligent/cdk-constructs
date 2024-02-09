@@ -10,7 +10,10 @@ import {
   SendMessageBatchCommand,
   SendMessageBatchRequestEntry,
 } from "@aws-sdk/client-sqs";
-import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
+import {
+  SecretsManagerClient,
+  GetSecretValueCommand,
+} from "@aws-sdk/client-secrets-manager";
 import { md5hash } from "aws-cdk-lib/core/lib/helpers-internal";
 
 /**
@@ -35,13 +38,9 @@ const QueueUrl = process.env.SQS_QUEUE_URL;
 const Bucket = process.env.PRERENDER_CACHE_BUCKET;
 
 export const MAX_URLS = 1000;
-export const PARAM_PREFIX = "prerender/recache/tokens";
 
 const sqsClient = new SQSClient({});
 const s3Client = new S3Client({});
-const ssmClient = new SSMClient({});
-
-const tokens: Map<string, string[]> = new Map();
 
 /**
  * Handles the recaching of URLs and returns a response with the recached URLs.
@@ -90,8 +89,11 @@ export const handler = async (
     };
   }
 
-  console.log(await deleteCacheContentForUrls(urlsToRecache));
-  await queueRecachineUrls(urlsToRecache);
+  const deleteResult = await deleteCacheContentForUrls(urlsToRecache);
+  console.log(
+    `Deletion of ${urlsToRecache} finished with status code ${deleteResult.$metadata.httpStatusCode}`
+  );
+  await queueRecachingUrls(urlsToRecache);
 
   return {
     statusCode: 200,
@@ -101,6 +103,9 @@ export const handler = async (
   };
 };
 
+// Use SecretsManager
+const secret_name = process.env.TOKEN_SECRET;
+const smClient = new SecretsManagerClient({});
 /**
  * Parses the given request body and returns an array of URLs to recache.
  * @param body - The request body to parse.
@@ -119,34 +124,26 @@ const getUrlsToRecache = async (body: string): Promise<string[]> => {
     urls = [];
   }
 
+  // Use SecretsManager
   const token = requestBody.prerenderToken;
-
-  if (!tokens.has(token)) {
-    const Name = `/${PARAM_PREFIX}/${token}`;
-    console.log(`Looking for allowed urls in ssm:${Name}`);
-
-    const getAllowedUrls = new GetParameterCommand({ Name });
-    console.log(getAllowedUrls);
-
-    const ssmResponse = await ssmClient.send(getAllowedUrls);
-
-    if (ssmResponse.Parameter === undefined) {
-      throw "No parameters returned";
-    }
-
-    const allowedUrlsResult = ssmResponse.Parameter;
-    if (allowedUrlsResult.Type === undefined) {
-      throw "Token not valid";
-    }
-
-    if (allowedUrlsResult.Type !== "StringList") {
-      throw `Token data is not a string list, ${Name} is ${allowedUrlsResult.Type}`;
-    }
-
-    tokens.set(token, allowedUrlsResult.Value?.split(",") || []);
+  interface TokenSecret {
+    [key: string]: string;
   }
 
-  const allowedUrls = tokens.get(token) || [];
+  console.log(`Looking for allowed urls in secretsmanager:${secret_name}`);
+
+  const getAllowedUrls = new GetSecretValueCommand({
+    SecretId: secret_name,
+  });
+
+  const smResponse = await smClient.send(getAllowedUrls);
+
+  if (smResponse.SecretString === undefined) {
+    throw "No secret found";
+  }
+
+  const secretsData: TokenSecret = JSON.parse(smResponse.SecretString);
+  const allowedUrls = secretsData[token].split(","); // get comma delimited urls from string
 
   console.log(`Allowed urls for ${token}: ${allowedUrls.join(", ")}`);
 
@@ -185,7 +182,7 @@ const deleteCacheContentForUrls = async (
  * Queues the given URLs for recaching.
  * @param urlsToRecache An array of URLs to recache.
  */
-const queueRecachineUrls = async (urlsToRecache: string[]) => {
+const queueRecachingUrls = async (urlsToRecache: string[]) => {
   const generateEntry = (url: string): SendMessageBatchRequestEntry => {
     return {
       DelaySeconds: 1,

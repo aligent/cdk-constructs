@@ -1,4 +1,3 @@
-import { PrerenderTokenUrlAssociationOptions } from "./recaching/prerender-tokens";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 /**
@@ -29,7 +28,7 @@ export interface PrerenderFargateOptions {
    */
   bucketName?: string;
   /**
-   * The number of days to keep prerendered pages in the S3 bucket before expiring them.
+   * The number of days to keep pre-rendered pages in the S3 bucket before expiring them.
    * @default - 10 days
    */
   expirationDays?: number;
@@ -37,6 +36,12 @@ export interface PrerenderFargateOptions {
    * The ARN of the SSL certificate to use for HTTPS connections.
    */
   certificateArn: string;
+  /**
+   * A pre-configured AWS Secrets Manager secret name for Prerender and Recache API authentication.
+   * The format of the secret value is: Map<string, string[]>, e.g.,
+   * {"token1": "https://www.example1.com,https://www.mydomain1.com", "token2":"https://www.example2.com,https://www.mydomain2.com"}
+   */
+  tokenSecret: string;
   /**
    * The minimum number of Fargate instances to run.
    * @default - 1
@@ -66,45 +71,12 @@ export interface PrerenderFargateOptions {
    * Whether to enable caching of HTTP redirects.
    * @default - false
    */
-  enableRedirectCache?: string;
+  enableRedirectCache?: boolean;
   /**
    * Whether to enable the S3 endpoint for the VPC.
    * @default - false
    */
   enableS3Endpoint?: boolean;
-  /**
-   * A pre-configured AWS SSM Parameter Store parameter can be used for Prerender API tokens.
-   * Prerender ECS service checks the [token] value to validate the requests.
-   * Parameter type: StringList
-   * Value: Comma-separated token list
-   */
-  tokenParam?: string;
-  /**
-   * Configuration for associating tokens with specific domain URLs.
-   * During the reacaching process, these tokens will be used to validate the request.
-   * ### Example:
-   * ```typescript
-   * {
-   *    tokenUrlAssociation: {
-   *      token1: [
-   *        "https://example.com",
-   *        "https://acme.example.com"],
-   *      token2: [
-   *        "https://example1.com",
-   *        "https://acme.example1.com"]
-   *    },
-   *    ssmPathPrefix: "/prerender/recache/tokens"
-   * }
-   * ```
-   */
-  tokenUrlAssociation?: PrerenderTokenUrlAssociationOptions;
-  /**
-   * A list of tokens to use for authentication with the Prerender service.
-   * This parameter is deprecated and will be removed in a future release.
-   * Please use the `tokenUrlAssociation` parameter instead.
-   * *If `tokenUrlAssociation` is provided, `tokenList` will be ignored*
-   */
-  tokenList?: Array<string>;
   /**
    * Prerender Fargate Scaling option
    * This allows to alter the scaling behavior. The default configuration should be sufficient
@@ -122,6 +94,12 @@ export interface PrerenderFargateOptions {
    * @default - true
    */
   enableRecache?: boolean;
+  /**
+   * Let Headless Chrome send "x-prerender" header in the request.
+   * Ensure CORS allows the header.
+   * @default - true
+   */
+  enablePrerenderHeader?: boolean;
 }
 
 /**
@@ -179,5 +157,5 @@ export interface PrerenderFargateRecachingOptions {
    * The maximum number of concurrent executions of the Prerender Re-cache API.
    * @default - 1
    */
-  maxConcurrentExecutions: number;
+  maxConcurrentExecutions?: number;
 }
