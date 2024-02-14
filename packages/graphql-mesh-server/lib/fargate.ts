@@ -297,7 +297,7 @@ export class MeshService extends Construct {
                     ipSetForwardedIpConfig: {
                       fallbackBehavior: "MATCH",
                       headerName: "X-Forwarded-For",
-                      position: "FIRST"
+                      position: "FIRST",
                     },
                   },
                 },
@@ -323,7 +323,7 @@ export class MeshService extends Construct {
                 ipSetForwardedIpConfig: {
                   fallbackBehavior: "MATCH",
                   headerName: "X-Forwarded-For",
-                  position: "FIRST"
+                  position: "FIRST",
                 },
               },
             },
@@ -345,7 +345,7 @@ export class MeshService extends Construct {
                 ipSetForwardedIpConfig: {
                   fallbackBehavior: "MATCH",
                   headerName: "X-Forwarded-For",
-                  position: "FIRST"
+                  position: "FIRST",
                 },
               },
             },
@@ -367,7 +367,7 @@ export class MeshService extends Construct {
                 ipSetForwardedIpConfig: {
                   fallbackBehavior: "MATCH",
                   headerName: "X-Forwarded-For",
-                  position: "FIRST"
+                  position: "FIRST",
                 },
               },
             },
