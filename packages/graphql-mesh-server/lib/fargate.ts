@@ -79,6 +79,11 @@ export interface MeshServiceProps {
    */
   blockedIpv6Priority?: number;
   /**
+   * If true, block all access to the endpoint. Use in conjunction with allowedIps to block public access
+   * @default false
+   */
+  blockAll?: boolean;
+  /**
    * List of AWS Managed rules to add to the WAF
    */
   wafManagedRules?: AWSManagedRule[];
@@ -97,9 +102,14 @@ export interface MeshServiceProps {
    */
   rateLimitPriority?: number;
   /**
-   * List of IPv4 addresses that can bypass rate limiting.
+   * The waf allowed ip rule priority.
+   * Defaults to 2
    */
-  rateLimitBypassList?: string[];
+  allowedIpPriority?: number;
+  /**
+   * List of IPv4 addresses that can bypass all WAF block lists.
+   */
+  allowedIps?: string[];
   /**
    * Pass custom cpu scaling steps
    * Default value:
@@ -253,8 +263,8 @@ export class MeshService extends Construct {
     this.service = fargateService.service;
     this.loadBalancer = fargateService.loadBalancer;
 
-    const rateLimitBypassList = new CfnIPSet(this, "RateLimitBypassList", {
-      addresses: props.rateLimitBypassList || [],
+    const allowedIpList = new CfnIPSet(this, "allowList", {
+      addresses: props.allowedIps || [],
       ipAddressVersion: "IPV4",
       scope: "REGIONAL",
       description: "List of IPs that are whitelisted from rate limiting",
@@ -274,60 +284,16 @@ export class MeshService extends Construct {
       description: "List of IPv6s blocked by WAF",
     });
 
-    const defaultRules: CfnWebACL.RuleProperty[] = [
-      {
-        name: "IPBlockList",
-        priority: 2 || props.blockedIpPriority,
-        statement: {
-          ipSetReferenceStatement: {
-            arn: blockedIpList.attrArn,
-          },
-        },
-        visibilityConfig: {
-          cloudWatchMetricsEnabled: true,
-          metricName: "IPBlockList",
-          sampledRequestsEnabled: true,
-        },
-        action: {
-          block: {},
-        },
-      },
-      {
-        name: "IPv6BlockList",
-        priority: 3 || props.blockedIpPriority,
-        statement: {
-          ipSetReferenceStatement: {
-            arn: blockedIpv6List.attrArn,
-          },
-        },
-        visibilityConfig: {
-          cloudWatchMetricsEnabled: true,
-          metricName: "IPv6BlockList",
-          sampledRequestsEnabled: true,
-        },
-        action: {
-          block: {},
-        },
-      },
-    ];
-
-    if (props.rateLimit) {
-      defaultRules.push({
-        name: "RateLimit",
-        priority: 10 || props.rateLimitPriority,
-        statement: {
-          rateBasedStatement: {
-            aggregateKeyType: "FORWARDED_IP",
-            limit: props.rateLimit,
-            forwardedIpConfig: {
-              fallbackBehavior: "MATCH",
-              headerName: "X-Forwarded-For",
-            },
-            scopeDownStatement: {
+    const defaultRules: CfnWebACL.RuleProperty[] = props.blockAll
+      ? [
+          {
+            name: "BlockNonAllowedIps",
+            priority: props.allowedIpPriority || 2,
+            statement: {
               notStatement: {
                 statement: {
                   ipSetReferenceStatement: {
-                    arn: rateLimitBypassList.attrArn,
+                    arn: allowedIpList.attrArn,
                     ipSetForwardedIpConfig: {
                       fallbackBehavior: "MATCH",
                       headerName: "X-Forwarded-For",
@@ -336,6 +302,97 @@ export class MeshService extends Construct {
                   },
                 },
               },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPAllowList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              block: {},
+            },
+          },
+        ]
+      : [
+          {
+            name: "IPAllowList",
+            priority: props.allowedIpPriority || 2,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: allowedIpList.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST",
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPAllowList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              allow: {},
+            },
+          },
+          {
+            name: "IPBlockList",
+            priority: props.blockedIpPriority || 3,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: blockedIpList.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST",
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPBlockList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              block: {},
+            },
+          },
+          {
+            name: "IPv6BlockList",
+            priority: (props.blockedIpPriority || 3) + 1,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: blockedIpv6List.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST",
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPv6BlockList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              block: {},
+            },
+          },
+        ];
+
+    if (props.rateLimit && !props.blockAll) {
+      defaultRules.push({
+        name: "RateLimit",
+        priority: props.rateLimitPriority || 10,
+        statement: {
+          rateBasedStatement: {
+            aggregateKeyType: "FORWARDED_IP",
+            limit: props.rateLimit,
+            forwardedIpConfig: {
+              fallbackBehavior: "MATCH",
+              headerName: "X-Forwarded-For",
             },
           },
         },
