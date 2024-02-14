@@ -97,9 +97,14 @@ export interface MeshServiceProps {
    */
   rateLimitPriority?: number;
   /**
-   * List of IPv4 addresses that can bypass rate limiting.
+   * The waf allowed ip rule priority.
+   * Defaults to 2
    */
-  rateLimitBypassList?: string[];
+  allowedIpPriority?: number;
+  /**
+   * List of IPv4 addresses that can bypass all WAF block lists.
+   */
+  allowedIps?: string[];
   /**
    * Pass custom cpu scaling steps
    * Default value:
@@ -253,8 +258,8 @@ export class MeshService extends Construct {
     this.service = fargateService.service;
     this.loadBalancer = fargateService.loadBalancer;
 
-    const rateLimitBypassList = new CfnIPSet(this, "RateLimitBypassList", {
-      addresses: props.rateLimitBypassList || [],
+    const allowedIpList = new CfnIPSet(this, "allowList", {
+      addresses: props.allowedIps || [],
       ipAddressVersion: "IPV4",
       scope: "REGIONAL",
       description: "List of IPs that are whitelisted from rate limiting",
@@ -276,8 +281,25 @@ export class MeshService extends Construct {
 
     const defaultRules: CfnWebACL.RuleProperty[] = [
       {
+        name: "IPAllowList",
+        priority: props.allowedIpPriority || 2,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: allowedIpList.attrArn,
+          },
+        },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "IPAllowList",
+          sampledRequestsEnabled: true,
+        },
+        action: {
+          allow: {},
+        },
+      },
+      {
         name: "IPBlockList",
-        priority: 2 || props.blockedIpPriority,
+        priority: props.blockedIpPriority || 3,
         statement: {
           ipSetReferenceStatement: {
             arn: blockedIpList.attrArn,
@@ -294,7 +316,7 @@ export class MeshService extends Construct {
       },
       {
         name: "IPv6BlockList",
-        priority: 3 || props.blockedIpPriority,
+        priority: (props.blockedIpPriority || 3) + 1,
         statement: {
           ipSetReferenceStatement: {
             arn: blockedIpv6List.attrArn,
@@ -314,7 +336,7 @@ export class MeshService extends Construct {
     if (props.rateLimit) {
       defaultRules.push({
         name: "RateLimit",
-        priority: 10 || props.rateLimitPriority,
+        priority: props.rateLimitPriority || 10,
         statement: {
           rateBasedStatement: {
             aggregateKeyType: "FORWARDED_IP",
@@ -322,20 +344,6 @@ export class MeshService extends Construct {
             forwardedIpConfig: {
               fallbackBehavior: "MATCH",
               headerName: "X-Forwarded-For",
-            },
-            scopeDownStatement: {
-              notStatement: {
-                statement: {
-                  ipSetReferenceStatement: {
-                    arn: rateLimitBypassList.attrArn,
-                    ipSetForwardedIpConfig: {
-                      fallbackBehavior: "MATCH",
-                      headerName: "X-Forwarded-For",
-                      position: "FIRST",
-                    },
-                  },
-                },
-              },
             },
           },
         },
