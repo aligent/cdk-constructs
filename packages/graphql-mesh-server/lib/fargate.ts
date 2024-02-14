@@ -79,6 +79,11 @@ export interface MeshServiceProps {
    */
   blockedIpv6Priority?: number;
   /**
+   * If true, block all access to the endpoint. Use in conjunction with allowedIps to block public access
+   * @default false
+   */
+  blockAll?: boolean;
+  /**
    * List of AWS Managed rules to add to the WAF
    */
   wafManagedRules?: AWSManagedRule[];
@@ -279,61 +284,105 @@ export class MeshService extends Construct {
       description: "List of IPv6s blocked by WAF",
     });
 
-    const defaultRules: CfnWebACL.RuleProperty[] = [
-      {
-        name: "IPAllowList",
-        priority: props.allowedIpPriority || 2,
-        statement: {
-          ipSetReferenceStatement: {
-            arn: allowedIpList.attrArn,
+    const defaultRules: CfnWebACL.RuleProperty[] = props.blockAll
+      ? [
+          {
+            name: "BlockNonAllowedIps",
+            priority: props.allowedIpPriority || 2,
+            statement: {
+              notStatement: {
+                statement: {
+                  ipSetReferenceStatement: {
+                    arn: allowedIpList.attrArn,
+                    ipSetForwardedIpConfig: {
+                      fallbackBehavior: "MATCH",
+                      headerName: "X-Forwarded-For",
+                      position: "FIRST"
+                    },
+                  },
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPAllowList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              block: {},
+            },
           },
-        },
-        visibilityConfig: {
-          cloudWatchMetricsEnabled: true,
-          metricName: "IPAllowList",
-          sampledRequestsEnabled: true,
-        },
-        action: {
-          allow: {},
-        },
-      },
-      {
-        name: "IPBlockList",
-        priority: props.blockedIpPriority || 3,
-        statement: {
-          ipSetReferenceStatement: {
-            arn: blockedIpList.attrArn,
+        ]
+      : [
+          {
+            name: "IPAllowList",
+            priority: props.allowedIpPriority || 2,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: allowedIpList.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST"
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPAllowList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              allow: {},
+            },
           },
-        },
-        visibilityConfig: {
-          cloudWatchMetricsEnabled: true,
-          metricName: "IPBlockList",
-          sampledRequestsEnabled: true,
-        },
-        action: {
-          block: {},
-        },
-      },
-      {
-        name: "IPv6BlockList",
-        priority: (props.blockedIpPriority || 3) + 1,
-        statement: {
-          ipSetReferenceStatement: {
-            arn: blockedIpv6List.attrArn,
+          {
+            name: "IPBlockList",
+            priority: props.blockedIpPriority || 3,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: blockedIpList.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST"
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPBlockList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              block: {},
+            },
           },
-        },
-        visibilityConfig: {
-          cloudWatchMetricsEnabled: true,
-          metricName: "IPv6BlockList",
-          sampledRequestsEnabled: true,
-        },
-        action: {
-          block: {},
-        },
-      },
-    ];
+          {
+            name: "IPv6BlockList",
+            priority: (props.blockedIpPriority || 3) + 1,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: blockedIpv6List.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST"
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPv6BlockList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              block: {},
+            },
+          },
+        ];
 
-    if (props.rateLimit) {
+    if (props.rateLimit && !props.blockAll) {
       defaultRules.push({
         name: "RateLimit",
         priority: props.rateLimitPriority || 10,

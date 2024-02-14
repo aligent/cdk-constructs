@@ -104,6 +104,11 @@ export type MeshHostingProps = {
    */
   blockedIpv6Priority?: number;
   /**
+   * If true, block all access to the endpoint. Use in conjunction with allowedIps to block public access
+   * @default false
+   */
+  blockAll?: boolean;
+  /**
    * List of AWS Managed rules to add to the WAF
    */
   wafManagedRules?: AWSManagedRule[];
