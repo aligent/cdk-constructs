@@ -148,6 +148,11 @@ export type MeshHostingProps = {
    * Any additional custom alarms
    */
   additionalAlarms?: Alarm[];
+
+  /**
+   * CloudFront distribution ID to clear cache on after a Mesh deploy.
+   */
+  cloudFrontDistributionId?: string;
 };
 
 export class MeshHosting extends Construct {
@@ -200,6 +205,7 @@ export class MeshHosting extends Construct {
       service: this.service,
       notificationArn: props.notificationArn,
       notificationRegion: props.notificationRegion,
+      cloudFrontDistributionId: props.cloudFrontDistributionId,
     });
 
     new PerformanceMetrics(this, "cloudwatch", {

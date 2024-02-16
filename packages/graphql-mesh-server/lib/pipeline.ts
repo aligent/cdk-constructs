@@ -9,7 +9,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as YAML from "yaml";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
-import { Runtime } from "aws-cdk-lib/aws-lambda";
+import { Runtime, IFunction, Function } from "aws-cdk-lib/aws-lambda";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Topic } from "aws-cdk-lib/aws-sns";
 import { LambdaSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
@@ -43,6 +43,11 @@ export interface CodePipelineServiceProps {
    * AWS Region the SNS topic is deployed in
    */
   notificationRegion?: string;
+
+  /**
+   * CloudFront distribution ID to clear cache on.
+   */
+  cloudFrontDistributionId?: string;
 }
 
 export class CodePipelineService extends Construct {
@@ -109,6 +114,47 @@ export class CodePipelineService extends Construct {
         }),
       ],
     });
+
+    if (props.cloudFrontDistributionId) {
+      const invalidateCacheLambda = new NodejsFunction(
+        this,
+        "InvalidateCacheLambda",
+        {
+          entry: path.resolve(
+            __dirname,
+            "../assets/handlers/invalidate-cloudfront-cache.ts"
+          ),
+          description: "Lambda function to invalidate CloudFront cache.",
+          runtime: Runtime.NODEJS_18_X,
+          handler: "index.handler",
+          timeout: Duration.seconds(5),
+          environment: {
+            PATHS: "/graphql",
+            DISTRIBUTION_ID: props.cloudFrontDistributionId || "",
+          },
+        }
+      );
+
+      invalidateCacheLambda.addToRolePolicy(
+        new PolicyStatement({
+          actions: ["cloudfront:CreateInvalidation"],
+          resources: [
+            `arn:aws:cloudfront::${Stack.of(this).account}:distribution/${props.cloudFrontDistributionId}`,
+          ],
+          effect: Effect.ALLOW,
+        })
+      );
+
+      this.pipeline.addStage({
+        stageName: "InvalidateCloudFrontCache",
+        actions: [
+          new pipe_actions.LambdaInvokeAction({
+            actionName: "InvalidateCloudFrontCache",
+            lambda: invalidateCacheLambda,
+          }),
+        ],
+      });
+    }
 
     if (props.notificationArn) {
       const notifier = new NodejsFunction(this, "NotifierLambda", {
