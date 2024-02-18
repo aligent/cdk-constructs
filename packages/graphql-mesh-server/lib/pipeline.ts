@@ -139,7 +139,9 @@ export class CodePipelineService extends Construct {
         new PolicyStatement({
           actions: ["cloudfront:CreateInvalidation"],
           resources: [
-            `arn:aws:cloudfront::${Stack.of(this).account}:distribution/${props.cloudFrontDistributionId}`,
+            `arn:aws:cloudfront::${Stack.of(this).account}:distribution/${
+              props.cloudFrontDistributionId
+            }`,
           ],
           effect: Effect.ALLOW,
         })
