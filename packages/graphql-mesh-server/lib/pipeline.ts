@@ -130,7 +130,7 @@ export class CodePipelineService extends Construct {
           timeout: Duration.seconds(5),
           environment: {
             PATHS: "/graphql",
-            DISTRIBUTION_ID: props.cloudFrontDistributionId || "",
+            DISTRIBUTION_ID: props.cloudFrontDistributionId,
           },
         }
       );
