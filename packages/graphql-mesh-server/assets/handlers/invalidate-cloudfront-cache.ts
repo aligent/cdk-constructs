@@ -25,5 +25,5 @@ export const handler = async (): Promise<CreateInvalidationCommandOutput> => {
   };
 
   const command = new CreateInvalidationCommand(invalidationInput);
-  return await cfClient.send(command);
+  return cfClient.send(command);
 };
