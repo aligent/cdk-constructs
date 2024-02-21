@@ -80,7 +80,7 @@ export class PrerenderRecacheApi extends Construct {
       existingProducerLambdaObj: apiHandler,
       existingConsumerLambdaObj: new NodejsFunction(this, "consumer", {
         reservedConcurrentExecutions: options.maxConcurrentExecutions,
-        timeout: Duration.seconds(60),
+        timeout: Duration.seconds(120),
       }),
       deployDeadLetterQueue: false,
       queueProps: { visibilityTimeout: Duration.minutes(60) },
