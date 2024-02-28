@@ -237,6 +237,7 @@ export class MeshService extends Construct {
       streamPrefix: props.logStreamPrefix || "graphql-server",
       logGroup: this.logGroup,
     });
+
     // Create a load-balanced Fargate service and make it public
     const fargateService =
       new ecsPatterns.ApplicationLoadBalancedFargateService(this, `fargate`, {
@@ -252,6 +253,9 @@ export class MeshService extends Construct {
           secrets: secrets,
           environment: environment,
           logDriver: logDriver,
+          taskRole: new iam.Role(this, "MeshTaskRole", {
+            assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+          }),
         },
         publicLoadBalancer: true, // default,
         taskSubnets: {
@@ -262,6 +266,26 @@ export class MeshService extends Construct {
 
     this.service = fargateService.service;
     this.loadBalancer = fargateService.loadBalancer;
+
+    // Configure x-ray
+    const xray = this.service.taskDefinition.addContainer("xray", {
+      image: ecs.ContainerImage.fromRegistry("amazon/aws-xray-daemon"),
+      cpu: 32,
+      memoryReservationMiB: 256,
+      essential: false,
+    });
+    xray.addPortMappings({
+      containerPort: 2000,
+      protocol: ecs.Protocol.UDP,
+    });
+
+    this.service.taskDefinition.taskRole.addManagedPolicy({
+      managedPolicyArn:
+        "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+    });
+    this.service.taskDefinition.taskRole.addManagedPolicy({
+      managedPolicyArn: "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess",
+    });
 
     const allowedIpList = new CfnIPSet(this, "allowList", {
       addresses: props.allowedIps || [],
