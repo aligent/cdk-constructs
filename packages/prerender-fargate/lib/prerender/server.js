@@ -88,7 +88,7 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
                             res.setHeader('Location', result.Metadata.location);
                         }
                         // default 200 for legacy objects that do not have Metadata.httpreturncode defined
-                        req.prerender.statusCode = result.Metadata.httpreturncode || 200
+                        return res.send(result.Metadata.httpreturncode || 200, result.Body);
                     } else {
                         console.error(`Fetching cached object from S3 bucket failed with error: ${err.code}`);
                     }
