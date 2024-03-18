@@ -7,6 +7,7 @@ import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ecsPatterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as ssm from "aws-cdk-lib/aws-ssm";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { Port, SecurityGroup, IVpc, Vpc } from "aws-cdk-lib/aws-ec2";
 import { RedisService } from "./redis-construct";
 import {
@@ -130,6 +131,11 @@ export interface MeshServiceProps {
    * Defaults to 'graphql-server'
    */
   logStreamPrefix?: string;
+  /**
+   * Whether a DynamoDB table should be created to store session data
+   * @default authentication-table
+   */
+  authenticationTable?: string;
 }
 
 export class MeshService extends Construct {
@@ -286,6 +292,25 @@ export class MeshService extends Construct {
     this.service.taskDefinition.taskRole.addManagedPolicy({
       managedPolicyArn: "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess",
     });
+
+    if (props.authenticationTable || props.authenticationTable === undefined) {
+      const authTable = new dynamodb.Table(this, "authenticationTable", {
+        tableName: props.authenticationTable || "authentication-table",
+        partitionKey: {
+          name: "customer_id",
+          type: dynamodb.AttributeType.STRING,
+        },
+        sortKey: {
+          name: "refresh_token_hash",
+          type: dynamodb.AttributeType.STRING,
+        },
+        billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+        removalPolicy: RemovalPolicy.DESTROY,
+        timeToLiveAttribute: "ttl",
+      });
+
+      authTable.grantReadWriteData(this.service.taskDefinition.taskRole);
+    }
 
     const allowedIpList = new CfnIPSet(this, "allowList", {
       addresses: props.allowedIps || [],
