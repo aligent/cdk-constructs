@@ -83,7 +83,7 @@ export class PrerenderRecacheApi extends Construct {
         timeout: Duration.seconds(120),
       }),
       deployDeadLetterQueue: false,
-      queueProps: { visibilityTimeout: Duration.minutes(60) },
+      queueProps: { visibilityTimeout: Duration.minutes(120) },
     });
   }
 }
