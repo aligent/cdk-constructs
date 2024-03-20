@@ -8,7 +8,17 @@ import { FileSystem } from "aws-cdk-lib/aws-efs";
 import path = require("path");
 
 interface MaintenanceProps {
+  /**
+   * VPC to mount the EFS volume on
+   * Should be the same VPC as the Fargate container
+   */
   vpc: IVpc;
+  /**
+   * Path to mount the efs volume to
+   *
+   * @default '/efs-volume'
+   */
+  mountPath: string;
 }
 
 export class Maintenance extends Construct {
@@ -21,6 +31,7 @@ export class Maintenance extends Construct {
       allowAnonymousAccess: false,
       removalPolicy: RemovalPolicy.DESTROY,
     });
+    const efsVolumeMountPath = props.mountPath || "/efs-volume";
 
     const api = new apigateway.RestApi(this, "maintenance-apigw");
 
@@ -37,8 +48,11 @@ export class Maintenance extends Construct {
       filesystem: {
         config: {
           arn: efsVolume.fileSystemArn,
-          localMountPath: "/efs-volume",
+          localMountPath: efsVolumeMountPath,
         },
+      },
+      environment: {
+        MAINTENANCE_FILE_PATH: efsVolumeMountPath,
       },
     });
     const maintenanceInt = new apigateway.LambdaIntegration(maintenanceLambda);
@@ -60,8 +74,11 @@ export class Maintenance extends Construct {
       filesystem: {
         config: {
           arn: efsVolume.fileSystemArn,
-          localMountPath: "/efs-volume",
+          localMountPath: efsVolumeMountPath,
         },
+      },
+      environment: {
+        MAINTENANCE_FILE_PATH: efsVolumeMountPath,
       },
     });
     const whitelistInt = new apigateway.LambdaIntegration(whitelistLambda);
