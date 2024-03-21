@@ -84,5 +84,6 @@ export class Maintenance extends Construct {
     const whitelistInt = new apigateway.LambdaIntegration(whitelistLambda);
     whitelist.addMethod("GET", whitelistInt);
     whitelist.addMethod("PUT", whitelistInt);
+    whitelist.addMethod("PATCH", whitelistInt)
   }
 }

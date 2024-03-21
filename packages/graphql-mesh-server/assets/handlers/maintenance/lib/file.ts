@@ -1,5 +1,8 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 
+const IP_REGEX =
+  /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\/([1-9]|[1-2][0-9]|3[1-2]))?$/;
+
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const MAINTENANCE_FILE_PATH = process.env.MAINTENANCE_FILE_PATH!;
 const FILE_NAME = "maintenance";
@@ -20,8 +23,20 @@ export const getFilePath = (): string => {
   return PATHS[0];
 };
 
-export const getFile = (): string => {
+export const getFileContents = (): string => {
   return readFileSync(getFilePath(), "utf-8");
+};
+
+export const setFileContents = (input: string): void => {
+  if (!validateIps(input)) throw new Error("List of IP addresses not valid");
+  writeFileSync(getFilePath(), input);
+};
+
+export const updateFileContents = (input: string): void => {
+  if (!input) throw new Error("Nothing to update.");
+  if (!validateIps(input)) throw new Error("List of IP addresses not valid");
+
+  setFileContents(`${getFileContents()},${input}`);
 };
 
 export const getCurrentStatus = (): "disabled" | "enabled" => {
@@ -39,4 +54,9 @@ export const toggleMaintenanceStatus = () => {
     getFilePath(),
     `${MAINTENANCE_FILE_PATH}/${FILE_NAME}.${desiredStatus}`
   );
+};
+
+const validateIps = (ipList: string) => {
+  const ips = ipList.split(",");
+  return Boolean(ips.find(ip => !IP_REGEX.test(ip)));
 };
