@@ -18,6 +18,7 @@ import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2"
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 import { Topic } from "aws-cdk-lib/aws-sns";
 import { Alarm } from "aws-cdk-lib/aws-cloudwatch";
+import { Maintenance } from "./maintenance";
 
 export type MeshHostingProps = {
   /**
@@ -153,6 +154,12 @@ export type MeshHostingProps = {
    * CloudFront distribution ID to clear cache on after a Mesh deploy.
    */
   cloudFrontDistributionId?: string;
+
+  /**
+   * If maintenance mode lambdas and efs volume should be created
+   * @default true
+   */
+  enableMaintenanceMode?: boolean;
 };
 
 export class MeshHosting extends Construct {
@@ -193,6 +200,16 @@ export class MeshHosting extends Construct {
         database: props.redis?.database,
       },
     });
+
+    if (
+      props.enableMaintenanceMode ||
+      props.enableMaintenanceMode === undefined
+    ) {
+      new Maintenance(this, "maintenance", {
+        ...props,
+        vpc: this.vpc,
+      });
+    }
 
     this.service = mesh.service;
     this.firewall = mesh.firewall;

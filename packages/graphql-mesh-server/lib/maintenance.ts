@@ -18,7 +18,7 @@ interface MaintenanceProps {
    *
    * @default '/efs-volume'
    */
-  mountPath: string;
+  mountPath?: string;
 }
 
 export class Maintenance extends Construct {
@@ -31,7 +31,7 @@ export class Maintenance extends Construct {
       allowAnonymousAccess: false,
       removalPolicy: RemovalPolicy.DESTROY,
     });
-    const efsVolumeMountPath = props.mountPath || "/efs-volume";
+    const efsVolumeMountPath = props.mountPath || "efs-volume";
 
     const api = new apigateway.RestApi(this, "maintenance-apigw");
 
@@ -54,6 +54,7 @@ export class Maintenance extends Construct {
       environment: {
         MAINTENANCE_FILE_PATH: efsVolumeMountPath,
       },
+      vpc: props.vpc
     });
     const maintenanceInt = new apigateway.LambdaIntegration(maintenanceLambda);
     maintenance.addMethod("GET", maintenanceInt);
@@ -62,7 +63,7 @@ export class Maintenance extends Construct {
     maintenance.addResource("disable").addMethod("POST", maintenanceInt);
 
     const whitelist = api.root.addResource("whitelist");
-    const whitelistLambda = new NodejsFunction(this, "", {
+    const whitelistLambda = new NodejsFunction(this, "whitelist-lambda", {
       entry: path.resolve(
         __dirname,
         "../assets/handlers/maintenance/whitelist.ts"
@@ -80,6 +81,7 @@ export class Maintenance extends Construct {
       environment: {
         MAINTENANCE_FILE_PATH: efsVolumeMountPath,
       },
+      vpc: props.vpc
     });
     const whitelistInt = new apigateway.LambdaIntegration(whitelistLambda);
     whitelist.addMethod("GET", whitelistInt);
