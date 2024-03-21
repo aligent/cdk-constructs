@@ -16,7 +16,7 @@ interface MaintenanceProps {
   /**
    * Path to mount the efs volume to
    *
-   * @default '/efs-volume'
+   * @default '/mnt/efs0'
    */
   mountPath?: string;
 }
@@ -31,7 +31,19 @@ export class Maintenance extends Construct {
       allowAnonymousAccess: false,
       removalPolicy: RemovalPolicy.DESTROY,
     });
-    const efsVolumeMountPath = props.mountPath || "efs-volume";
+    const accessPoint = efsVolume.addAccessPoint("access-point", {
+      createAcl: {
+        ownerGid: "1001",
+        ownerUid: "1001",
+        permissions: "750",
+      },
+      path: "/export/maintenance",
+      posixUser: {
+        gid: "1001",
+        uid: "1001",
+      },
+    });
+    const efsVolumeMountPath = props.mountPath || "/mnt/efs0";
 
     const api = new apigateway.RestApi(this, "maintenance-apigw");
 
@@ -45,16 +57,14 @@ export class Maintenance extends Construct {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: "index.handler",
       timeout: Duration.seconds(5),
-      filesystem: {
-        config: {
-          arn: efsVolume.fileSystemArn,
-          localMountPath: efsVolumeMountPath,
-        },
-      },
+      filesystem: lambda.FileSystem.fromEfsAccessPoint(
+        accessPoint,
+        efsVolumeMountPath
+      ),
       environment: {
         MAINTENANCE_FILE_PATH: efsVolumeMountPath,
       },
-      vpc: props.vpc
+      vpc: props.vpc,
     });
     const maintenanceInt = new apigateway.LambdaIntegration(maintenanceLambda);
     maintenance.addMethod("GET", maintenanceInt);
@@ -62,7 +72,7 @@ export class Maintenance extends Construct {
     maintenance.addResource("enable").addMethod("POST", maintenanceInt);
     maintenance.addResource("disable").addMethod("POST", maintenanceInt);
 
-    const whitelist = api.root.addResource("whitelist");
+    const whitelist = maintenance.addResource("whitelist");
     const whitelistLambda = new NodejsFunction(this, "whitelist-lambda", {
       entry: path.resolve(
         __dirname,
@@ -72,20 +82,18 @@ export class Maintenance extends Construct {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: "index.handler",
       timeout: Duration.seconds(5),
-      filesystem: {
-        config: {
-          arn: efsVolume.fileSystemArn,
-          localMountPath: efsVolumeMountPath,
-        },
-      },
+      filesystem: lambda.FileSystem.fromEfsAccessPoint(
+        accessPoint,
+        efsVolumeMountPath
+      ),
       environment: {
         MAINTENANCE_FILE_PATH: efsVolumeMountPath,
       },
-      vpc: props.vpc
+      vpc: props.vpc,
     });
     const whitelistInt = new apigateway.LambdaIntegration(whitelistLambda);
     whitelist.addMethod("GET", whitelistInt);
     whitelist.addMethod("PUT", whitelistInt);
-    whitelist.addMethod("PATCH", whitelistInt)
+    whitelist.addMethod("PATCH", whitelistInt);
   }
 }
