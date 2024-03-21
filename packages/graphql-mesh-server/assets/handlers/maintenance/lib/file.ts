@@ -29,7 +29,9 @@ export const getFileContents = (): string => {
 
 export const setFileContents = (input: string): void => {
   if (!validateIps(input)) throw new Error("List of IP addresses not valid");
-  writeFileSync(getFilePath(), input);
+  const uniqueIps = [...new Set(input.split(","))].join(",");
+
+  writeFileSync(getFilePath(), uniqueIps, { encoding: "utf-8" });
 };
 
 export const updateFileContents = (input: string): void => {
@@ -58,5 +60,5 @@ export const toggleMaintenanceStatus = () => {
 
 const validateIps = (ipList: string) => {
   const ips = ipList.split(",");
-  return Boolean(ips.find(ip => !IP_REGEX.test(ip)));
+  return ips.find(ip => !IP_REGEX.test(ip)) === undefined;
 };
