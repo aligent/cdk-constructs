@@ -5,7 +5,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
 import { FileSystem } from "aws-cdk-lib/aws-efs";
-import { FargateService } from "aws-cdk-lib/aws-ecs";
+import { FargateService, MountPoint } from "aws-cdk-lib/aws-ecs";
 import path = require("path");
 import { PolicyStatement } from "aws-cdk-lib/aws-iam";
 
@@ -85,6 +85,19 @@ export class Maintenance extends Construct {
         },
       },
     });
+
+    const mountPoint: MountPoint = {
+      containerPath: efsVolumeMountPath,
+      readOnly: true,
+      sourceVolume: "maintenanceVolume",
+    };
+    props.fargateService.taskDefinition.defaultContainer?.addMountPoints(
+      mountPoint
+    );
+    props.fargateService.taskDefinition.defaultContainer?.addEnvironment(
+      "MAINTENANCE_FILE_PATH",
+      `${efsVolumeMountPath}/maintenance.enabled`
+    );
 
     const api = new apigateway.RestApi(this, "maintenance-apigw");
 
