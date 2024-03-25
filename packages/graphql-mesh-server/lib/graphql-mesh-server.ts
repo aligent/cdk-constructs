@@ -160,6 +160,12 @@ export type MeshHostingProps = {
    * @default true
    */
   enableMaintenanceMode?: boolean;
+
+  /**
+   * Maintenance auth key
+   * @default true
+   */
+  maintenanceAuthKey?: string;
 };
 
 export class MeshHosting extends Construct {
@@ -214,7 +220,8 @@ export class MeshHosting extends Construct {
       new Maintenance(this, "maintenance", {
         ...props,
         vpc: this.vpc,
-        fargateService: this.service
+        fargateService: this.service,
+        authKey: props.maintenanceAuthKey,
       });
     }
 

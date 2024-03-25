@@ -27,6 +27,13 @@ interface MaintenanceProps {
    * @default '/mnt/efs0'
    */
   mountPath?: string;
+
+  /**
+   * Authentication key for the maintenance API
+   *
+   * @default randomly generated key
+   */
+  authKey?: string;
 }
 
 export class Maintenance extends Construct {
@@ -100,6 +107,17 @@ export class Maintenance extends Construct {
     );
 
     const api = new apigateway.RestApi(this, "maintenance-apigw");
+    const apiKey = api.addApiKey("maintenance-api-key", {
+      value: props.authKey,
+    });
+    const usagePlan = api.addUsagePlan("maintenance-usage-plan", {
+      apiStages: [{ api: api, stage: api.deploymentStage }],
+    });
+    usagePlan.addApiKey(apiKey);
+
+    const methodOptions: apigateway.MethodOptions = {
+      apiKeyRequired: true,
+    };
 
     const maintenance = api.root.addResource("maintenance");
     const maintenanceLambda = new NodejsFunction(this, "maintenance-lambda", {
@@ -121,10 +139,14 @@ export class Maintenance extends Construct {
       vpc: props.vpc,
     });
     const maintenanceInt = new apigateway.LambdaIntegration(maintenanceLambda);
-    maintenance.addMethod("GET", maintenanceInt);
-    maintenance.addMethod("POST", maintenanceInt);
-    maintenance.addResource("enable").addMethod("POST", maintenanceInt);
-    maintenance.addResource("disable").addMethod("POST", maintenanceInt);
+    maintenance.addMethod("GET", maintenanceInt, methodOptions);
+    maintenance.addMethod("POST", maintenanceInt, methodOptions);
+    maintenance
+      .addResource("enable")
+      .addMethod("POST", maintenanceInt, methodOptions);
+    maintenance
+      .addResource("disable")
+      .addMethod("POST", maintenanceInt, methodOptions);
 
     const whitelist = maintenance.addResource("whitelist");
     const whitelistLambda = new NodejsFunction(this, "whitelist-lambda", {
@@ -146,8 +168,8 @@ export class Maintenance extends Construct {
       vpc: props.vpc,
     });
     const whitelistInt = new apigateway.LambdaIntegration(whitelistLambda);
-    whitelist.addMethod("GET", whitelistInt);
-    whitelist.addMethod("PUT", whitelistInt);
-    whitelist.addMethod("PATCH", whitelistInt);
+    whitelist.addMethod("GET", whitelistInt, methodOptions);
+    whitelist.addMethod("PUT", whitelistInt, methodOptions);
+    whitelist.addMethod("PATCH", whitelistInt, methodOptions);
   }
 }
