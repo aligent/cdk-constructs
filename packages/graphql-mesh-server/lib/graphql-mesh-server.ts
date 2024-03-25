@@ -201,6 +201,12 @@ export class MeshHosting extends Construct {
       },
     });
 
+    this.service = mesh.service;
+    this.firewall = mesh.firewall;
+    this.loadBalancer = mesh.loadBalancer;
+    this.logGroup = mesh.logGroup;
+    this.repository = mesh.repository;
+
     if (
       props.enableMaintenanceMode ||
       props.enableMaintenanceMode === undefined
@@ -208,14 +214,9 @@ export class MeshHosting extends Construct {
       new Maintenance(this, "maintenance", {
         ...props,
         vpc: this.vpc,
+        fargateService: this.service
       });
     }
-
-    this.service = mesh.service;
-    this.firewall = mesh.firewall;
-    this.loadBalancer = mesh.loadBalancer;
-    this.logGroup = mesh.logGroup;
-    this.repository = mesh.repository;
 
     new CodePipelineService(this, "pipeline", {
       repository: this.repository,

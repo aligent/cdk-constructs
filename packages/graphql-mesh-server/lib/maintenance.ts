@@ -1,11 +1,13 @@
 import { Duration, RemovalPolicy } from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import { IVpc } from "aws-cdk-lib/aws-ec2";
+import { IVpc, Peer, Port, SecurityGroup } from "aws-cdk-lib/aws-ec2";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
 import { FileSystem } from "aws-cdk-lib/aws-efs";
+import { FargateService } from "aws-cdk-lib/aws-ecs";
 import path = require("path");
+import { PolicyStatement } from "aws-cdk-lib/aws-iam";
 
 interface MaintenanceProps {
   /**
@@ -13,6 +15,12 @@ interface MaintenanceProps {
    * Should be the same VPC as the Fargate container
    */
   vpc: IVpc;
+
+  /**
+   * Task definition to mount to the EFS volume to
+   */
+  fargateService: FargateService;
+
   /**
    * Path to mount the efs volume to
    *
@@ -22,14 +30,17 @@ interface MaintenanceProps {
 }
 
 export class Maintenance extends Construct {
-  declare backend: lambda.Function;
   constructor(scope: Construct, id: string, props: MaintenanceProps) {
     super(scope, id);
 
+    const efsVolumeSecGroup = new SecurityGroup(this, "efs-security-group", {
+      vpc: props.vpc,
+    });
     const efsVolume = new FileSystem(this, "efs", {
       vpc: props.vpc,
       allowAnonymousAccess: false,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.DESTROY, // Nothing import is stored here, fine to destroy
+      securityGroup: efsVolumeSecGroup,
     });
     const accessPoint = efsVolume.addAccessPoint("access-point", {
       createAcl: {
@@ -44,6 +55,36 @@ export class Maintenance extends Construct {
       },
     });
     const efsVolumeMountPath = props.mountPath || "/mnt/efs0";
+
+    const accessPolicy = new PolicyStatement({
+      actions: [
+        "elasticfilesystem:ClientMount",
+        "elasticfilesystem:ClientWrite",
+        "elasticfilesystem:ClientRootAccess",
+      ],
+      resources: [efsVolume.fileSystemArn, accessPoint.accessPointArn],
+    });
+
+    efsVolumeSecGroup.addIngressRule(
+      Peer.anyIpv4(), // Can't get the IP address of each container as we don't know them at deploy time!
+      Port.tcp(2049),
+      "File access"
+    );
+
+    efsVolume.grantReadWrite(props.fargateService.taskDefinition.taskRole);
+    props.fargateService.taskDefinition.addToTaskRolePolicy(accessPolicy);
+
+    props.fargateService.taskDefinition.addVolume({
+      name: "maintenanceVolume",
+      efsVolumeConfiguration: {
+        ...efsVolume,
+        transitEncryption: "ENABLED",
+        authorizationConfig: {
+          accessPointId: accessPoint.accessPointId,
+          iam: "ENABLED",
+        },
+      },
+    });
 
     const api = new apigateway.RestApi(this, "maintenance-apigw");
 

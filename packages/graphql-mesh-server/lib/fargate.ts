@@ -279,6 +279,7 @@ export class MeshService extends Construct {
       cpu: 32,
       memoryReservationMiB: 256,
       essential: false,
+      logging: logDriver,
     });
     xray.addPortMappings({
       containerPort: 2000,
