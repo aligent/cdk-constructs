@@ -203,7 +203,7 @@ export class PrerenderFargate extends Construct {
 
     // Setup AutoScaling policy
     const scaling = fargateService.service.autoScaleTaskCount({
-      maxCapacity: maxInstanceCount || 2,
+      maxCapacity: maxInstanceCount || 4,
       minCapacity: minInstanceCount || 1,
     });
     scaling.scaleOnCpuUtilization(`${prerenderName}-scaling`, {
