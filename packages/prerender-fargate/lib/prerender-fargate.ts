@@ -152,8 +152,8 @@ export class PrerenderFargate extends Construct {
           cluster,
           serviceName: `${prerenderName}-service`,
           desiredCount: desiredInstanceCount || 1,
-          cpu: instanceCPU || 512, // 0.5 vCPU default
-          memoryLimitMiB: instanceMemory || 1024, // 1 GB default to give Chrome enough memory
+          cpu: instanceCPU || 2048, // 2 vCPU default
+          memoryLimitMiB: instanceMemory || 4096, // 4 GB default to give Chrome enough memory
           taskImageOptions: {
             containerName: `${prerenderName}-container`,
             image: ecs.ContainerImage.fromDockerImageAsset(asset),
