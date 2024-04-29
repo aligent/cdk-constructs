@@ -87,6 +87,11 @@ export type MeshHostingProps = {
    */
   notificationRegion?: string;
   /**
+   * Name of the WAF
+   * Defaults to 'graphql-mesh-web-acl'
+   */
+  wafName?: string;
+  /**
    * List of IPv4 addresses to block
    */
   blockedIps?: string[];

@@ -62,6 +62,11 @@ export interface MeshServiceProps {
    */
   secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
   /**
+   * Name of the WAF
+   * Defaults to 'graphql-mesh-web-acl'
+   */
+  wafName?: string;
+  /**
    * List of IPv4 addresses to block
    */
   blockedIps?: string[];
@@ -457,6 +462,7 @@ export class MeshService extends Construct {
     }
 
     this.firewall = new WebApplicationFirewall(this, "waf", {
+      name: props.wafName,
       scope: Scope.REGIONAL,
       visibilityConfig: {
         cloudWatchMetricsEnabled: true,
