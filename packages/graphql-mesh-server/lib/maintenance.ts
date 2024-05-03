@@ -72,11 +72,7 @@ export class Maintenance extends Construct {
       resources: [efsVolume.fileSystemArn, accessPoint.accessPointArn],
     });
 
-    efsVolumeSecGroup.addIngressRule(
-      Peer.anyIpv4(), // Can't get the IP address of each container as we don't know them at deploy time!
-      Port.tcp(2049),
-      "File access"
-    );
+    efsVolume.connections.allowDefaultPortFrom(props.fargateService.connections);
 
     efsVolume.grantReadWrite(props.fargateService.taskDefinition.taskRole);
     props.fargateService.taskDefinition.addToTaskRolePolicy(accessPolicy);

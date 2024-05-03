@@ -141,6 +141,27 @@ export interface MeshServiceProps {
    * @default authentication-table
    */
   authenticationTable?: string;
+
+  /**
+   * Specify a name for the ECS cluster
+   * 
+   * @default - AWS generated cluster name
+   */
+  clusterName?: string
+
+  /**
+   * Specify a name for the GraphQL service
+   * 
+   * @default - AWS generated service name
+   */
+  serviceName?: string
+
+  /**
+   * Specify a name for the ECR repository
+   * 
+   * @default - AWS generated repository name
+   */
+  repositoryName?: string
 }
 
 export class MeshService extends Construct {
@@ -171,6 +192,7 @@ export class MeshService extends Construct {
     this.repository =
       props.repository ||
       new ecr.Repository(this, "repo", {
+        repositoryName: props.repositoryName !== undefined ? props.repositoryName : undefined,
         removalPolicy: RemovalPolicy.DESTROY,
         autoDeleteImages: true,
       });
@@ -219,6 +241,8 @@ export class MeshService extends Construct {
       vpc: this.vpc,
       containerInsights:
         props.containerInsights !== undefined ? props.containerInsights : true,
+      clusterName:
+        props.clusterName !== undefined ? props.clusterName : undefined,
     });
 
     const environment: { [key: string]: string } = {};
