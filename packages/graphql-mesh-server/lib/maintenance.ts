@@ -1,6 +1,6 @@
 import { Duration, RemovalPolicy } from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import { IVpc, SecurityGroup } from "aws-cdk-lib/aws-ec2";
+import { IVpc, Peer, Port, SecurityGroup } from "aws-cdk-lib/aws-ec2";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
@@ -72,8 +72,10 @@ export class Maintenance extends Construct {
       resources: [efsVolume.fileSystemArn, accessPoint.accessPointArn],
     });
 
-    efsVolume.connections.allowDefaultPortFrom(
-      props.fargateService.connections
+    efsVolumeSecGroup.addIngressRule(
+      Peer.ipv4(props.vpc.vpcCidrBlock),
+      Port.tcp(2049),
+      "File access"
     );
 
     efsVolume.grantReadWrite(props.fargateService.taskDefinition.taskRole);

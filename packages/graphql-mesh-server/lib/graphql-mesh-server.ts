@@ -171,6 +171,13 @@ export type MeshHostingProps = {
    * @default true
    */
   maintenanceAuthKey?: string;
+
+  /**
+   * Whether a DynamoDB table should be created to store session data
+   *
+   * @default authentication-table
+   */
+  authenticationTable?: string;
 };
 
 export class MeshHosting extends Construct {

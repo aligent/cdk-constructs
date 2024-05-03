@@ -48,6 +48,13 @@ export interface CodePipelineServiceProps {
    * CloudFront distribution ID to clear cache on.
    */
   cloudFrontDistributionId?: string;
+
+  /**
+   * Deployment pipeline name
+   *
+   * @default AWS CloudFormation generates an ID and uses that for the pipeline name
+   */
+  pipelineName?: string;
 }
 
 export class CodePipelineService extends Construct {
@@ -56,7 +63,10 @@ export class CodePipelineService extends Construct {
   constructor(scope: Construct, id: string, props: CodePipelineServiceProps) {
     super(scope, id);
 
-    this.pipeline = new Pipeline(this, "deploy-pipeline");
+    this.pipeline = new Pipeline(this, "deploy-pipeline", {
+      pipelineName:
+        props.pipelineName !== undefined ? props.pipelineName : undefined,
+    });
 
     const sourceOutput = new Artifact();
     const sourceAction = new pipe_actions.EcrSourceAction({
