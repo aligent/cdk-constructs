@@ -144,24 +144,31 @@ export interface MeshServiceProps {
 
   /**
    * Specify a name for the ECS cluster
-   * 
+   *
    * @default - AWS generated cluster name
    */
-  clusterName?: string
+  clusterName?: string;
 
   /**
    * Specify a name for the GraphQL service
-   * 
+   *
    * @default - AWS generated service name
    */
-  serviceName?: string
+  serviceName?: string;
 
   /**
    * Specify a name for the ECR repository
-   * 
+   *
    * @default - AWS generated repository name
    */
-  repositoryName?: string
+  repositoryName?: string;
+
+  /**
+   * Specify a name for the task definition family
+   *
+   * @default - AWS generated task definition family name
+   */
+  taskDefinitionFamilyName?: string;
 }
 
 export class MeshService extends Construct {
@@ -192,7 +199,8 @@ export class MeshService extends Construct {
     this.repository =
       props.repository ||
       new ecr.Repository(this, "repo", {
-        repositoryName: props.repositoryName !== undefined ? props.repositoryName : undefined,
+        repositoryName:
+          props.repositoryName !== undefined ? props.repositoryName : undefined,
         removalPolicy: RemovalPolicy.DESTROY,
         autoDeleteImages: true,
       });
@@ -291,6 +299,10 @@ export class MeshService extends Construct {
           taskRole: new iam.Role(this, "MeshTaskRole", {
             assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
           }),
+          family:
+            props.taskDefinitionFamilyName !== undefined
+              ? props.taskDefinitionFamilyName
+              : undefined,
         },
         publicLoadBalancer: true, // default,
         taskSubnets: {
