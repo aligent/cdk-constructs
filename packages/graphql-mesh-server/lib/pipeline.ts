@@ -113,7 +113,7 @@ export class CodePipelineService extends Construct {
       sid: "AllowTaggingEcsResource",
       actions: ["ecs:TagResource"],
       resources: [
-        `arn:aws:ecs:${/* TODO: region */ ""}:*:task/${
+        `arn:aws:ecs:${Stack.of(this).region}:*:task/${
           props.service.cluster.clusterName
         }/*`,
       ],
