@@ -73,7 +73,7 @@ export class Maintenance extends Construct {
     });
 
     efsVolumeSecGroup.addIngressRule(
-      Peer.anyIpv4(), // Can't get the IP address of each container as we don't know them at deploy time!
+      Peer.ipv4(props.vpc.vpcCidrBlock),
       Port.tcp(2049),
       "File access"
     );
