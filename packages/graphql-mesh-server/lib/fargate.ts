@@ -7,6 +7,7 @@ import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ecsPatterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as ssm from "aws-cdk-lib/aws-ssm";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { Port, SecurityGroup, IVpc, Vpc } from "aws-cdk-lib/aws-ec2";
 import { RedisService } from "./redis-construct";
 import {
@@ -61,6 +62,11 @@ export interface MeshServiceProps {
    */
   secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
   /**
+   * Name of the WAF
+   * Defaults to 'graphql-mesh-web-acl'
+   */
+  wafName?: string;
+  /**
    * List of IPv4 addresses to block
    */
   blockedIps?: string[];
@@ -78,6 +84,11 @@ export interface MeshServiceProps {
    * Defaults to 3
    */
   blockedIpv6Priority?: number;
+  /**
+   * If true, block all access to the endpoint. Use in conjunction with allowedIps to block public access
+   * @default false
+   */
+  blockAll?: boolean;
   /**
    * List of AWS Managed rules to add to the WAF
    */
@@ -97,9 +108,14 @@ export interface MeshServiceProps {
    */
   rateLimitPriority?: number;
   /**
-   * List of IPv4 addresses that can bypass rate limiting.
+   * The waf allowed ip rule priority.
+   * Defaults to 2
    */
-  rateLimitBypassList?: string[];
+  allowedIpPriority?: number;
+  /**
+   * List of IPv4 addresses that can bypass all WAF block lists.
+   */
+  allowedIps?: string[];
   /**
    * Pass custom cpu scaling steps
    * Default value:
@@ -120,6 +136,39 @@ export interface MeshServiceProps {
    * Defaults to 'graphql-server'
    */
   logStreamPrefix?: string;
+  /**
+   * Whether a DynamoDB table should be created to store session data
+   * @default authentication-table
+   */
+  authenticationTable?: string;
+
+  /**
+   * Specify a name for the ECS cluster
+   *
+   * @default - AWS generated cluster name
+   */
+  clusterName?: string;
+
+  /**
+   * Specify a name for the GraphQL service
+   *
+   * @default - AWS generated service name
+   */
+  serviceName?: string;
+
+  /**
+   * Specify a name for the ECR repository
+   *
+   * @default - AWS generated repository name
+   */
+  repositoryName?: string;
+
+  /**
+   * Specify a name for the task definition family
+   *
+   * @default - AWS generated task definition family name
+   */
+  taskDefinitionFamilyName?: string;
 }
 
 export class MeshService extends Construct {
@@ -150,6 +199,8 @@ export class MeshService extends Construct {
     this.repository =
       props.repository ||
       new ecr.Repository(this, "repo", {
+        repositoryName:
+          props.repositoryName !== undefined ? props.repositoryName : undefined,
         removalPolicy: RemovalPolicy.DESTROY,
         autoDeleteImages: true,
       });
@@ -198,6 +249,8 @@ export class MeshService extends Construct {
       vpc: this.vpc,
       containerInsights:
         props.containerInsights !== undefined ? props.containerInsights : true,
+      clusterName:
+        props.clusterName !== undefined ? props.clusterName : undefined,
     });
 
     const environment: { [key: string]: string } = {};
@@ -227,6 +280,7 @@ export class MeshService extends Construct {
       streamPrefix: props.logStreamPrefix || "graphql-server",
       logGroup: this.logGroup,
     });
+
     // Create a load-balanced Fargate service and make it public
     const fargateService =
       new ecsPatterns.ApplicationLoadBalancedFargateService(this, `fargate`, {
@@ -242,6 +296,13 @@ export class MeshService extends Construct {
           secrets: secrets,
           environment: environment,
           logDriver: logDriver,
+          taskRole: new iam.Role(this, "MeshTaskRole", {
+            assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+          }),
+          family:
+            props.taskDefinitionFamilyName !== undefined
+              ? props.taskDefinitionFamilyName
+              : undefined,
         },
         publicLoadBalancer: true, // default,
         taskSubnets: {
@@ -253,8 +314,47 @@ export class MeshService extends Construct {
     this.service = fargateService.service;
     this.loadBalancer = fargateService.loadBalancer;
 
-    const rateLimitBypassList = new CfnIPSet(this, "RateLimitBypassList", {
-      addresses: props.rateLimitBypassList || [],
+    // Configure x-ray
+    const xray = this.service.taskDefinition.addContainer("xray", {
+      image: ecs.ContainerImage.fromRegistry("amazon/aws-xray-daemon"),
+      cpu: 32,
+      memoryReservationMiB: 256,
+      essential: false,
+    });
+    xray.addPortMappings({
+      containerPort: 2000,
+      protocol: ecs.Protocol.UDP,
+    });
+
+    this.service.taskDefinition.taskRole.addManagedPolicy({
+      managedPolicyArn:
+        "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+    });
+    this.service.taskDefinition.taskRole.addManagedPolicy({
+      managedPolicyArn: "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess",
+    });
+
+    if (props.authenticationTable || props.authenticationTable === undefined) {
+      const authTable = new dynamodb.Table(this, "authenticationTable", {
+        tableName: props.authenticationTable || "authentication-table",
+        partitionKey: {
+          name: "customer_id",
+          type: dynamodb.AttributeType.STRING,
+        },
+        sortKey: {
+          name: "refresh_token_hash",
+          type: dynamodb.AttributeType.STRING,
+        },
+        billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+        removalPolicy: RemovalPolicy.DESTROY,
+        timeToLiveAttribute: "ttl",
+      });
+
+      authTable.grantReadWriteData(this.service.taskDefinition.taskRole);
+    }
+
+    const allowedIpList = new CfnIPSet(this, "allowList", {
+      addresses: props.allowedIps || [],
       ipAddressVersion: "IPV4",
       scope: "REGIONAL",
       description: "List of IPs that are whitelisted from rate limiting",
@@ -274,60 +374,16 @@ export class MeshService extends Construct {
       description: "List of IPv6s blocked by WAF",
     });
 
-    const defaultRules: CfnWebACL.RuleProperty[] = [
-      {
-        name: "IPBlockList",
-        priority: 2 || props.blockedIpPriority,
-        statement: {
-          ipSetReferenceStatement: {
-            arn: blockedIpList.attrArn,
-          },
-        },
-        visibilityConfig: {
-          cloudWatchMetricsEnabled: true,
-          metricName: "IPBlockList",
-          sampledRequestsEnabled: true,
-        },
-        action: {
-          block: {},
-        },
-      },
-      {
-        name: "IPv6BlockList",
-        priority: 3 || props.blockedIpPriority,
-        statement: {
-          ipSetReferenceStatement: {
-            arn: blockedIpv6List.attrArn,
-          },
-        },
-        visibilityConfig: {
-          cloudWatchMetricsEnabled: true,
-          metricName: "IPv6BlockList",
-          sampledRequestsEnabled: true,
-        },
-        action: {
-          block: {},
-        },
-      },
-    ];
-
-    if (props.rateLimit) {
-      defaultRules.push({
-        name: "RateLimit",
-        priority: 10 || props.rateLimitPriority,
-        statement: {
-          rateBasedStatement: {
-            aggregateKeyType: "FORWARDED_IP",
-            limit: props.rateLimit,
-            forwardedIpConfig: {
-              fallbackBehavior: "MATCH",
-              headerName: "X-Forwarded-For",
-            },
-            scopeDownStatement: {
+    const defaultRules: CfnWebACL.RuleProperty[] = props.blockAll
+      ? [
+          {
+            name: "BlockNonAllowedIps",
+            priority: props.allowedIpPriority || 2,
+            statement: {
               notStatement: {
                 statement: {
                   ipSetReferenceStatement: {
-                    arn: rateLimitBypassList.attrArn,
+                    arn: allowedIpList.attrArn,
                     ipSetForwardedIpConfig: {
                       fallbackBehavior: "MATCH",
                       headerName: "X-Forwarded-For",
@@ -336,6 +392,97 @@ export class MeshService extends Construct {
                   },
                 },
               },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPAllowList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              block: {},
+            },
+          },
+        ]
+      : [
+          {
+            name: "IPAllowList",
+            priority: props.allowedIpPriority || 2,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: allowedIpList.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST",
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPAllowList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              allow: {},
+            },
+          },
+          {
+            name: "IPBlockList",
+            priority: props.blockedIpPriority || 3,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: blockedIpList.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST",
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPBlockList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              block: {},
+            },
+          },
+          {
+            name: "IPv6BlockList",
+            priority: (props.blockedIpPriority || 3) + 1,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: blockedIpv6List.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST",
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPv6BlockList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              block: {},
+            },
+          },
+        ];
+
+    if (props.rateLimit && !props.blockAll) {
+      defaultRules.push({
+        name: "RateLimit",
+        priority: props.rateLimitPriority || 10,
+        statement: {
+          rateBasedStatement: {
+            aggregateKeyType: "FORWARDED_IP",
+            limit: props.rateLimit,
+            forwardedIpConfig: {
+              fallbackBehavior: "MATCH",
+              headerName: "X-Forwarded-For",
             },
           },
         },
@@ -351,6 +498,7 @@ export class MeshService extends Construct {
     }
 
     this.firewall = new WebApplicationFirewall(this, "waf", {
+      name: props.wafName,
       scope: Scope.REGIONAL,
       visibilityConfig: {
         cloudWatchMetricsEnabled: true,

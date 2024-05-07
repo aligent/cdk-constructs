@@ -4,7 +4,7 @@ import { LambdaToSqsToLambda } from "@aws-solutions-constructs/aws-lambda-sqs-la
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Bucket } from "aws-cdk-lib/aws-s3";
-import { Duration } from "aws-cdk-lib";
+import { Stack, Duration } from "aws-cdk-lib";
 
 /**
  * Options for the Prerender Recache API.
@@ -18,11 +18,17 @@ export interface PrerenderRecacheApiOptions {
    * Maximum number of concurrent executions of the Prerender Recache API.
    */
   maxConcurrentExecutions: number;
+  /**
+   * Secrets Manager secret name having Map<string, string[]> as its value, e.g.,
+   * { "tokenABC": "https://URL_A,https://URL_B,...", ..., "tokenXYZ":"https://URL_Y,https://URL_Z" }
+   */
+  tokenSecret: string;
 }
 
 /**
  * Represents an API for recaching prerendered pages.
  */
+
 export class PrerenderRecacheApi extends Construct {
   readonly api: LambdaRestApi;
 
@@ -34,6 +40,33 @@ export class PrerenderRecacheApi extends Construct {
     super(scope, id);
 
     const apiHandler = createApiLambdaFunction(this, options);
+
+    const smGetSecretPolicy = new iam.PolicyStatement({
+      actions: ["secretsmanager:GetSecretValue"],
+      resources: [
+        `arn:aws:secretsmanager:${Stack.of(this).region}:${
+          Stack.of(this).account
+        }:secret:${options.tokenSecret}-*`,
+      ],
+    });
+
+    const smDescribeSecretPolicy = new iam.PolicyStatement({
+      actions: ["secretsmanager:DescribeSecret"],
+      resources: [
+        `arn:aws:secretsmanager:${Stack.of(this).region}:${
+          Stack.of(this).account
+        }:secret:${options.tokenSecret}-*`,
+      ],
+    });
+
+    const s3DeleteObjectPolicy = new iam.PolicyStatement({
+      actions: ["s3:DeleteObject"],
+      resources: [`${options.prerenderS3Bucket.bucketArn}/*`],
+    });
+
+    apiHandler.addToRolePolicy(smGetSecretPolicy);
+    apiHandler.addToRolePolicy(smDescribeSecretPolicy);
+    apiHandler.addToRolePolicy(s3DeleteObjectPolicy);
 
     this.api = new LambdaRestApi(this, "prerenderRecacheApi", {
       handler: apiHandler,
@@ -47,7 +80,7 @@ export class PrerenderRecacheApi extends Construct {
       existingProducerLambdaObj: apiHandler,
       existingConsumerLambdaObj: new NodejsFunction(this, "consumer", {
         reservedConcurrentExecutions: options.maxConcurrentExecutions,
-        timeout: Duration.seconds(60),
+        timeout: Duration.seconds(120),
       }),
       deployDeadLetterQueue: false,
       queueProps: { visibilityTimeout: Duration.minutes(60) },
@@ -74,24 +107,7 @@ const createApiLambdaFunction = (
     options.prerenderS3Bucket.bucketName
   );
 
-  const ssmGetParameterPolicy = new iam.PolicyStatement({
-    actions: ["ssm:GetParameter"],
-    resources: ["*"],
-  }); // should be arn:aws:ssm:::parameter/prerender/recache/tokens/*, but can't make that work
-
-  const ssmDescribeParameterPolicy = new iam.PolicyStatement({
-    actions: ["ssm:DescribeParameters"],
-    resources: ["*"],
-  });
-
-  const s3DeleteObjectPolicy = new iam.PolicyStatement({
-    actions: ["s3:DeleteObject"],
-    resources: [`${options.prerenderS3Bucket.bucketArn}/*`],
-  });
-
-  apiHandler.addToRolePolicy(ssmGetParameterPolicy);
-  apiHandler.addToRolePolicy(ssmDescribeParameterPolicy);
-  apiHandler.addToRolePolicy(s3DeleteObjectPolicy);
+  apiHandler.addEnvironment("TOKEN_SECRET", options.tokenSecret);
 
   return apiHandler;
 };

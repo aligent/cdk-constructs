@@ -16,13 +16,14 @@ const crypto = require('crypto');
 const s3Cache = require('prerender-aws-s3-cache');
 
 const server = prerender({
-    chromeFlags: ['--no-sandbox', '--headless', '--disable-gpu', '--remote-debugging-port=9222', '--hide-scrollbars', '--disable-dev-shm-usage'],
+    chromeFlags: ['--no-sandbox', '--headless', '--disable-gpu', '--disable-web-security', '--remote-debugging-port=9222', '--hide-scrollbars', '--disable-dev-shm-usage'],
     forwardHeaders: true,
     chromeLocation: '/usr/bin/chromium-browser'
 });
 
-// Prefer tokens defined via SSM
-const tokens = process.env.TOKEN_LIST_SSM ? process.env.TOKEN_LIST_SSM : process.env.TOKEN_LIST;
+const tokenJson = JSON.parse(process.env.TOKEN_SECRET);
+const tokens = Object.keys(tokenJson);
+
 const tokenAllowList = tokens.toString().split(',');
 
 server.use({
@@ -37,12 +38,14 @@ server.use({
             return res.send(401);
         }
 
-        // compare credentials in header to list of allowed credentials
-
+        // compare credentials in header to list of allowed credentials and corresponding domains
         let authenticated = false;
         for (const token of tokenAllowList) {
-            authenticated = auth === token;
-
+            let domains = tokenJson[token].split(',')
+            for (const domain of domains) {
+                authenticated = (auth === token && req.url.replace("https%3A%2F%2F", "https://").startsWith(`/${domain}`) );
+                if (authenticated) break;
+            }
             if (authenticated) break;
         }
         if (!authenticated) {
@@ -61,17 +64,37 @@ server.use({
 
 server.use(prerender.blacklist());
 
-// Send 'X-Prerender': '1'
-server.use(prerender.sendPrerenderHeader());
+if (process.env.ENABLE_PRERENDER_HEADER.toLowerCase() === 'true'){
+
+    // Let headless chrome send 'X-Prerender: 1' in the request for any specicial handling such as disabling geo-redirection.
+    // Ensure that the "access-control-allow-headers" header of any backend systems allows "x-prerender" if CORS is configured.
+
+    server.use(prerender.sendPrerenderHeader());
+}
 
 if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
     var he = require('he');
     var s3 = new (require('aws-sdk')).S3({params:{Bucket: process.env.S3_BUCKET_NAME}});
+
     server.use({
             // The requestReceived and pageLoaded functions are a modified version of
             // httpHeader plugin - https://github.com/prerender/prerender/blob/478fa6d0a5196ea29c88c69e64e72eb5507b6d2c/lib/plugins/httpHeaders.js combined with
             // s3cache plugin - https://github.com/prerender/prerender-aws-s3-cache/blob/98707fa0f787de83aa41583682cd2c2d330a9cca/index.js
         requestReceived: function(req, res, next) {
+                const fetchCachedObject = function (err, result) {
+                    if (!err && result) {
+                        console.log(`Found cached object: ${key}`);
+                        if (result.Metadata.location){
+                            res.setHeader('Location', result.Metadata.location);
+                        }
+                        // default 200 for legacy objects that do not have Metadata.httpreturncode defined
+                        return res.send(result.Metadata.httpreturncode || 200, result.Body);
+                    } else {
+                        console.error(`Fetching cached object from S3 bucket failed with error: ${err.code}`);
+                    }
+                    next();
+                }
+
                 if(req.method !== 'GET' && req.method !== 'HEAD') {
                     return next();
                 }
@@ -84,28 +107,32 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
 
                 s3.getObject({
                     Key: key
-                }, function (err, result) {
-
-                    if (!err && result) {
-                        console.log("Found cached object: " + key);
-                        if (result.Metadata.location){
-                            res.setHeader('Location', result.Metadata.location);
-                        }
-                        // default 200 for legacy objects that do not have Metadata.httpreturncode defined
-                        return res.send(result.Metadata.httpreturncode || 200, result.Body);
-                    } else {
-                        console.error(err);
-                    }
-
-                    next();
-                });
+                }, fetchCachedObject);
             }});
+
     server.use(prerender.removeScriptTags());
+
     server.use({
         pageLoaded: function(req, res, next) {
             const statusCodesToCache = ['200', '301', '302'];
             var s3Metadata = {}
-
+            const cacheObject = function (err, result) {
+                if (!err && result) {
+                    console.log(`Cached object ${key} already present. Skipping caching...`);
+                } else {
+                    console.log(`Caching the object ${req.prerender.url} with statusCode ${req.prerender.statusCode}`);
+                    s3.putObject({
+                        Key: key,
+                        ContentType: 'text/html;charset=UTF-8',
+                        StorageClass: 'REDUCED_REDUNDANCY',
+                        Body: req.prerender.content,
+                        Metadata: s3Metadata
+                    }, function(err, result) {
+                        console.log(result);
+                        if (err) console.error(err);
+                    });
+                }
+            }
             // Inspect prerender meta tags and update response accordingly
             if (req.prerender.content && req.prerender.renderType == 'html') {
                 const statusMatchRegex = /<meta[^<>]*(?:name=['"]prerender-status-code['"][^<>]*content=['"]([0-9]{3})['"]|content=['"]([0-9]{3})['"][^<>]*name=['"]prerender-status-code['"])[^<>]*>/i;
@@ -120,39 +147,30 @@ if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true'){
 
                 let headerMatch = headerMatchRegex.exec(head)
                 while (headerMatch) {
-                    s3Metadata.location = he.decode(headerMatch[2] || headerMatch[4]);
+                    s3Metadata.location = headerMatch[1].toLowerCase() == 'location' ? he.decode(headerMatch[2] || headerMatch[4]) : '';
                     res.setHeader(headerMatch[1] || headerMatch[3], s3Metadata.location);
                     req.prerender.content = req.prerender.content.toString().replace(headerMatch[0], '');
                     headerMatch = headerMatchRegex.exec(head)
                 }
 
-                // Skip caching for the http response codes not in the list, such as 404
-                if ( ! statusCodesToCache.includes(req.prerender.statusCode.toString()) ) {
+                if ( statusCodesToCache.includes(req.prerender.statusCode.toString()) ){
+                    s3Metadata.httpreturncode = req.prerender.statusCode.toString()
+
+                    var key = req.prerender.url;
+
+                    if (process.env.S3_PREFIX_KEY) {
+                        key = process.env.S3_PREFIX_KEY + '/' + key;
+                    }
+                    s3.getObject({
+                        Key: key
+                    }, cacheObject);
+                } else {
+                    // Skip caching for the http response codes not in the list, such as 404
                     console.log(`StatusCode ${req.prerender.statusCode} for ${req.prerender.url} is not in the cachable code list. Returning without caching the result.`);
-                    return res.send(req.prerender.statusCode, req.prerender.content);
                 }
-            }
-            s3Metadata.httpreturncode = req.prerender.statusCode.toString()
-
-            console.log(`Caching the object ${req.prerender.url} with statusCode ${req.prerender.statusCode}`);
-            var key = req.prerender.url;
-
-            if (process.env.S3_PREFIX_KEY) {
-                key = process.env.S3_PREFIX_KEY + '/' + key;
-            }
-
-            s3.putObject({
-                Key: key,
-                ContentType: 'text/html;charset=UTF-8',
-                StorageClass: 'REDUCED_REDUNDANCY',
-                Body: req.prerender.content,
-                Metadata: s3Metadata
-            }, function(err, result) {
-                console.log(result);
-                if (err) console.error(err);
 
                 next();
-            });
+            }
         }
     });
 } else {

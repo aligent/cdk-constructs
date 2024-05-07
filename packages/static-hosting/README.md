@@ -3,7 +3,17 @@
 ## Overview
 
 This repository defines a CDK construct for hosting a static website on AWS using S3 and CloudFront.
-It can be imported and used within CDK applications.
+
+It can be imported and used within CDK applications. By default this construct will create a CloudFront distribution with an S3 bucket as the origin. It will also create an IAM user and group that have permission to create files in the S3 bucket.
+
+It has the following features that can optionally be enabled:
+
+- Create a DNS record in an existing hosted zone
+- Store CloudFront logs in an S3 bucket
+- Add a custom backend origin
+- Remap static files to the the S3 or backend origin
+
+![static hosting diagram](docs/static_hosting.png)
 
 ## Example
 
@@ -21,8 +31,6 @@ const HostingStackProps : StaticHostingProps = {
     domainName: 'domain.tld',
     certificateArn: 'arn:aws:acm:us-east-1:123456789:certificate/some-arn-id',
     createDnsRecord: false,
-    createPublisherGroup: true,
-    createPublisherUser: true,
     enableErrorConfig: true
 };
 

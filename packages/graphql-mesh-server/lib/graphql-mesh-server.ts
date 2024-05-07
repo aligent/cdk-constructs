@@ -18,6 +18,7 @@ import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2"
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 import { Topic } from "aws-cdk-lib/aws-sns";
 import { Alarm } from "aws-cdk-lib/aws-cloudwatch";
+import { Maintenance } from "./maintenance";
 
 export type MeshHostingProps = {
   /**
@@ -86,6 +87,11 @@ export type MeshHostingProps = {
    */
   notificationRegion?: string;
   /**
+   * Name of the WAF
+   * Defaults to 'graphql-mesh-web-acl'
+   */
+  wafName?: string;
+  /**
    * List of IPv4 addresses to block
    */
   blockedIps?: string[];
@@ -103,6 +109,11 @@ export type MeshHostingProps = {
    * Defaults to 3
    */
   blockedIpv6Priority?: number;
+  /**
+   * If true, block all access to the endpoint. Use in conjunction with allowedIps to block public access
+   * @default false
+   */
+  blockAll?: boolean;
   /**
    * List of AWS Managed rules to add to the WAF
    */
@@ -122,9 +133,9 @@ export type MeshHostingProps = {
    */
   rateLimitPriority?: number;
   /**
-   * List of IPv4 addresses that can bypass rate limiting.
+   * List of IPv4 addresses that can bypass all WAF block lists.
    */
-  rateLimitBypassList?: string[];
+  allowedIps?: string[];
   /**
    * Enable / disable container insights
    * Defaults to true
@@ -143,6 +154,30 @@ export type MeshHostingProps = {
    * Any additional custom alarms
    */
   additionalAlarms?: Alarm[];
+
+  /**
+   * CloudFront distribution ID to clear cache on after a Mesh deploy.
+   */
+  cloudFrontDistributionId?: string;
+
+  /**
+   * If maintenance mode lambdas and efs volume should be created
+   * @default true
+   */
+  enableMaintenanceMode?: boolean;
+
+  /**
+   * Maintenance auth key
+   * @default true
+   */
+  maintenanceAuthKey?: string;
+
+  /**
+   * Whether a DynamoDB table should be created to store session data
+   *
+   * @default authentication-table
+   */
+  authenticationTable?: string;
 };
 
 export class MeshHosting extends Construct {
@@ -190,11 +225,24 @@ export class MeshHosting extends Construct {
     this.logGroup = mesh.logGroup;
     this.repository = mesh.repository;
 
+    if (
+      props.enableMaintenanceMode ||
+      props.enableMaintenanceMode === undefined
+    ) {
+      new Maintenance(this, "maintenance", {
+        ...props,
+        vpc: this.vpc,
+        fargateService: this.service,
+        authKey: props.maintenanceAuthKey,
+      });
+    }
+
     new CodePipelineService(this, "pipeline", {
       repository: this.repository,
       service: this.service,
       notificationArn: props.notificationArn,
       notificationRegion: props.notificationRegion,
+      cloudFrontDistributionId: props.cloudFrontDistributionId,
     });
 
     new PerformanceMetrics(this, "cloudwatch", {
