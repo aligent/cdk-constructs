@@ -100,6 +100,11 @@ export interface PrerenderFargateOptions {
    * @default - true
    */
   enablePrerenderHeader?: boolean;
+  /**
+   * Locate tasks in a private subnet with egress access instead of a public subnet
+   * @default - false
+   */
+  usePrivateSubnets?: boolean;
 }
 
 /**
