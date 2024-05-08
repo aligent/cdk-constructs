@@ -285,7 +285,8 @@ export class MeshService extends Construct {
     const fargateService =
       new ecsPatterns.ApplicationLoadBalancedFargateService(this, `fargate`, {
         cluster,
-        serviceName: props.serviceName !== undefined ? props.serviceName : undefined,
+        serviceName:
+          props.serviceName !== undefined ? props.serviceName : undefined,
         certificate,
         enableExecuteCommand: true,
         cpu: props.cpu || 512, // 0.5 vCPU
