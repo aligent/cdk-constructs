@@ -90,6 +90,7 @@ export class PrerenderFargate extends Construct {
       prerenderFargateRecachingOptions,
       enableRecache,
       enablePrerenderHeader,
+      usePrivateSubnets,
     } = props;
 
     // Create bucket for prerender storage
@@ -183,6 +184,11 @@ export class PrerenderFargate extends Construct {
             prerenderFargateScalingOptions?.minHealthyPercent || 50,
           maxHealthyPercent:
             prerenderFargateScalingOptions?.maxHealthyPercent || 200,
+          taskSubnets: {
+            subnetType: usePrivateSubnets
+              ? ec2.SubnetType.PRIVATE_WITH_EGRESS
+              : ec2.SubnetType.PUBLIC,
+          },
         }
       );
 
