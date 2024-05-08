@@ -478,6 +478,11 @@ export class StaticHosting extends Construct {
 
     const additionalBehaviors: Record<string, Writeable<BehaviorOptions>> = {};
 
+    // If additional behaviours are provided via props, then merge, overriding generated behaviours if required.
+    if (props.additionalBehaviors) {
+      Object.assign(additionalBehaviors, props.additionalBehaviors);
+    }
+
     if (props.backendHost) {
       backendOrigin = new HttpOrigin(props.backendHost);
 
@@ -523,11 +528,6 @@ export class StaticHosting extends Construct {
         additionalBehaviors[path].responseHeadersPolicy =
           props.responseHeadersPolicies.additionalBehaviorResponsePolicy[path];
       }
-    }
-
-    // If additional behaviours are provided via props, then merge, overriding generated behaviours if required.
-    if (props.additionalBehaviors) {
-      Object.assign(additionalBehaviors, props.additionalBehaviors);
     }
 
     const distributionProps: DistributionProps = {
