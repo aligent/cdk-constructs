@@ -178,6 +178,34 @@ export type MeshHostingProps = {
    * @default authentication-table
    */
   authenticationTable?: string;
+
+  /**
+   * Specify a name for the ECS cluster
+   *
+   * @default - AWS generated cluster name
+   */
+  clusterName?: string;
+
+  /**
+   * Specify a name for the GraphQL service
+   *
+   * @default - AWS generated service name
+   */
+  serviceName?: string;
+
+  /**
+   * Specify a name for the ECR repository
+   *
+   * @default - AWS generated repository name
+   */
+  repositoryName?: string;
+
+  /**
+   * Specify a name for the task definition family
+   *
+   * @default - AWS generated task definition family name
+   */
+  taskDefinitionFamilyName?: string;
 };
 
 export class MeshHosting extends Construct {
