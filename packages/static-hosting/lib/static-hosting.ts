@@ -427,14 +427,21 @@ export class StaticHosting extends Construct {
     const originRequestPolicy =
       props.defaultBehaviorRequestPolicy ||
       new OriginRequestPolicy(this, "S3OriginRequestPolicy", {
-        headerBehavior:
-          OriginRequestHeaderBehavior.allowList("x-forwarded-host"),
+        headerBehavior: OriginRequestHeaderBehavior.allowList(
+          "x-forwarded-host",
+          "x-request-prerender",
+          "x-prerender"
+        ),
       });
 
     const originCachePolicy =
       props.defaultBehaviorCachePolicy ||
       new CachePolicy(this, "S3OriginCachePolicy", {
-        headerBehavior: CacheHeaderBehavior.allowList("x-forwarded-host"),
+        headerBehavior: CacheHeaderBehavior.allowList(
+          "x-forwarded-host",
+          "x-request-prerender",
+          "x-prerender"
+        ),
         enableAcceptEncodingBrotli: true,
         enableAcceptEncodingGzip: true,
       });
