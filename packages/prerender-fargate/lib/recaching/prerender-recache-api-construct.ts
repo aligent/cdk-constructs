@@ -23,6 +23,13 @@ export interface PrerenderRecacheApiOptions {
    * { "tokenABC": "https://URL_A,https://URL_B,...", ..., "tokenXYZ":"https://URL_Y,https://URL_Z" }
    */
   tokenSecret: string;
+
+  /**
+   * A name for the recache queue
+   *
+   * @default CloudFormation-generated name
+   */
+  queueName?: string;
 }
 
 /**
@@ -83,7 +90,11 @@ export class PrerenderRecacheApi extends Construct {
         timeout: Duration.seconds(120),
       }),
       deployDeadLetterQueue: false,
-      queueProps: { visibilityTimeout: Duration.minutes(60) },
+      queueProps: {
+        visibilityTimeout: Duration.minutes(60),
+        queueName:
+          options.queueName !== undefined ? options.queueName : undefined,
+      },
     });
   }
 }

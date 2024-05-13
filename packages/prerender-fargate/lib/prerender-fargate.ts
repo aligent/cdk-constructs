@@ -119,7 +119,8 @@ export class PrerenderFargate extends Construct {
 
     const cluster = new ecs.Cluster(this, `${prerenderName}-cluster`, {
       vpc: vpc,
-      clusterName: props.clusterName !== undefined ? props.clusterName : undefined
+      clusterName:
+        props.clusterName !== undefined ? props.clusterName : undefined,
     });
 
     const directory = path.join(__dirname, "prerender");
@@ -163,10 +164,16 @@ export class PrerenderFargate extends Construct {
             containerPort: 3000,
             environment,
             secrets,
-            family: props.taskDefinitionFamilyName !== undefined ? props.taskDefinitionFamilyName : undefined,
+            family:
+              props.taskDefinitionFamilyName !== undefined
+                ? props.taskDefinitionFamilyName
+                : undefined,
           },
           publicLoadBalancer: true,
-          loadBalancerName: props.loadBalancerName !== undefined ? props.loadBalancerName : undefined,
+          loadBalancerName:
+            props.loadBalancerName !== undefined
+              ? props.loadBalancerName
+              : undefined,
           assignPublicIp: true,
           listenerPort: 443,
           redirectHTTP: true,
