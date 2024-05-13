@@ -317,8 +317,8 @@ export class StaticHosting extends Construct {
     const siteNameArray: Array<string> = [siteName];
     const enforceSSL = props.enforceSSL !== false;
     const enableStaticFileRemap = props.enableStaticFileRemap !== false;
-    const defaultRootObject = props.defaultRootObject ?? "/index.html";
-    const errorResponsePagePath = props.errorResponsePagePath ?? "/index.html";
+    const defaultRootObject = props.defaultRootObject ?? "index.html";
+    const errorResponsePagePath = props.errorResponsePagePath ?? "index.html";
     const defaultBehaviorEdgeLambdas = props.defaultBehaviorEdgeLambdas ?? [];
     const disableCSP = props.disableCSP === true;
 
