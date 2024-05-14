@@ -105,6 +105,27 @@ export interface PrerenderFargateOptions {
    * @default - false
    */
   usePrivateSubnets?: boolean;
+
+  /**
+   * Specify a name for the ECS cluster
+   *
+   * @default - AWS generated cluster name
+   */
+  clusterName?: string;
+
+  /**
+   * Specify a name for the task definition family
+   *
+   * @default - AWS generated task definition family name
+   */
+  taskDefinitionFamilyName?: string;
+
+  /**
+   * Specify a name for the load balancer
+   *
+   * @default - AWS generated load balancer name
+   */
+  loadBalancerName?: string;
 }
 
 /**
