@@ -614,8 +614,8 @@ export class StaticHosting extends Construct {
     const lambdas: EdgeLambda[] = [];
 
     // If the remap is to a different path, create a Lambda@Edge function to handle this
-    if (from !== to) {
-      // Remove special characters from path
+    // Remove special characters from path
+    if (from.replace(/\*$/, "") !== to) {
       const id = from.replace(/[&/\\#,+()$~%'":*?<>{}]/g, "-");
 
       const remapFunction = new PathRemapFunction(
