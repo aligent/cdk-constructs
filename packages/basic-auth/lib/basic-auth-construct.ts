@@ -21,7 +21,7 @@ export class BasicAuthFunction extends Construct {
       {
         code: Bundling.bundle({
           entry: `${__dirname}/handlers/basic-auth.ts`,
-          runtime: Runtime.NODEJS_14_X,
+          runtime: Runtime.NODEJS_16_X,
           sourceMap: true,
           projectRoot: `${__dirname}/handlers/`,
           depsLockFilePath: `${__dirname}/handlers/package-lock.json`,
@@ -33,7 +33,7 @@ export class BasicAuthFunction extends Construct {
             "process.env.AUTH_PASSWORD": JSON.stringify(options.password),
           },
         } as any),
-        runtime: Runtime.NODEJS_14_X,
+        runtime: Runtime.NODEJS_16_X,
         handler: "index.handler",
       }
     );

@@ -31,7 +31,7 @@ export class ArbitraryPathRemapFunction extends Construct {
             "process.env.REMAP_PATH": JSON.stringify(options.path),
           },
         } as any),
-        runtime: Runtime.NODEJS_14_X,
+        runtime: Runtime.NODEJS_16_X,
         handler: "index.handler",
       }
     );
