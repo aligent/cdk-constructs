@@ -143,6 +143,7 @@ export interface StaticHostingProps {
    * Paths to remap on the default behaviour. For example you might remap deployed_sitemap.xml -> sitemap.xml
    * Created a behaviour in CloudFront to handle the remap. If the paths are different
    * it will also deploy a Lambda@Edge function to perform the required remap.
+   * The "to" path is optional, and the Lambda@Edge function will not be deployed if not provided.
    *
    * @default undefined
    */
@@ -276,7 +277,7 @@ export interface StaticHostingProps {
 
 interface remapPath {
   from: string;
-  to: string;
+  to?: string;
 }
 
 export interface ResponseHeaderMappings {
@@ -519,6 +520,7 @@ export class StaticHosting extends Construct {
       for (const path of props.remapPaths) {
         additionalBehaviors[path.from] = {
           origin: s3Origin,
+          viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           edgeLambdas: this.createRemapBehavior(path.from, path.to),
         };
       }
@@ -610,12 +612,12 @@ export class StaticHosting extends Construct {
     }
   }
 
-  private createRemapBehavior(from: string, to: string): EdgeLambda[] {
+  private createRemapBehavior(from: string, to?: string): EdgeLambda[] {
     const lambdas: EdgeLambda[] = [];
 
     // If the remap is to a different path, create a Lambda@Edge function to handle this
     // Remove special characters from path
-    if (from.replace(/\*$/, "") !== to) {
+    if (to && from.replace(/\*$/, "") !== to) {
       const id = from.replace(/[&/\\#,+()$~%'":*?<>{}]/g, "-");
 
       const remapFunction = new PathRemapFunction(
