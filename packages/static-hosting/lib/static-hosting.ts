@@ -519,6 +519,7 @@ export class StaticHosting extends Construct {
       for (const path of props.remapPaths) {
         additionalBehaviors[path.from] = {
           origin: s3Origin,
+          viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           edgeLambdas: this.createRemapBehavior(path.from, path.to),
         };
       }
