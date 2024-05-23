@@ -91,6 +91,8 @@ export class PrerenderFargate extends Construct {
       enableRecache,
       enablePrerenderHeader,
       usePrivateSubnets,
+      queueName,
+      restApiName,
     } = props;
 
     // Create bucket for prerender storage
@@ -253,6 +255,8 @@ export class PrerenderFargate extends Construct {
         maxConcurrentExecutions:
           prerenderFargateRecachingOptions?.maxConcurrentExecutions || 1,
         tokenSecret,
+        queueName,
+        restApiName,
       });
     }
   }

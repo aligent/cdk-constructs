@@ -126,6 +126,20 @@ export interface PrerenderFargateOptions {
    * @default - AWS generated load balancer name
    */
   loadBalancerName?: string;
+
+  /**
+   * A name for the recache queue
+   *
+   * @default CloudFormation-generated name
+   */
+  queueName?: string;
+
+  /**
+   * A name for the API Gateway RestApi resource.
+   *
+   * @default - ID of the RestApi construct.
+   */
+  restApiName?: string;
 }
 
 /**
