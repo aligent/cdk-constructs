@@ -30,6 +30,13 @@ export interface PrerenderRecacheApiOptions {
    * @default CloudFormation-generated name
    */
   queueName?: string;
+
+  /**
+   * A name for the API Gateway RestApi resource.
+   *
+   * @default - ID of the RestApi construct.
+   */
+  restApiName?: string;
 }
 
 /**
@@ -78,6 +85,8 @@ export class PrerenderRecacheApi extends Construct {
     this.api = new LambdaRestApi(this, "prerenderRecacheApi", {
       handler: apiHandler,
       proxy: false,
+      restApiName:
+        options.restApiName !== undefined ? options.restApiName : undefined,
     });
 
     const recache = this.api.root.addResource("recache");
