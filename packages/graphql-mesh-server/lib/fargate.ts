@@ -59,15 +59,17 @@ export interface MeshServiceProps {
   };
   /**
    * SSM values to pass through to the container as secrets
+   *
+   * @deprecated - Use secrets instead
    */
-  secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
+  ssmSecrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
 
   /**
    * ECS Secrets to pass through to the container as secrets
    *
    * The key values can be referenced from either SSM or Secrets manager
    */
-  secretsV2?: { [key: string]: ecs.Secret };
+  secrets?: { [key: string]: ecs.Secret };
 
   /**
    * Name of the WAF
@@ -276,10 +278,10 @@ export class MeshService extends Construct {
     }
 
     // Construct secrets from provided ssm values
-    const secrets: { [key: string]: ecs.Secret } = {};
-    props.secrets = props.secrets || {};
-    for (const [key, ssm] of Object.entries(props.secrets)) {
-      secrets[key] = ecs.Secret.fromSsmParameter(ssm);
+    const ssmSecrets: { [key: string]: ecs.Secret } = {};
+    props.ssmSecrets = props.ssmSecrets || {};
+    for (const [key, ssm] of Object.entries(props.ssmSecrets)) {
+      ssmSecrets[key] = ecs.Secret.fromSsmParameter(ssm);
     }
 
     // Configure a custom log driver and group
@@ -303,7 +305,7 @@ export class MeshService extends Construct {
           image: ecs.ContainerImage.fromEcrRepository(this.repository),
           enableLogging: true, // default
           containerPort: 4000, // graphql mesh gateway port
-          secrets: props.secretsV2 ? props.secretsV2 : secrets, // Prefer v2 secrets using secrets manager
+          secrets: props.secrets ? props.secrets : ssmSecrets, // Prefer v2 secrets using secrets manager
           environment: environment,
           logDriver: logDriver,
           taskRole: new iam.Role(this, "MeshTaskRole", {
