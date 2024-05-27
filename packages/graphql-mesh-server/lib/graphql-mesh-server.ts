@@ -19,6 +19,7 @@ import { LogGroup } from "aws-cdk-lib/aws-logs";
 import { Topic } from "aws-cdk-lib/aws-sns";
 import { Alarm } from "aws-cdk-lib/aws-cloudwatch";
 import { Maintenance } from "./maintenance";
+import { Secret } from "aws-cdk-lib/aws-ecs";
 
 export type MeshHostingProps = {
   /**
@@ -66,8 +67,20 @@ export type MeshHostingProps = {
   };
   /**
    * SSM values to pass through to the container as secrets
+   *
+   * @deprecated - Use secrets instead
    */
-  secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
+  ssmSecrets?: {
+    [key: string]: ssm.IStringParameter | ssm.IStringListParameter;
+  };
+
+  /**
+   * ECS Secrets to pass through to the container as secrets
+   *
+   * The key values can be referenced from either SSM or Secrets manager
+   */
+  secrets?: { [key: string]: Secret };
+
   /**
    * Pass custom cpu scaling steps
    * Default value:
