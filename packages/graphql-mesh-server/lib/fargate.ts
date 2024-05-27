@@ -62,7 +62,9 @@ export interface MeshServiceProps {
    *
    * @deprecated - Use secrets instead
    */
-  ssmSecrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
+  ssmSecrets?: {
+    [key: string]: ssm.IStringParameter | ssm.IStringListParameter;
+  };
 
   /**
    * ECS Secrets to pass through to the container as secrets
