@@ -61,6 +61,12 @@ export interface MeshServiceProps {
    * SSM values to pass through to the container as secrets
    */
   secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
+
+  /**
+   * ECS Secrets
+   */
+  secretsV2: { [key: string]: ecs.Secret };
+
   /**
    * Name of the WAF
    * Defaults to 'graphql-mesh-web-acl'
@@ -295,7 +301,7 @@ export class MeshService extends Construct {
           image: ecs.ContainerImage.fromEcrRepository(this.repository),
           enableLogging: true, // default
           containerPort: 4000, // graphql mesh gateway port
-          secrets: secrets,
+          secrets: props.secretsV2 ? props.secretsV2 : secrets, // Prefer v2 secrets using secrets manager
           environment: environment,
           logDriver: logDriver,
           taskRole: new iam.Role(this, "MeshTaskRole", {
