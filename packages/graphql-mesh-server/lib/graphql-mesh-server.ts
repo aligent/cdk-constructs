@@ -70,7 +70,12 @@ export type MeshHostingProps = {
    */
   secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
 
-  secretsV2: { [key: string]: Secret };
+  /**
+   * ECS Secrets to pass through to the container as secrets
+   *
+   * The key values can be referenced from either SSM or Secrets manager
+   */
+  secretsV2?: { [key: string]: Secret };
 
   /**
    * Pass custom cpu scaling steps

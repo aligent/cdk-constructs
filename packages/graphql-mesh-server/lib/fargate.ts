@@ -63,9 +63,11 @@ export interface MeshServiceProps {
   secrets?: { [key: string]: ssm.IStringParameter | ssm.IStringListParameter };
 
   /**
-   * ECS Secrets
+   * ECS Secrets to pass through to the container as secrets
+   *
+   * The key values can be referenced from either SSM or Secrets manager
    */
-  secretsV2: { [key: string]: ecs.Secret };
+  secretsV2?: { [key: string]: ecs.Secret };
 
   /**
    * Name of the WAF
