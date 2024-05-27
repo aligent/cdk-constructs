@@ -10,12 +10,7 @@ import * as path from "path";
 import * as YAML from "yaml";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Runtime } from "aws-cdk-lib/aws-lambda";
-import {
-  Effect,
-  PolicyStatement,
-  Role,
-  ServicePrincipal,
-} from "aws-cdk-lib/aws-iam";
+import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Topic } from "aws-cdk-lib/aws-sns";
 import { LambdaSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
 import {
@@ -118,22 +113,6 @@ export class CodePipelineService extends Construct {
         }),
       ],
     });
-
-    const tagECSPermission = new PolicyStatement({
-      sid: "AllowTaggingEcsResource",
-      actions: ["ecs:TagResource"],
-      resources: [
-        `arn:aws:ecs:${Stack.of(this).region}:*:task/${
-          props.service.cluster.clusterName
-        }/*`,
-      ],
-    });
-
-    const tagECSRole = new Role(this, "tagEcsRole", {
-      assumedBy: new ServicePrincipal("ecs-tasks.amazonaws.com"),
-    });
-    tagECSRole.addToPolicy(tagECSPermission);
-
     this.pipeline.addStage({
       stageName: "Deploy",
       actions: [
@@ -142,7 +121,6 @@ export class CodePipelineService extends Construct {
           service: props.service,
           input: buildOutput,
           deploymentTimeout: Duration.minutes(10),
-          role: tagECSRole,
         }),
       ],
     });
