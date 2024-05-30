@@ -7,12 +7,12 @@ import { Esbuild } from "@aligent/cdk-esbuild";
 
 export interface PrerenderCheckOptions {
   /**
-   * A custom regex string to detect bots. Will be used in addition 
+   * A custom regex string to detect bots. Will be used in addition
    * to the existing bot check regex to determine if a user-agent is a bot.
-   * 
+   *
    * @type string
    */
-  customBotCheckRegex: string
+  customBotCheckRegex: string;
 }
 
 export class PrerenderCheckFunction extends Construct {
