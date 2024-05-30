@@ -1,6 +1,9 @@
 import { Construct, CfnOutput } from "@aws-cdk/core";
 import { PrerenderFunction } from "./prerender-construct";
-import { PrerenderCheckFunction, PrerenderCheckOptions } from "./prerender-check-construct";
+import {
+  PrerenderCheckFunction,
+  PrerenderCheckOptions,
+} from "./prerender-check-construct";
 import { ErrorResponseFunction } from "./error-response-construct";
 import {
   CloudFrontCacheControl,
