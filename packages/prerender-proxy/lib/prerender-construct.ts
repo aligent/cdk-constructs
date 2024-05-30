@@ -14,11 +14,7 @@ export interface PrerenderFunctionOptions {
 export class PrerenderFunction extends Construct {
   readonly edgeFunction: experimental.EdgeFunction;
 
-  constructor(
-    scope: Construct,
-    id: string,
-    options?: PrerenderFunctionOptions
-  ) {
+  constructor(scope: Construct, id: string, options: PrerenderFunctionOptions) {
     super(scope, id);
 
     const command = [

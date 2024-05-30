@@ -17,7 +17,7 @@ import {
 } from "./error-response-construct";
 
 export interface PrerenderLambdaProps {
-  prerenderProps?: PrerenderFunctionOptions;
+  prerenderProps: PrerenderFunctionOptions;
   errorResponseProps: ErrorResponseFunctionOptions;
   prerenderCheckOptions?: PrerenderCheckOptions;
   cacheControlProps?: CloudFrontCacheControlOptions;
