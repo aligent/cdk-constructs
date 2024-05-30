@@ -5,10 +5,20 @@ import { Construct } from "constructs";
 import { join } from "path";
 import { Esbuild } from "@aligent/cdk-esbuild";
 
+export interface PrerenderCheckOptions {
+  /**
+   * A custom regex string to detect bots. Will be used in addition 
+   * to the existing bot check regex to determine if a user-agent is a bot.
+   * 
+   * @type string
+   */
+  customBotCheckRegex: string
+}
+
 export class PrerenderCheckFunction extends Construct {
   readonly edgeFunction: experimental.EdgeFunction;
 
-  constructor(scope: Construct, id: string) {
+  constructor(scope: Construct, id: string, options?: PrerenderCheckOptions) {
     super(scope, id);
 
     const command = [
@@ -28,6 +38,11 @@ export class PrerenderCheckFunction extends Construct {
             image: DockerImage.fromRegistry("busybox"),
             local: new Esbuild({
               entryPoints: [join(__dirname, "handlers/prerender-check.ts")],
+              define: {
+                "process.env.CUSTOM_BOT_CHECK": JSON.stringify(
+                  options?.customBotCheckRegex ?? "[]"
+                ),
+              },
             }),
           },
         }),

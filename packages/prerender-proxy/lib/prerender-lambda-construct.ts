@@ -3,7 +3,10 @@ import {
   CloudFrontCacheControl,
   CloudFrontCacheControlOptions,
 } from "./prerender-cf-cache-control-construct";
-import { PrerenderCheckFunction } from "./prerender-check-construct";
+import {
+  PrerenderCheckFunction,
+  PrerenderCheckOptions,
+} from "./prerender-check-construct";
 import {
   PrerenderFunction,
   PrerenderFunctionOptions,
@@ -14,8 +17,9 @@ import {
 } from "./error-response-construct";
 
 export interface PrerenderLambdaProps {
-  prerenderProps: PrerenderFunctionOptions;
+  prerenderProps?: PrerenderFunctionOptions;
   errorResponseProps: ErrorResponseFunctionOptions;
+  prerenderCheckOptions?: PrerenderCheckOptions;
   cacheControlProps?: CloudFrontCacheControlOptions;
 }
 
@@ -30,7 +34,8 @@ export class PrerenderLambda extends Construct {
 
     this.prerenderCheckFunction = new PrerenderCheckFunction(
       this,
-      "PrerenderViewerRequest"
+      "PrerenderViewerRequest",
+      props.prerenderCheckOptions
     );
 
     this.prerenderFunction = new PrerenderFunction(
