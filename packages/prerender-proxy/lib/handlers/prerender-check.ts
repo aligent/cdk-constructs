@@ -8,7 +8,7 @@ const IS_FILE =
   /\.(js|css|xml|less|png|jpg|jpeg|gif|pdf|doc|txt|ico|rss|zip|mp3|rar|exe|wmv|avi|ppt|mpg|mpeg|tif|wav|mov|psd|ai|xls|mp4|m4a|swf|dat|dmg|iso|flv|m4v|woff|ttf|svg|webmanifest|eot|torrent)$/;
 
 // Allow passing a custom bot detection regex string
-const IS_BOT_CUSTOM = new RegExp(process.env.CUSTOM_BOT_CHECK || "[]");
+const IS_BOT_CUSTOM = new RegExp(process.env.CUSTOM_BOT_CHECK || "[]", "i");
 
 export const handler = async (
   event: CloudFrontRequestEvent
