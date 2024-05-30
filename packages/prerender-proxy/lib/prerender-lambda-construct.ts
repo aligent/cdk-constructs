@@ -1,6 +1,6 @@
 import { Construct, CfnOutput } from "@aws-cdk/core";
 import { PrerenderFunction } from "./prerender-construct";
-import { PrerenderCheckFunction } from "./prerender-check-construct";
+import { PrerenderCheckFunction, PrerenderCheckOptions } from "./prerender-check-construct";
 import { ErrorResponseFunction } from "./error-response-construct";
 import {
   CloudFrontCacheControl,
@@ -11,6 +11,7 @@ export interface PrerenderLambdaProps {
   prerenderToken: string;
   exclusionExpression?: string;
   cacheControlProps?: CloudFrontCacheControlOptions;
+  prerenderCheckOptions?: PrerenderCheckOptions;
 }
 
 export class PrerenderLambda extends Construct {
@@ -24,7 +25,8 @@ export class PrerenderLambda extends Construct {
 
     this.prerenderCheckFunction = new PrerenderCheckFunction(
       this,
-      "PrerenderViewerRequest"
+      "PrerenderViewerRequest",
+      props.prerenderCheckOptions
     );
 
     this.prerenderFunction = new PrerenderFunction(
