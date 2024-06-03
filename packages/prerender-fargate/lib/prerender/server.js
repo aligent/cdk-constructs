@@ -37,22 +37,31 @@ const server = prerender({
     chromeLocation: '/usr/bin/chromium-browser'
 });
 
+// Healthcheck endpoint
+server.use({
+    beforeSend: (req, res, next) => {
+        if (req.prerender.url === "health") {
+            return res.send(200, 'OK');
+        }
+
+        return next();
+    }
+});
+
 server.use({
     beforeSend: (req, res, next) => {
         const ms = new Date().getTime() - req.prerender.start.getTime();
 
-        if (req.prerender.url !== "health") {
-            logger.render({
-                time: ms,
-                path: req.prerender.url,
-                status: req.prerender.statusCode,
-                ip: req.socket.remoteAddress,
-                headers: req.prerender.headers,
-                origin: req.headers
-            });
-        }
+        logger.render({
+            time: ms,
+            path: req.prerender.url,
+            status: req.prerender.statusCode,
+            ip: req.socket.remoteAddress,
+            headers: req.prerender.headers,
+            origin: req.headers
+        });
 
-        next();
+        return next();
     },
 });
 
