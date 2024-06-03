@@ -12,13 +12,57 @@
 'use strict';
 
 const prerender = require('prerender');
+const util = require('prerender/lib/util');
 const crypto = require('crypto');
 const s3Cache = require('prerender-aws-s3-cache');
+const logger = require('./utils/logger')
+
+/**
+ * Replace prerender's util log function with our own which uses pino to log
+ *
+ * @param  {...any} args 
+ * @returns 
+ */
+util.log = function (...args) {
+    if (process.env.DISABLE_LOGGING) {
+        return;
+    }
+
+    logger.info(args.join(' '));
+};
 
 const server = prerender({
     chromeFlags: ['--no-sandbox', '--headless', '--disable-gpu', '--disable-web-security', '--remote-debugging-port=9222', '--hide-scrollbars', '--disable-dev-shm-usage'],
     forwardHeaders: true,
     chromeLocation: '/usr/bin/chromium-browser'
+});
+
+// Healthcheck endpoint
+server.use({
+    beforeSend: (req, res, next) => {
+        if (req.prerender.url === "health") {
+            return res.send(200, 'OK');
+        }
+
+        return next();
+    }
+});
+
+server.use({
+    beforeSend: (req, res, next) => {
+        const ms = new Date().getTime() - req.prerender.start.getTime();
+
+        logger.render({
+            time: ms,
+            path: req.prerender.url,
+            status: req.prerender.statusCode,
+            ip: req.socket.remoteAddress,
+            headers: req.prerender.headers,
+            origin: req.headers
+        });
+
+        return next();
+    },
 });
 
 const tokenJson = JSON.parse(process.env.TOKEN_SECRET);
@@ -31,10 +75,12 @@ server.use({
         // Log "x-prerender-user-agent" value forwarded from CloudFront/Lambda@edge that contains the original User-Agent value. If not present, e.g. requests from ELB, default to "user-agent" value.
         const userAgent = req.get('x-prerender-user-agent') || req.get('user-agent');
 
-        console.log(`${new Date().toISOString()} User-Agent: "${userAgent}" ${req.prerender.reqId} ${req.prerender.url}`);
+        logger.info(`${new Date().toISOString()} User-Agent: "${userAgent}" ${req.prerender.reqId} ${req.prerender.url}`)
         let auth = req.headers['x-prerender-token'];
+
         if (!auth) {
-            console.log(`${new Date().toISOString()} "${userAgent}" ${req.prerender.reqId} Authentication header not found.`);
+            logger.info(`${new Date().toISOString()} "${userAgent}" ${req.prerender.reqId} Authentication header not found.`);
+
             return res.send(401);
         }
 
@@ -49,7 +95,7 @@ server.use({
             if (authenticated) break;
         }
         if (!authenticated) {
-            console.log(`${new Date().toISOString()} "${userAgent}" ${req.prerender.reqId} Authentication Failed.`);
+            logger.info(`${new Date().toISOString()} "${userAgent}" ${req.prerender.reqId} Authentication Failed.`);
             return res.send(401);
         }
 
@@ -82,14 +128,15 @@ server.use({
     requestReceived: function(req, res, next) {
             const fetchCachedObject = function (err, result) {
                 if (!err && result) {
-                    console.log(`Found cached object: ${key}`);
+                    logger.info(`Found cached object: ${key}`);
+
                     if (result.Metadata.location){
                         res.setHeader('Location', result.Metadata.location);
                     }
                     // default 200 for legacy objects that do not have Metadata.httpreturncode defined
                     return res.send(result.Metadata.httpreturncode || 200, result.Body);
                 } else {
-                    console.error(`Fetching cached object from S3 bucket failed with error: ${err.code}`);
+                    logger.error(`Fetching cached object from S3 bucket failed with error: ${err.code}`);
                 }
                 next();
             }
@@ -117,9 +164,9 @@ server.use({
         var s3Metadata = {}
         const cacheObject = function (err, result) {
             if (!err && result) {
-                console.log(`Cached object ${key} already present. Skipping caching...`);
+                logger.info(`Cached object ${key} already present. Skipping caching...`);
             } else {
-                console.log(`Caching the object ${req.prerender.url} with statusCode ${req.prerender.statusCode}`);
+                logger.info(`Caching the object ${req.prerender.url} with statusCode ${req.prerender.statusCode}`);
                 s3.putObject({
                     Key: key,
                     ContentType: 'text/html;charset=UTF-8',
@@ -127,11 +174,12 @@ server.use({
                     Body: req.prerender.content,
                     Metadata: s3Metadata
                 }, function(err, result) {
-                    console.log(result);
-                    if (err) console.error(err);
+                    logger.info(result);
+                    if (err) logger.error(err);
                 });
             }
         }
+
         // Inspect prerender meta tags and update response accordingly
         if (req.prerender.content && req.prerender.renderType == 'html') {
             const statusMatchRegex = /<meta[^<>]*(?:name=['"]prerender-status-code['"][^<>]*content=['"]([0-9]{3})['"]|content=['"]([0-9]{3})['"][^<>]*name=['"]prerender-status-code['"])[^<>]*>/i;
@@ -165,7 +213,7 @@ server.use({
                 }, cacheObject);
             } else {
                 // Skip caching for the http response codes not in the list, such as 404
-                console.log(`StatusCode ${req.prerender.statusCode} for ${req.prerender.url} is not in the cachable code list. Returning without caching the result.`);
+                logger.info(`StatusCode ${req.prerender.statusCode} for ${req.prerender.url} is not in the cachable code list. Returning without caching the result.`);
             }
 
             next();

@@ -7,6 +7,7 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "pino": "^9.1.0",
     "prerender": "5.20.0",
     "prerender-aws-s3-cache": "1.0.1"
   }
