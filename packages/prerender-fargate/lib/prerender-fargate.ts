@@ -216,7 +216,7 @@ export class PrerenderFargate extends Construct {
       ),
       unhealthyThresholdCount:
         prerenderFargateScalingOptions?.unhealthyThresholdCount || 5,
-      healthyHttpCodes: "401",
+      healthyHttpCodes: "200",
     });
 
     // Setup AutoScaling policy
