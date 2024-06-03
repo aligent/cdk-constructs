@@ -13,8 +13,8 @@ COPY ./package.json .
 
 RUN npm install --no-package-lock
 
-COPY ./server.js .
 COPY ./utils ./utils
+COPY ./server.js .
 
 EXPOSE 3000
 
