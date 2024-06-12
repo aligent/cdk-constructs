@@ -146,6 +146,19 @@ export class RagPrerenderStackStack extends Stack {
 }
 ```
 
+# Local Development
+
+Prerender can be run locally with docker:
+
+```bash
+
+docker build lib/prerender --tag prerender:1
+docker run -p 3000:3000 -e TOKEN_SECRET='{"token1": "https://www.emaplesite.com.au"}' -e ENABLE_REDIRECT_CACHE='true' -e ENABLE_PRERENDER_HEADER='true' prerender:1
+
+
+curl http://localhost:3000/https://www.emaplesite.com.au/home -H 'x-prerender-token: token1'
+```
+
 ## Acknowledgements
 
 - [prerender.io](https://prerender.io/) - The Prerender service.
