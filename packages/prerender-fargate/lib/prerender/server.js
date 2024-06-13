@@ -200,6 +200,10 @@ server.use({
                 headerMatch = headerMatchRegex.exec(head)
             }
 
+            if (['301', '302'].includes(req.prerender.statusCode )) {
+                req.prerender.content = `This page has moved, redirecting to ${s3Metadata.location}...`;
+            }
+
             if ( statusCodesToCache.includes(req.prerender.statusCode.toString()) ){
                 s3Metadata.httpreturncode = req.prerender.statusCode.toString()
 
