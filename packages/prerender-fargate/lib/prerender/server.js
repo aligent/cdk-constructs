@@ -160,7 +160,7 @@ server.use(prerender.removeScriptTags());
 
 server.use({
     pageLoaded: function(req, res, next) {
-        const statusCodesToCache = process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true' ? ['200', '301', '302'] : ['200'];
+        const statusCodesToCache = process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true' ? ['200', '301', '302', '308'] : ['200'];
         var s3Metadata = {}
         const cacheObject = function (err, result) {
             if (!err && result) {
@@ -200,8 +200,8 @@ server.use({
                 headerMatch = headerMatchRegex.exec(head)
             }
 
-            if (['301', '302', '307'].includes(req.prerender.statusCode )) {
-                const permanentlyOrTemporarily = req.prerender.statusCode === '301' ? 'permanently': 'temporarily';
+            if (['301', '302', '307', '308'].includes(req.prerender.statusCode)) {
+                const permanentlyOrTemporarily = ['301', '308'].includes(req.prerender.statusCode) ? 'permanently': 'temporarily';
                 req.prerender.content = `This page has ${permanentlyOrTemporarily} moved, redirecting to <a href="${s3Metadata.location}">${s3Metadata.location}</a>...`;
             }
 
