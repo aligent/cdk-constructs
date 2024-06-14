@@ -200,8 +200,9 @@ server.use({
                 headerMatch = headerMatchRegex.exec(head)
             }
 
-            if (['301', '302'].includes(req.prerender.statusCode )) {
-                req.prerender.content = `This page has moved, redirecting to ${s3Metadata.location}...`;
+            if (['301', '302', '307'].includes(req.prerender.statusCode )) {
+                const permanentlyOrTemporarily = req.prerender.statusCode === '301' ? 'permanently': 'temporarily';
+                req.prerender.content = `This page has ${permanentlyOrTemporarily} moved, redirecting to <a href="${s3Metadata.location}">${s3Metadata.location}</a>...`;
             }
 
             if ( statusCodesToCache.includes(req.prerender.statusCode.toString()) ){
