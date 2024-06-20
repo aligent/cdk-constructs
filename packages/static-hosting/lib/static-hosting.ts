@@ -127,7 +127,7 @@ export interface StaticHostingProps {
   /**
    * Custom error response page path
    *
-   * @default index.html
+   * @default /index.html
    */
   errorResponsePagePath?: string;
 
@@ -319,7 +319,7 @@ export class StaticHosting extends Construct {
     const enforceSSL = props.enforceSSL !== false;
     const enableStaticFileRemap = props.enableStaticFileRemap !== false;
     const defaultRootObject = props.defaultRootObject ?? "index.html";
-    const errorResponsePagePath = props.errorResponsePagePath ?? "index.html";
+    const errorResponsePagePath = props.errorResponsePagePath ?? "/index.html";
     const defaultBehaviorEdgeLambdas = props.defaultBehaviorEdgeLambdas ?? [];
     const disableCSP = props.disableCSP === true;
 
