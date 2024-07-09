@@ -240,7 +240,7 @@ export class PerformanceMetrics extends Construct {
       width: 6,
       height: 6,
       queryString:
-        "fields @timestamp, status | filter ispresent(status) | stats count(status) as `Response Code` by status",
+        "fields status | filter level like 'render' and status not like '401' | stats count(status) as `Count` by `status` | sort `Count` desc",
       logGroupNames: [props.logGroup.logGroupName],
       view: LogQueryVisualizationType.PIE,
     });
@@ -250,7 +250,8 @@ export class PerformanceMetrics extends Construct {
       title: "Top Bot Refers",
       width: 9,
       height: 9,
-      queryString: `parse message /User-Agent: "(?<userAgent>.*)"/ | filter ispresent(userAgent) and userAgent not like "ELB-HealthChecker/2.0" | sort @timestamp desc | stats count(userAgent) as countUserAgent by userAgent | sort countUserAgent desc`,
+      queryString:
+        "fields `origin.x-prerender-user-agent` as userAgent | filter level like 'render' and status not like '401' | stats count(userAgent) as countUserAgent by userAgent | sort countUserAgent desc",
       logGroupNames: [props.logGroup.logGroupName],
       view: LogQueryVisualizationType.TABLE,
     });
@@ -261,7 +262,7 @@ export class PerformanceMetrics extends Construct {
       width: 6,
       height: 14,
       queryString:
-        "parse message /(?<url>https:\\/\\/.*)/ | filter message like 'got ' and ispresent(url) | stats count(url) as countUrl by url | sort countUrl desc",
+        "fields path | filter level like 'render' and status not like '401' | stats count(path) as pathUrl by path | sort pathUrl desc",
       logGroupNames: [props.logGroup.logGroupName],
       view: LogQueryVisualizationType.TABLE,
     });
@@ -271,7 +272,7 @@ export class PerformanceMetrics extends Construct {
       title: "Average Render Time (per hour)",
       width: 9,
       height: 6,
-      queryString: `parse message /got \\d{3} in (?<time>\\d*)ms/ | filter (ispresent(time) and message like 'https') | stats avg(time) by bin(1h)`,
+      queryString: `fields time | filter level like 'render' and status not like '401' | stats avg(time) by bin(1h)`,
       logGroupNames: [props.logGroup.logGroupName],
       view: LogQueryVisualizationType.LINE,
     });
@@ -280,7 +281,7 @@ export class PerformanceMetrics extends Construct {
       title: "Average Render Time (per day)",
       width: 9,
       height: 6,
-      queryString: `parse message /got \\d{3} in (?<time>\\d*)ms/ | filter (ispresent(time) and message like 'https') | stats avg(time) by bin(1d)`,
+      queryString: `fields time | filter level like 'render' and status not like '401' | stats avg(time) by bin(1d)`,
       logGroupNames: [props.logGroup.logGroupName],
       view: LogQueryVisualizationType.LINE,
     });
