@@ -249,7 +249,7 @@ export class PerformanceMetrics extends Construct {
     const topBotRefers = new LogQueryWidget({
       title: "Top Bot Refers",
       width: 9,
-      height: 9,
+      height: 8,
       queryString:
         "fields `origin.x-prerender-user-agent` as userAgent | filter level like 'render' and status not like '401' | stats count(userAgent) as countUserAgent by userAgent | sort countUserAgent desc",
       logGroupNames: [props.logGroup.logGroupName],
@@ -364,11 +364,11 @@ export class PerformanceMetrics extends Construct {
     });
 
     const renderHistoryWidget = new LogQueryWidget({
-      title: "Cache Hit Rate",
+      title: "Render History",
       width: 12,
       height: 17,
       queryString:
-        "fields @timestamp, status, time, path | filter level like 'render'",
+        "fields @timestamp, status, time, path | filter level like 'render' and status not like '401",
       logGroupNames: [props.logGroup.logGroupName],
       view: LogQueryVisualizationType.TABLE,
     });
