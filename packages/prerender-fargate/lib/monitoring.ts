@@ -74,7 +74,7 @@ export class PerformanceMetrics extends Construct {
 
     const loadBalancerLabel = new TextWidget({
       markdown: "# Load Balancer",
-      width: 24,
+      width: 12,
       height: 1,
     });
 
@@ -354,6 +354,27 @@ export class PerformanceMetrics extends Construct {
     const cachedBucketWidgets = [cacheBucketTextWidget, cacheBucketWidget];
 
     /**
+     * Render History
+     */
+    const renderHistoryLabel = new TextWidget({
+      markdown: "# Render History",
+      width: 12,
+      height: 1,
+    });
+
+    const renderHistoryWidget = new LogQueryWidget({
+      title: "Cache Hit Rate",
+      width: 12,
+      height: 17,
+      queryString:
+        "fields @timestamp, status, time, path | filter level like 'render'",
+      logGroupNames: [props.logGroup.logGroupName],
+      view: LogQueryVisualizationType.TABLE,
+    });
+
+    const renderHistory = [renderHistoryLabel, renderHistoryWidget];
+
+    /**
      * RECACHE STATS BLOCK
      */
     const recacheWidgets = [];
@@ -502,7 +523,7 @@ export class PerformanceMetrics extends Construct {
         [cacheLabel],
         [new Column(...cachedBucketWidgets), new Column(cacheHitRate)],
         [...recacheWidgets],
-        [new Column(...loadBalancerWidgets)],
+        [new Column(...loadBalancerWidgets), new Column(...renderHistory)],
       ],
     });
 
