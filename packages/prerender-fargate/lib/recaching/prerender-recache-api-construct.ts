@@ -5,6 +5,8 @@ import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Stack, Duration } from "aws-cdk-lib";
+import { Queue } from "aws-cdk-lib/aws-sqs";
+import * as lambda from "aws-cdk-lib/aws-lambda";
 
 /**
  * Options for the Prerender Recache API.
@@ -45,6 +47,9 @@ export interface PrerenderRecacheApiOptions {
 
 export class PrerenderRecacheApi extends Construct {
   readonly api: LambdaRestApi;
+  readonly queue: Queue;
+  readonly consumer: lambda.Function
+  readonly producer: lambda.Function
 
   constructor(
     scope: Construct,
@@ -92,7 +97,7 @@ export class PrerenderRecacheApi extends Construct {
     const recache = this.api.root.addResource("recache");
     recache.addMethod("POST");
 
-    new LambdaToSqsToLambda(this, "prerenderRequestQueue", {
+    const sqsLambda = new LambdaToSqsToLambda(this, "prerenderRequestQueue", {
       existingProducerLambdaObj: apiHandler,
       existingConsumerLambdaObj: new NodejsFunction(this, "consumer", {
         reservedConcurrentExecutions: options.maxConcurrentExecutions,
@@ -105,6 +110,10 @@ export class PrerenderRecacheApi extends Construct {
           options.queueName !== undefined ? options.queueName : undefined,
       },
     });
+
+    this.queue = sqsLambda.sqsQueue;
+    this.consumer = sqsLambda.consumerLambdaFunction
+    this.producer = sqsLambda.producerLambdaFunction
   }
 }
 

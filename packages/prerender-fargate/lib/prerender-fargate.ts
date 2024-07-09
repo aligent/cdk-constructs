@@ -11,6 +11,8 @@ import { Duration, RemovalPolicy, Stack } from "aws-cdk-lib";
 import * as path from "path";
 import { PrerenderRecacheApi } from "./recaching/prerender-recache-api-construct";
 import { PrerenderFargateOptions } from "./prerender-fargate-options";
+import { PerformanceMetrics } from "./monitoring";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 
 /**
  * `PrerenderFargate` construct sets up an AWS Fargate service to run a
@@ -123,6 +125,7 @@ export class PrerenderFargate extends Construct {
       vpc: vpc,
       clusterName:
         props.clusterName !== undefined ? props.clusterName : undefined,
+      containerInsights: true,
     });
 
     const directory = path.join(__dirname, "prerender");
@@ -148,6 +151,13 @@ export class PrerenderFargate extends Construct {
       ),
     };
 
+    // Configure a custom log driver and group
+    const logGroup = new LogGroup(this, "prerender-server-log", {});
+    const logDriver = ecs.LogDrivers.awsLogs({
+      streamPrefix: props.logStreamPrefix || "prerender-server",
+      logGroup: logGroup,
+    });
+
     // Create a load-balanced Fargate service
     const fargateService =
       new ecsPatterns.ApplicationLoadBalancedFargateService(
@@ -170,6 +180,7 @@ export class PrerenderFargate extends Construct {
               props.taskDefinitionFamilyName !== undefined
                 ? props.taskDefinitionFamilyName
                 : undefined,
+            logDriver: logDriver,
           },
           publicLoadBalancer: true,
           loadBalancerName:
@@ -245,12 +256,13 @@ export class PrerenderFargate extends Construct {
       });
     }
 
+    let recacheApi;
     /**
      * Recache API is enable by default
      * This would create the API that is used to trigger recaching of the URLs
      */
     if (enableRecache === undefined || enableRecache) {
-      new PrerenderRecacheApi(this, `${prerenderName}-recache-api`, {
+      recacheApi = new PrerenderRecacheApi(this, `${prerenderName}-recache-api`, {
         prerenderS3Bucket: this.bucket,
         maxConcurrentExecutions:
           prerenderFargateRecachingOptions?.maxConcurrentExecutions || 1,
@@ -259,5 +271,14 @@ export class PrerenderFargate extends Construct {
         restApiName,
       });
     }
+
+    new PerformanceMetrics(this, "cloudwatch", {
+      ...props,
+      service: fargateService.service,
+      loadBalancer: fargateService.loadBalancer,
+      logGroup: logGroup,
+      cacheBucket: this.bucket,
+      recache: recacheApi
+    });
   }
 }
