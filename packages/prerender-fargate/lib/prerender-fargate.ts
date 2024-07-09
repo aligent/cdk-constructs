@@ -262,14 +262,18 @@ export class PrerenderFargate extends Construct {
      * This would create the API that is used to trigger recaching of the URLs
      */
     if (enableRecache === undefined || enableRecache) {
-      recacheApi = new PrerenderRecacheApi(this, `${prerenderName}-recache-api`, {
-        prerenderS3Bucket: this.bucket,
-        maxConcurrentExecutions:
-          prerenderFargateRecachingOptions?.maxConcurrentExecutions || 1,
-        tokenSecret,
-        queueName,
-        restApiName,
-      });
+      recacheApi = new PrerenderRecacheApi(
+        this,
+        `${prerenderName}-recache-api`,
+        {
+          prerenderS3Bucket: this.bucket,
+          maxConcurrentExecutions:
+            prerenderFargateRecachingOptions?.maxConcurrentExecutions || 1,
+          tokenSecret,
+          queueName,
+          restApiName,
+        }
+      );
     }
 
     new PerformanceMetrics(this, "cloudwatch", {
@@ -278,7 +282,7 @@ export class PrerenderFargate extends Construct {
       loadBalancer: fargateService.loadBalancer,
       logGroup: logGroup,
       cacheBucket: this.bucket,
-      recache: recacheApi
+      recache: recacheApi,
     });
   }
 }

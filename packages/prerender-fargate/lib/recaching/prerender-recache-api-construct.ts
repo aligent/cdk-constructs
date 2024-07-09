@@ -48,8 +48,8 @@ export interface PrerenderRecacheApiOptions {
 export class PrerenderRecacheApi extends Construct {
   readonly api: LambdaRestApi;
   readonly queue: Queue;
-  readonly consumer: lambda.Function
-  readonly producer: lambda.Function
+  readonly consumer: lambda.Function;
+  readonly producer: lambda.Function;
 
   constructor(
     scope: Construct,
@@ -112,8 +112,8 @@ export class PrerenderRecacheApi extends Construct {
     });
 
     this.queue = sqsLambda.sqsQueue;
-    this.consumer = sqsLambda.consumerLambdaFunction
-    this.producer = sqsLambda.producerLambdaFunction
+    this.consumer = sqsLambda.consumerLambdaFunction;
+    this.producer = sqsLambda.producerLambdaFunction;
   }
 }
 

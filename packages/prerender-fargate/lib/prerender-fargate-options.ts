@@ -151,7 +151,7 @@ export interface PrerenderFargateOptions {
   /**
    * An optional dashboard name to override the default randomly generated one
    */
-  dashboardName?: string
+  dashboardName?: string;
 }
 
 /**
