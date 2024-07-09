@@ -140,6 +140,18 @@ export interface PrerenderFargateOptions {
    * @default - ID of the RestApi construct.
    */
   restApiName?: string;
+
+  /**
+   * A name for the API Gateway RestApi resource.
+   *
+   * @default - ID of the RestApi construct.
+   */
+  logStreamPrefix?: string;
+
+  /**
+   * An optional dashboard name to override the default randomly generated one
+   */
+  dashboardName?: string;
 }
 
 /**
