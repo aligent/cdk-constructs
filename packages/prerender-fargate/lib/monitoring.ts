@@ -368,7 +368,7 @@ export class PerformanceMetrics extends Construct {
       width: 12,
       height: 17,
       queryString:
-        "fields @timestamp, status, time, path | filter level like 'render' and status not like '401",
+        "fields @timestamp, status, time, path | filter level like 'render' and status not like '401'",
       logGroupNames: [props.logGroup.logGroupName],
       view: LogQueryVisualizationType.TABLE,
     });
