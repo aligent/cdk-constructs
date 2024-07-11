@@ -160,7 +160,16 @@ server.use(prerender.removeScriptTags());
 
 server.use({
     pageLoaded: function(req, res, next) {
-        const statusCodesToCache = process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true' ? ['200', '301', '302', '308'] : ['200'];
+        const statusCodesToCache = ['200'];
+
+        if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === 'true') {
+            statusCodesToCache.push('301', '302', '308');
+        }
+
+        if (process.env.ENABLE_NOTFOUND_CACHE.toLowerCase() === 'true') {
+            statusCodesToCache.push('404');
+        }
+
         var s3Metadata = {}
         const cacheObject = function (err, result) {
             if (!err && result) {
