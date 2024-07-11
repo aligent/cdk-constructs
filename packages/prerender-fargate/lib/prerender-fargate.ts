@@ -83,6 +83,7 @@ export class PrerenderFargate extends Construct {
       expirationDays,
       enableS3Endpoint,
       enableRedirectCache,
+      enableNotFoundCache,
       desiredInstanceCount,
       bucketName,
       domainName,
@@ -142,6 +143,7 @@ export class PrerenderFargate extends Construct {
       S3_BUCKET_NAME: this.bucket.bucketName,
       AWS_REGION: Stack.of(this).region,
       ENABLE_REDIRECT_CACHE: enableRedirectCache?.toString() || "false",
+      ENABLE_NOTFOUND_CACHE: enableNotFoundCache?.toString() || "false",
       ENABLE_PRERENDER_HEADER: enablePrerenderHeader?.toString() || "true",
     };
 

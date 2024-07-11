@@ -73,6 +73,11 @@ export interface PrerenderFargateOptions {
    */
   enableRedirectCache?: boolean;
   /**
+   * Whether to enable caching of HTTP 404s.
+   * @default - false
+   */
+  enableNotFoundCache?: boolean;
+  /**
    * Whether to enable the S3 endpoint for the VPC.
    * @default - false
    */
