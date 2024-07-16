@@ -149,8 +149,9 @@ export interface MeshServiceProps {
    */
   logStreamPrefix?: string;
   /**
-   * Whether a DynamoDB table should be created to store session data
-   * @default authentication-table
+   * Whether a DynamoDB table should be created to store session data,
+   * if not defined a table will not be created.
+   * @default undefined
    */
   authenticationTable?: string;
 
@@ -348,7 +349,7 @@ export class MeshService extends Construct {
       managedPolicyArn: "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess",
     });
 
-    if (props.authenticationTable || props.authenticationTable === undefined) {
+    if (props.authenticationTable) {
       const authTable = new dynamodb.Table(this, "authenticationTable", {
         tableName: props.authenticationTable || "authentication-table",
         partitionKey: {

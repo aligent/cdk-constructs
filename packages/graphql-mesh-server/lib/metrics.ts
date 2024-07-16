@@ -30,6 +30,7 @@ export interface PerformanceMetricsProps {
   logGroup: LogGroup;
   snsTopic?: Topic;
   additionalAlarms?: Alarm[];
+  dashboardName?: string;
 }
 
 export class PerformanceMetrics extends Construct {
@@ -355,7 +356,7 @@ export class PerformanceMetrics extends Construct {
 
     // Create the dashboard
     new Dashboard(this, "dashboard", {
-      dashboardName: "Mesh-Dashboard",
+      dashboardName: props.dashboardName ?? Stack.of(this).stackName + "-Mesh-Dashboard",
       widgets: [
         [new Column(...loadBalancerWidgets), new Column(...wafWidgets)],
         [meshPerformanceLabel],
