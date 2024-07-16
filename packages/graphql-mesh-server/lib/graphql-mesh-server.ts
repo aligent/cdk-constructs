@@ -223,7 +223,7 @@ export type MeshHostingProps = {
   /**
    * Specify a name for the dashboard
    *
-   * @default - {stackName}-Mesh-Dashboard
+   * @default - AWS Generated name
    */
   dashboardName?: string;
 };
