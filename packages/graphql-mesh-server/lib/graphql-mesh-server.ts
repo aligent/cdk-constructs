@@ -219,6 +219,13 @@ export type MeshHostingProps = {
    * @default - AWS generated task definition family name
    */
   taskDefinitionFamilyName?: string;
+
+  /**
+   * Specify a name for the dashboard
+   *
+   * @default - {stackName}-Mesh-Dashboard
+   */
+  dashboardName?: string;
 };
 
 export class MeshHosting extends Construct {
