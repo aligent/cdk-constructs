@@ -95,6 +95,40 @@ export class WebApplicationFirewall extends Construct {
     if (props.preProcessCustomRules) {
       finalRules.push(...props.preProcessCustomRules);
     }
+
+    if (props.allowedPaths) {
+      // Path Allowlist
+      const allowed_paths = new aws_wafv2.CfnRegexPatternSet(this, "PathSet", {
+        regularExpressionList: props.allowedPaths,
+        scope: wafScope,
+      });
+
+      finalRules.push({
+        name: "allow_path_rule",
+        priority: 10,
+        statement: {
+          regexPatternSetReferenceStatement: {
+            arn: allowed_paths.attrArn,
+            fieldToMatch: {
+              uriPath: {},
+            },
+            textTransformations: [
+              {
+                priority: 0,
+                type: "NONE",
+              },
+            ],
+          },
+        },
+        action: { allow: {} },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "AllowPathRule",
+          sampledRequestsEnabled: true,
+        },
+      });
+    }
+
     if (props.allowedIPs) {
       // IPv4 Allowlist
       const allowed_ips = new aws_wafv2.CfnIPSet(this, "IPSet-IPv4", {
@@ -106,7 +140,7 @@ export class WebApplicationFirewall extends Construct {
 
       finalRules.push({
         name: "allow_xff_ip_rule",
-        priority: 2,
+        priority: 11,
         statement: {
           ipSetReferenceStatement: {
             arn: allowed_ips.attrArn,
@@ -127,7 +161,7 @@ export class WebApplicationFirewall extends Construct {
 
       finalRules.push({
         name: "allow_src_ip_rule",
-        priority: 3,
+        priority: 12,
         statement: {
           ipSetReferenceStatement: {
             arn: allowed_ips.attrArn,
@@ -153,7 +187,7 @@ export class WebApplicationFirewall extends Construct {
 
       finalRules.push({
         name: "allow_xff_ip_rule_ipv6",
-        priority: 4,
+        priority: 13,
         statement: {
           ipSetReferenceStatement: {
             arn: allowed_ips.attrArn,
@@ -174,7 +208,7 @@ export class WebApplicationFirewall extends Construct {
 
       finalRules.push({
         name: "allow_src_ip_rule_ipv6",
-        priority: 5,
+        priority: 14,
         statement: {
           ipSetReferenceStatement: {
             arn: allowed_ips.attrArn,
@@ -184,62 +218,6 @@ export class WebApplicationFirewall extends Construct {
         visibilityConfig: {
           cloudWatchMetricsEnabled: true,
           metricName: "allow_src_ip_rule",
-          sampledRequestsEnabled: true,
-        },
-      });
-    }
-
-    // Implement AWSManagedRulesKnownBadInputsRuleSet
-    finalRules.push({
-      name: "bad_actors_rule",
-      priority: 0,
-      overrideAction: { none: {} },
-      statement: {
-        managedRuleGroupStatement: {
-          name: "AWSManagedRulesKnownBadInputsRuleSet",
-          vendorName: "AWS",
-          excludedRules: [
-            { name: "Host_localhost_HEADER" },
-            { name: "PROPFIND_METHOD" },
-            { name: "ExploitablePaths_URIPATH" },
-          ],
-        },
-      },
-      visibilityConfig: {
-        cloudWatchMetricsEnabled: true,
-        metricName: "bad_actors_rule",
-        sampledRequestsEnabled: true,
-      },
-    });
-
-    if (props.allowedPaths) {
-      // Path Allowlist
-      const allowed_paths = new aws_wafv2.CfnRegexPatternSet(this, "PathSet", {
-        regularExpressionList: props.allowedPaths,
-        scope: wafScope,
-      });
-
-      finalRules.push({
-        name: "allow_path_rule",
-        priority: 1,
-        statement: {
-          regexPatternSetReferenceStatement: {
-            arn: allowed_paths.attrArn,
-            fieldToMatch: {
-              uriPath: {},
-            },
-            textTransformations: [
-              {
-                priority: 0,
-                type: "NONE",
-              },
-            ],
-          },
-        },
-        action: { allow: {} },
-        visibilityConfig: {
-          cloudWatchMetricsEnabled: true,
-          metricName: "AllowPathRule",
           sampledRequestsEnabled: true,
         },
       });
@@ -258,7 +236,7 @@ export class WebApplicationFirewall extends Construct {
 
       finalRules.push({
         name: "allow_user_agent_rule",
-        priority: 6,
+        priority: 15,
         statement: {
           regexPatternSetReferenceStatement: {
             arn: allowed_user_agent.attrArn,
@@ -298,10 +276,33 @@ export class WebApplicationFirewall extends Construct {
       });
     }
 
+    // Implement AWSManagedRulesKnownBadInputsRuleSet
+    finalRules.push({
+      name: "bad_actors_rule",
+      priority: 20,
+      overrideAction: { none: {} },
+      statement: {
+        managedRuleGroupStatement: {
+          name: "AWSManagedRulesKnownBadInputsRuleSet",
+          vendorName: "AWS",
+          excludedRules: [
+            { name: "Host_localhost_HEADER" },
+            { name: "PROPFIND_METHOD" },
+            { name: "ExploitablePaths_URIPATH" },
+          ],
+        },
+      },
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: "bad_actors_rule",
+        sampledRequestsEnabled: true,
+      },
+    });
+
     // Implement AWSManagedRulesCommonRuleSet
     finalRules.push({
       name: "common_rule_set",
-      priority: 10,
+      priority: 21,
       statement: {
         managedRuleGroupStatement: {
           name: "AWSManagedRulesCommonRuleSet",
@@ -320,7 +321,7 @@ export class WebApplicationFirewall extends Construct {
     // Implement AWSManagedRulesPHPRuleSet
     finalRules.push({
       name: "php_rule_set",
-      priority: 11,
+      priority: 22,
       statement: {
         managedRuleGroupStatement: {
           name: "AWSManagedRulesPHPRuleSet",
@@ -339,7 +340,7 @@ export class WebApplicationFirewall extends Construct {
     if (props.rateLimit) {
       finalRules.push({
         name: "rate_limit_rule",
-        priority: 20,
+        priority: 30,
         statement: {
           rateBasedStatement: {
             aggregateKeyType: "FORWARDED_IP",
@@ -363,6 +364,8 @@ export class WebApplicationFirewall extends Construct {
     if (props.postProcessCustomRules) {
       finalRules.push(...props.postProcessCustomRules);
     }
+
+    // Define Default action
     const defaultAction = props.blockByDefault ? { block: {} } : { allow: {} };
 
     this.web_acl = new aws_wafv2.CfnWebACL(this, "WebAcl", {
