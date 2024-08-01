@@ -64,6 +64,18 @@ export interface WebApplicationFirewallProps {
    * Whether to block by default
    */
   blockByDefault?: boolean;
+
+  /**
+   * Custom rules that are evaluated before the default rules defined by this construct.
+   * Priority numbers must be smaller than 10
+   */
+  preProcessCustomRules?: aws_wafv2.CfnWebACL.RuleProperty[];
+
+  /**
+   * Custom rules that are evaluated after the default rules defined by this construct
+   * Priority numbers must be equal to or bigger than 30
+   */
+  postProcessCustomRules?: aws_wafv2.CfnWebACL.RuleProperty[];
 }
 
 export class WebApplicationFirewall extends Construct {
@@ -79,6 +91,10 @@ export class WebApplicationFirewall extends Construct {
     const finalRules: aws_wafv2.CfnWebACL.RuleProperty[] = [];
     const wafScope = props.scope ?? REGIONAL;
 
+    // preprocess custom rules
+    if (props.preProcessCustomRules) {
+      finalRules.push(...props.preProcessCustomRules);
+    }
     if (props.allowedIPs) {
       // IPv4 Allowlist
       const allowed_ips = new aws_wafv2.CfnIPSet(this, "IPSet-IPv4", {
@@ -343,6 +359,10 @@ export class WebApplicationFirewall extends Construct {
       });
     }
 
+    // postprocess custom rules
+    if (props.postProcessCustomRules) {
+      finalRules.push(...props.postProcessCustomRules);
+    }
     const defaultAction = props.blockByDefault ? { block: {} } : { allow: {} };
 
     this.web_acl = new aws_wafv2.CfnWebACL(this, "WebAcl", {
