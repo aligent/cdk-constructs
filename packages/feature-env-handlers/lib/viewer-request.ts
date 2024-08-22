@@ -6,6 +6,7 @@ export const handler = async (
 ): Promise<CloudFrontRequest> => {
   const { request } = event.Records[0].cf;
 
+  // Consumed by OriginRequest Lambda@Edge for Feature Environment functionality.
   request.headers["x-forwarded-host"] = [
     {
       value: request.headers.host[0].value,
