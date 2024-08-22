@@ -40,7 +40,7 @@ export class PathRemapFunction extends Construct {
         }),
         runtime: Runtime.NODEJS_18_X,
         handler: "remap.handler",
-      },
+      }
     );
   }
 
@@ -48,7 +48,7 @@ export class PathRemapFunction extends Construct {
     return Version.fromVersionArn(
       this,
       "remap-fn-version",
-      this.edgeFunction.currentVersion.edgeArn,
+      this.edgeFunction.currentVersion.edgeArn
     );
   }
 }
