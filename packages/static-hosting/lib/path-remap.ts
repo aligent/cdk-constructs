@@ -33,7 +33,7 @@ export class PathRemapFunction extends Construct {
             local: new Esbuild({
               entryPoints: [join(__dirname, "handlers/remap.ts")],
               define: {
-                "process.env.REMAP_PATH": options.path,
+                "process.env.REMAP_PATH": "\""+options.path+"\"",
               },
             }),
           },
