@@ -33,14 +33,14 @@ export class PathRemapFunction extends Construct {
             local: new Esbuild({
               entryPoints: [join(__dirname, "handlers/remap.ts")],
               define: {
-                "process.env.REMAP_PATH": "\""+options.path+"\"",
+                "process.env.REMAP_PATH": '"' + options.path + '"',
               },
             }),
           },
         }),
         runtime: Runtime.NODEJS_18_X,
         handler: "remap.handler",
-      }
+      },
     );
   }
 
@@ -48,7 +48,7 @@ export class PathRemapFunction extends Construct {
     return Version.fromVersionArn(
       this,
       "remap-fn-version",
-      this.edgeFunction.currentVersion.edgeArn
+      this.edgeFunction.currentVersion.edgeArn,
     );
   }
 }
