@@ -247,6 +247,16 @@ export interface StaticHostingProps {
   defaultBehaviorCachePolicy?: CachePolicy;
 
   /**
+   * Additional headers to include in OriginRequestHeaderBehavior
+   */
+  additionalDefaultOriginRequestHeaders?: string[];
+
+  /**
+   * Additional headers to include in CacheHeaderBehavior
+   */
+  additionalDefaultCacheKeyHeaders?: string[];
+
+  /**
    * After switching constructs, you need to maintain the same logical ID
    * for the underlying CfnDistribution if you wish to avoid the deletion
    * and recreation of your distribution.
@@ -425,23 +435,39 @@ export class StaticHosting extends Construct {
     });
     let backendOrigin = undefined;
 
+    const originRequestHeaderBehaviorAllowList = [
+      "x-forwarded-host", // Consumed by OriginRequest Lambda@Edge for Feature Environment functionality.
+      "x-request-prerender", // Consumed by OriginRequest Lambda@Edge to determine if this request needs to be send to Prerender service rather than other origins.
+      "x-prerender-host", // Consumed by OriginRequest Lambda@Edge, only when x-request-prerender header is set. Prerender service will send request to this host.
+      "x-prerender", // Consumed, if configured, by origin's custom features, such as GeoRedirection, the behave of which should depend on whether the request is from an end user.
+      "x-prerender-user-agent", // Consumed by Prerender service for logging original user agent rather than CloudFront's
+    ];
+    if (props.additionalDefaultOriginRequestHeaders) {
+      props.additionalDefaultOriginRequestHeaders.forEach(header => {
+        originRequestHeaderBehaviorAllowList.push(header);
+      });
+    }
     const originRequestPolicy =
       props.defaultBehaviorRequestPolicy ||
       new OriginRequestPolicy(this, "S3OriginRequestPolicy", {
         headerBehavior: OriginRequestHeaderBehavior.allowList(
-          "x-forwarded-host",
-          "x-request-prerender",
-          "x-prerender"
+          ...originRequestHeaderBehaviorAllowList
         ),
       });
-
+    const cacheHeaderBehaviorAllowList = [
+      "x-forwarded-host", // Origin response may vary depending on the domain/path based on Feature Environment
+      "x-prerender", // Origin response may vary depending on whether the request is from end user or prerender service.
+    ];
+    if (props.additionalDefaultCacheKeyHeaders) {
+      props.additionalDefaultCacheKeyHeaders.forEach(header => {
+        cacheHeaderBehaviorAllowList.push(header);
+      });
+    }
     const originCachePolicy =
       props.defaultBehaviorCachePolicy ||
       new CachePolicy(this, "S3OriginCachePolicy", {
         headerBehavior: CacheHeaderBehavior.allowList(
-          "x-forwarded-host",
-          "x-request-prerender",
-          "x-prerender"
+          ...cacheHeaderBehaviorAllowList
         ),
         enableAcceptEncodingBrotli: true,
         enableAcceptEncodingGzip: true,
