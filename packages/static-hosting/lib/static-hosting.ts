@@ -2,27 +2,27 @@ import { Construct } from "constructs";
 import { CfnOutput, Duration, RemovalPolicy } from "aws-cdk-lib";
 import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import {
+  BehaviorOptions,
+  CacheHeaderBehavior,
+  CachePolicy,
+  CfnDistribution,
   Distribution,
   DistributionProps,
+  EdgeLambda,
+  ErrorResponse,
   HttpVersion,
+  IDistribution,
+  IResponseHeadersPolicy,
+  IOriginAccessIdentity,
+  LambdaEdgeEventType,
+  OriginAccessIdentity,
+  OriginRequestHeaderBehavior,
+  OriginRequestPolicy,
   PriceClass,
   ResponseHeadersPolicy,
   SecurityPolicyProtocol,
   SSLMethod,
   ViewerProtocolPolicy,
-  BehaviorOptions,
-  ErrorResponse,
-  EdgeLambda,
-  CfnDistribution,
-  OriginRequestPolicy,
-  CachePolicy,
-  OriginRequestHeaderBehavior,
-  CacheHeaderBehavior,
-  IResponseHeadersPolicy,
-  LambdaEdgeEventType,
-  OriginAccessIdentity,
-  IDistribution,
-  IOriginAccessIdentity,
 } from "aws-cdk-lib/aws-cloudfront";
 import { HttpOrigin, S3Origin } from "aws-cdk-lib/aws-cloudfront-origins";
 import {
@@ -505,7 +505,7 @@ export class StaticHosting extends Construct {
       origin: s3Origin,
       viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       edgeLambdas: defaultBehaviorEdgeLambdas,
-      originRequestPolicy: originRequestPolicy,
+      originRequestPolicy,
       cachePolicy: originCachePolicy,
       responseHeadersPolicy: responseHeadersPolicy,
     };
@@ -566,7 +566,7 @@ export class StaticHosting extends Construct {
     }
 
     const distributionProps: DistributionProps = {
-      domainNames: domainNames,
+      domainNames,
       webAclId: props.webAclArn,
       comment: props.comment,
       defaultRootObject: defaultRootObject,
@@ -583,8 +583,8 @@ export class StaticHosting extends Construct {
         "DomainCertificate",
         props.certificateArn
       ),
-      defaultBehavior: defaultBehavior,
-      additionalBehaviors: additionalBehaviors,
+      defaultBehavior,
+      additionalBehaviors,
       errorResponses: props.enableErrorConfig ? errorResponses : [],
     };
 
