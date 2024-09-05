@@ -453,15 +453,13 @@ export class StaticHosting extends Construct {
         ),
       });
 
+    const additionalDefaultCacheKeyHeaders =
+      props.additionalDefaultCacheKeyHeaders || [];
     const cacheHeaderBehaviorAllowList = [
       "x-forwarded-host", // Origin response may vary depending on the domain/path based on Feature Environment
       "x-prerender", // Origin response may vary depending on whether the request is from end user or prerender service.
+      ...additionalDefaultCacheKeyHeaders,
     ];
-    if (props.additionalDefaultCacheKeyHeaders) {
-      props.additionalDefaultCacheKeyHeaders.forEach(header => {
-        cacheHeaderBehaviorAllowList.push(header);
-      });
-    }
     const originCachePolicy =
       props.defaultBehaviorCachePolicy ||
       new CachePolicy(this, "S3OriginCachePolicy", {
