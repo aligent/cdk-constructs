@@ -435,18 +435,16 @@ export class StaticHosting extends Construct {
     });
     let backendOrigin = undefined;
 
+    const additionalDefaultOriginRequestHeaders =
+      props.additionalDefaultOriginRequestHeaders || [];
     const originRequestHeaderBehaviorAllowList = [
       "x-forwarded-host", // Consumed by OriginRequest Lambda@Edge for Feature Environment functionality.
       "x-request-prerender", // Consumed by OriginRequest Lambda@Edge to determine if this request needs to be send to Prerender service rather than other origins.
       "x-prerender-host", // Consumed by OriginRequest Lambda@Edge, only when x-request-prerender header is set. Prerender service will send request to this host.
       "x-prerender", // Consumed, if configured, by origin's custom features, such as GeoRedirection, the behave of which should depend on whether the request is from an end user.
       "x-prerender-user-agent", // Consumed by Prerender service for logging original user agent rather than CloudFront's
+      ...additionalDefaultOriginRequestHeaders,
     ];
-    if (props.additionalDefaultOriginRequestHeaders) {
-      props.additionalDefaultOriginRequestHeaders.forEach(header => {
-        originRequestHeaderBehaviorAllowList.push(header);
-      });
-    }
     const originRequestPolicy =
       props.defaultBehaviorRequestPolicy ||
       new OriginRequestPolicy(this, "S3OriginRequestPolicy", {
@@ -454,6 +452,7 @@ export class StaticHosting extends Construct {
           ...originRequestHeaderBehaviorAllowList
         ),
       });
+
     const cacheHeaderBehaviorAllowList = [
       "x-forwarded-host", // Origin response may vary depending on the domain/path based on Feature Environment
       "x-prerender", // Origin response may vary depending on whether the request is from end user or prerender service.
