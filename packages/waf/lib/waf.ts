@@ -1,4 +1,5 @@
-import { aws_wafv2 } from "aws-cdk-lib";
+import { aws_wafv2, RemovalPolicy } from "aws-cdk-lib";
+import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 
 export const REGIONAL = "REGIONAL";
@@ -76,6 +77,21 @@ export interface WebApplicationFirewallProps {
    * Priority numbers must be equal to or bigger than 30
    */
   postProcessCustomRules?: aws_wafv2.CfnWebACL.RuleProperty[];
+
+  /**
+   * Enable CloudWatch logging. Default: false
+   */
+  enableLogging?: boolean;
+
+  /**
+   * Define CloudWatch log retention period. Default: 1 year
+   */
+  logRetentionDays?: RetentionDays;
+
+  /**
+   * Define CloudWatch log removal policy. Default: RETAIN
+   */
+  logRemovalPolicy?: RemovalPolicy;
 }
 
 export class WebApplicationFirewall extends Construct {
@@ -389,6 +405,22 @@ export class WebApplicationFirewall extends Construct {
           resourceArn: association,
           webAclArn: this.web_acl.attrArn,
         });
+      });
+    }
+
+    if (props.enableLogging) {
+      const wafLogGroup = new LogGroup(this, `WAF-Logs-${this.web_acl.name}`, {
+        retention: props.logRetentionDays
+          ? props.logRetentionDays
+          : RetentionDays.ONE_YEAR,
+        removalPolicy: props.logRemovalPolicy
+          ? props.logRemovalPolicy
+          : RemovalPolicy.RETAIN,
+        logGroupName: `aws-waf-logs-${this.web_acl.name}`,
+      });
+      new aws_wafv2.CfnLoggingConfiguration(this, "CloudWatchLogging", {
+        logDestinationConfigs: [`${wafLogGroup.logGroupArn}`],
+        resourceArn: this.web_acl.attrArn,
       });
     }
   }
