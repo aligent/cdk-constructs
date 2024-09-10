@@ -79,7 +79,7 @@ export interface WebApplicationFirewallProps {
   postProcessCustomRules?: aws_wafv2.CfnWebACL.RuleProperty[];
 
   /**
-   * Enable CloudWatch logging. Default: false
+   * Enable CloudWatch logging. Default: true
    */
   enableLogging?: boolean;
 
@@ -408,7 +408,8 @@ export class WebApplicationFirewall extends Construct {
       });
     }
 
-    if (props.enableLogging) {
+    const enableLogging = props.enableLogging ?? true;
+    if (enableLogging) {
       const wafLogGroup = new LogGroup(this, `WAF-Logs-${this.web_acl.name}`, {
         retention: props.logRetentionDays
           ? props.logRetentionDays
