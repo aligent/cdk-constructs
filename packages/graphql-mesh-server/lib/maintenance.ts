@@ -98,13 +98,15 @@ export class Maintenance extends Construct {
       readOnly: true,
       sourceVolume: "maintenanceVolume",
     };
-    props.fargateService.taskDefinition.defaultContainer?.addMountPoints(
-      mountPoint
-    );
-    props.fargateService.taskDefinition.defaultContainer?.addEnvironment(
-      "MAINTENANCE_FILE_PATH",
-      `${efsVolumeMountPath}/maintenance.enabled`
-    );
+    props.fargateService.taskDefinition
+      .findContainer("mesh")
+      ?.addMountPoints(mountPoint);
+    props.fargateService.taskDefinition
+      .findContainer("mesh")
+      ?.addEnvironment(
+        "MAINTENANCE_FILE_PATH",
+        `${efsVolumeMountPath}/maintenance.enabled`
+      );
 
     const api = new apigateway.RestApi(this, "maintenance-apigw");
     const apiKey = api.addApiKey("maintenance-api-key", {

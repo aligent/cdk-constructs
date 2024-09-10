@@ -20,6 +20,7 @@ import { CfnIPSet, CfnWebACL } from "aws-cdk-lib/aws-wafv2";
 import { ScalingInterval, AdjustmentType } from "aws-cdk-lib/aws-autoscaling";
 import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
+import path = require("path");
 
 export interface MeshServiceProps {
   /**
@@ -182,6 +183,25 @@ export interface MeshServiceProps {
    * @default - AWS generated task definition family name
    */
   taskDefinitionFamilyName?: string;
+
+  /**
+   * Nginx image to use
+   *
+   * @default ecs.ContainerImage.fromRegistry("nginx:stable-alpine")
+   */
+  nginxImage?: ecs.ContainerImage;
+
+  /**
+   * Disable the nginx sidecar container
+   *
+   * @default - false
+   */
+  disableNginx?: boolean;
+
+  /**
+   * Optional manual overrides for nginx sidecar container
+   */
+  nginxConfigOverride?: Partial<ecs.ContainerDefinitionOptions>;
 }
 
 export class MeshService extends Construct {
@@ -202,6 +222,8 @@ export class MeshService extends Construct {
           props.certificateArn
         )
       : undefined;
+
+    if (!certificate) throw Error("Must pass certificate");
 
     this.vpc =
       props.vpc ||
@@ -294,6 +316,65 @@ export class MeshService extends Construct {
       logGroup: this.logGroup,
     });
 
+    const taskDefinition = new ecs.FargateTaskDefinition(this, "TaskDef", {
+      memoryLimitMiB: props.memory || 1024,
+      cpu: props.cpu || 512,
+    });
+
+    // Configure nginx
+    if (!props.disableNginx) {
+      taskDefinition.addContainer("nginx", {
+        image:
+          props.nginxImage ||
+          ecs.ContainerImage.fromAsset(
+            path.resolve(__dirname, "../assets/nginx")
+          ),
+        containerName: "nginx",
+        essential: true,
+        healthCheck: {
+          command: [
+            "CMD-SHELL",
+            "curl -f http://localhost || echo 'Health check failed'",
+          ],
+          startPeriod: Duration.seconds(5),
+        },
+        logging: logDriver,
+        portMappings: [{ containerPort: 80 }],
+        ...props.nginxConfigOverride,
+      });
+    }
+
+    // Add the main mesh container
+    taskDefinition.addContainer("mesh", {
+      image: ecs.ContainerImage.fromEcrRepository(this.repository),
+      containerName: "mesh",
+      environment: environment,
+      secrets: props.secrets ? props.secrets : ssmSecrets,
+      healthCheck: {
+        command: [
+          "CMD-SHELL",
+          "curl -f http://localhost || echo 'Health check failed'",
+        ],
+        startPeriod: Duration.seconds(5),
+      },
+      logging: logDriver,
+      portMappings: [{ containerPort: 4000 }], // Main application listens on port 4000
+    });
+
+    // Configure x-ray
+    taskDefinition.addContainer("xray", {
+      image: ecs.ContainerImage.fromRegistry("amazon/aws-xray-daemon"),
+      cpu: 32,
+      containerName: "xray",
+      memoryReservationMiB: 256,
+      essential: false,
+      healthCheck: {
+        command: ["CMD-SHELL", "pgrep xray || echo 'Health check failed'"],
+        startPeriod: Duration.seconds(5),
+      },
+      portMappings: [{ containerPort: 4000, protocol: ecs.Protocol.UDP }],
+    });
+
     // Create a load-balanced Fargate service and make it public
     const fargateService =
       new ecsPatterns.ApplicationLoadBalancedFargateService(this, `fargate`, {
@@ -304,22 +385,8 @@ export class MeshService extends Construct {
         enableExecuteCommand: true,
         cpu: props.cpu || 512, // 0.5 vCPU
         memoryLimitMiB: props.memory || 1024, // 1 GB
-        taskImageOptions: {
-          image: ecs.ContainerImage.fromEcrRepository(this.repository),
-          enableLogging: true, // default
-          containerPort: 4000, // graphql mesh gateway port
-          secrets: props.secrets ? props.secrets : ssmSecrets, // Prefer v2 secrets using secrets manager
-          environment: environment,
-          logDriver: logDriver,
-          taskRole: new iam.Role(this, "MeshTaskRole", {
-            assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
-          }),
-          family:
-            props.taskDefinitionFamilyName !== undefined
-              ? props.taskDefinitionFamilyName
-              : undefined,
-        },
-        publicLoadBalancer: true, // default,
+        taskDefinition: taskDefinition,
+        publicLoadBalancer: true, // defult,
         taskSubnets: {
           subnets: [...this.vpc.privateSubnets],
         },
@@ -329,23 +396,11 @@ export class MeshService extends Construct {
     this.service = fargateService.service;
     this.loadBalancer = fargateService.loadBalancer;
 
-    // Configure x-ray
-    const xray = this.service.taskDefinition.addContainer("xray", {
-      image: ecs.ContainerImage.fromRegistry("amazon/aws-xray-daemon"),
-      cpu: 32,
-      memoryReservationMiB: 256,
-      essential: false,
-    });
-    xray.addPortMappings({
-      containerPort: 2000,
-      protocol: ecs.Protocol.UDP,
-    });
-
-    this.service.taskDefinition.taskRole.addManagedPolicy({
+    taskDefinition.taskRole.addManagedPolicy({
       managedPolicyArn:
         "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
     });
-    this.service.taskDefinition.taskRole.addManagedPolicy({
+    taskDefinition.taskRole.addManagedPolicy({
       managedPolicyArn: "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess",
     });
 
@@ -539,7 +594,7 @@ export class MeshService extends Construct {
 
     this.firewall.addAssociation(
       "loadbalancer-association",
-      fargateService.loadBalancer.loadBalancerArn
+      this.loadBalancer.loadBalancerArn
     );
 
     fargateService.targetGroup.configureHealthCheck({
@@ -547,7 +602,7 @@ export class MeshService extends Construct {
     });
 
     // Setup auto scaling policy
-    const scaling = fargateService.service.autoScaleTaskCount({
+    const scaling = this.service.autoScaleTaskCount({
       minCapacity: props.minCapacity || 1,
       maxCapacity: props.maxCapacity || 5,
     });
@@ -558,7 +613,7 @@ export class MeshService extends Construct {
       { lower: 85, change: +3 },
     ];
 
-    const cpuUtilization = fargateService.service.metricCpuUtilization();
+    const cpuUtilization = this.service.metricCpuUtilization();
     scaling.scaleOnMetric("auto-scale-cpu", {
       metric: cpuUtilization,
       scalingSteps: cpuScalingSteps,
