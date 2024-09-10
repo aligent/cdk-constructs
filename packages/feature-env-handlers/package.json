@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-feature-env-handlers",
-  "version": "0.1.0",
+  "version": "2.0.1",
   "description": "Cloudfront Lambda@Edge handlers to allow feature environments to function",
   "main": "index.js",
   "scripts": {

@@ -17,8 +17,10 @@ export const handler = async (
   if (
     !IS_FILE.test(request.uri) &&
     IS_BOT.test(request.headers["user-agent"][0].value) &&
+    // Check if the request is from Prerender service
     !request.headers["x-prerender"]
   ) {
+    // Consumed by OriginRequest Lambda@Edge to determine if this request needs to be send to Prerender service rather than other origins.
     request.headers["x-request-prerender"] = [
       {
         key: "x-request-prerender",
@@ -26,6 +28,7 @@ export const handler = async (
       },
     ];
 
+    // Consumed by OriginRequest Lambda@Edge, only when x-request-prerender header is set. Prerender service will send request to this host.
     request.headers["x-prerender-host"] = [
       { key: "X-Prerender-Host", value: request.headers.host[0].value },
     ];
