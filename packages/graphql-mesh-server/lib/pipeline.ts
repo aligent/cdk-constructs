@@ -107,7 +107,8 @@ export class CodePipelineService extends Construct {
             },
             CONTAINER_NAME: {
               value:
-                props.service.taskDefinition.defaultContainer?.containerName,
+                props.service.taskDefinition.findContainer("mesh")
+                  ?.containerName,
             },
           },
         }),
