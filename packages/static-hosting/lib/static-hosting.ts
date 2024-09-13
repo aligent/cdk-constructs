@@ -140,6 +140,13 @@ export interface StaticHostingProps {
   enableStaticFileRemap?: boolean;
 
   /**
+   * Optional additional properties for static file remap behaviours
+   * 
+   * @default none
+   */
+  staticFileRemapOptions?: BehaviorOptions;
+
+  /**
    * Paths to remap on the default behaviour. For example you might remap deployed_sitemap.xml -> sitemap.xml
    * Created a behaviour in CloudFront to handle the remap. If the paths are different
    * it will also deploy a Lambda@Edge function to perform the required remap.
@@ -533,6 +540,7 @@ export class StaticHosting extends Construct {
         additionalBehaviors[`*.${path}`] = {
           origin: s3Origin,
           viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          ...props.staticFileRemapOptions,
         };
       }
     }
