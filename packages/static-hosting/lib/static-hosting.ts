@@ -141,10 +141,10 @@ export interface StaticHostingProps {
 
   /**
    * Optional additional properties for static file remap behaviours
-   * 
+   *
    * @default none
    */
-  staticFileRemapOptions?: BehaviorOptions;
+  staticFileRemapOptions?: Partial<BehaviorOptions>;
 
   /**
    * Paths to remap on the default behaviour. For example you might remap deployed_sitemap.xml -> sitemap.xml
@@ -295,6 +295,7 @@ export interface StaticHostingProps {
 interface remapPath {
   from: string;
   to?: string;
+  behaviour?: Partial<BehaviorOptions>;
 }
 
 export interface ResponseHeaderMappings {
@@ -530,6 +531,7 @@ export class StaticHosting extends Construct {
             origin: backendOrigin,
             viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             edgeLambdas: this.createRemapBehavior(path.from, path.to),
+            ...path.behaviour,
           };
         }
       }
@@ -553,6 +555,7 @@ export class StaticHosting extends Construct {
           origin: s3Origin,
           viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           edgeLambdas: this.createRemapBehavior(path.from, path.to),
+          ...path.behaviour,
         };
       }
     }
