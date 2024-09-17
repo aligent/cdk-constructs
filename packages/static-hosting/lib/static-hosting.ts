@@ -544,16 +544,6 @@ export class StaticHosting extends Construct {
       }
     }
 
-    if (enableStaticFileRemap) {
-      for (const path of this.staticFiles) {
-        additionalBehaviors[`*.${path}`] = {
-          origin: s3Origin,
-          viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          ...props.staticFileRemapOptions,
-        };
-      }
-    }
-
     // Note: A given path may override if the same path is defined both remapPaths and remapBackendPaths. This is an
     // unlikely scenario but worth noting. e.g. `/robots.txt` should be defined in one of the above but not both.
     if (props.remapPaths) {
