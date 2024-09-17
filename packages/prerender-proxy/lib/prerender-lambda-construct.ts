@@ -34,25 +34,25 @@ export class PrerenderLambda extends Construct {
 
     this.prerenderCheckFunction = new PrerenderCheckFunction(
       this,
-      "PrerenderViewerRequest",
+      `${id}-PrerenderViewerRequest`,
       props.prerenderCheckOptions
     );
 
     this.prerenderFunction = new PrerenderFunction(
       this,
-      "PrerenderOriginRequest",
+      `${id}-PrerenderOriginRequest`,
       props.prerenderProps
     );
 
     this.errorResponseFunction = new ErrorResponseFunction(
       this,
-      "ErrorResponse",
+      `${id}-ErrorResponse`,
       props.errorResponseProps
     );
 
     this.cacheControlFunction = new CloudFrontCacheControl(
       this,
-      "PrerenderCloudFrontCacheControl",
+      `${id}-PrerenderCloudFrontCacheControl`,
       props.cacheControlProps
     );
   }

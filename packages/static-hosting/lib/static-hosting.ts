@@ -140,6 +140,13 @@ export interface StaticHostingProps {
   enableStaticFileRemap?: boolean;
 
   /**
+   * Any prefixes to remapping that should be included in the path such as au or nz
+   *
+   * @default true
+   */
+  behaviourPrefixes?: { prefix: string; edgeLambdas: EdgeLambda[] }[];
+
+  /**
    * Optional additional properties for static file remap behaviours
    *
    * @default none
@@ -292,7 +299,7 @@ export interface StaticHostingProps {
   comment?: string;
 }
 
-interface remapPath {
+export interface remapPath {
   from: string;
   to?: string;
   behaviour?: Partial<BehaviorOptions>;
@@ -559,6 +566,31 @@ export class StaticHosting extends Construct {
         };
       }
     }
+
+    if (enableStaticFileRemap) {
+      const staticFileRemapPrefixes = props.behaviourPrefixes?.map(
+        prefix => `${prefix.prefix}/`
+      ) || [""];
+      staticFileRemapPrefixes.forEach(prefix => {
+        this.staticFiles.forEach(path => {
+          additionalBehaviors[`${prefix}*.${path}`] = {
+            origin: s3Origin,
+            viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          };
+        });
+      });
+    }
+
+    props.behaviourPrefixes?.forEach(prefix => {
+      additionalBehaviors[`${prefix.prefix}*`] = {
+        origin: s3Origin,
+        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        edgeLambdas: prefix.edgeLambdas,
+        originRequestPolicy: originRequestPolicy,
+        cachePolicy: originCachePolicy,
+        responseHeadersPolicy: responseHeadersPolicy,
+      };
+    });
 
     if (props.responseHeadersPolicies?.defaultBehaviorResponseHeaderPolicy) {
       defaultBehavior.responseHeadersPolicy =
