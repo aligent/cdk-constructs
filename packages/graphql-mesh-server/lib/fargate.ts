@@ -17,14 +17,19 @@ import {
   WebApplicationFirewall,
 } from "./web-application-firewall";
 import { CfnIPSet, CfnWebACL } from "aws-cdk-lib/aws-wafv2";
-import { ScalingInterval, AdjustmentType } from "aws-cdk-lib/aws-autoscaling";
+import {
+  ScalingInterval,
+  AdjustmentType,
+  BasicStepScalingPolicyProps,
+} from "aws-cdk-lib/aws-autoscaling";
 import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 import path = require("path");
+import { MetricOptions } from "aws-cdk-lib/aws-cloudwatch";
 
 export interface MeshServiceProps {
   /**
-   * VPC to attach Redis instance to
+   * VPC to attach Fargate instance to
    */
   vpc?: IVpc;
   /**
@@ -131,7 +136,7 @@ export interface MeshServiceProps {
   allowedIps?: string[];
   /**
    * Pass custom cpu scaling steps
-   * Default value:
+   * @default
    * [
    *    { upper: 30, change: -1 },
    *    { lower: 50, change: +1 },
@@ -202,6 +207,31 @@ export interface MeshServiceProps {
    * Optional manual overrides for nginx sidecar container
    */
   nginxConfigOverride?: Partial<ecs.ContainerDefinitionOptions>;
+
+  /**
+   * Override cpu scaling options
+   *
+   * @default
+   * {
+   *   period: Duration.minutes(1),
+   *   statistic: "max",
+   * }
+   */
+  cpuScalingOptions?: Partial<MetricOptions>;
+
+  /**
+   * Override cpu step scaling options
+   *
+   * @default
+   * {
+   *   metric: cpuUtilization, // use cpuScalingOptions to modify
+   *   scalingSteps: cpuScalingSteps, // use cpuScalingSteps to modify
+   *   adjustmentType: AdjustmentType.CHANGE_IN_CAPACITY,
+   *   evaluationPeriods: 3,
+   *   datapointsToAlarm: 2,
+   * }
+   */
+  cpuStepScalingOptions?: Partial<BasicStepScalingPolicyProps>;
 }
 
 export class MeshService extends Construct {
@@ -613,11 +643,21 @@ export class MeshService extends Construct {
       { lower: 85, change: +3 },
     ];
 
-    const cpuUtilization = this.service.metricCpuUtilization();
+    // These default options are based on testing
+    /// however they can be overwritten if required
+    const cpuUtilization = this.service.metricCpuUtilization({
+      period: Duration.minutes(1),
+      statistic: "max",
+      ...props.cpuScalingOptions,
+    });
+
     scaling.scaleOnMetric("auto-scale-cpu", {
       metric: cpuUtilization,
       scalingSteps: cpuScalingSteps,
       adjustmentType: AdjustmentType.CHANGE_IN_CAPACITY,
+      evaluationPeriods: 3,
+      datapointsToAlarm: 2,
+      ...props.cpuStepScalingOptions,
     });
   }
 }
