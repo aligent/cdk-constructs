@@ -140,11 +140,14 @@ export interface StaticHostingProps {
   enableStaticFileRemap?: boolean;
 
   /**
-   * Any prefixes to remapping that should be included in the path such as au or nz
+   * Overrides default behaviour paths with a prefix and takes in options to apply to each static file behaviour
    *
    * @default true
    */
-  behaviourPrefixes?: { prefix: string; edgeLambdas: EdgeLambda[] }[];
+  defaultBehaviourPrefixes?: {
+    prefix: string;
+    behaviourOverride: Partial<BehaviorOptions>;
+  }[];
 
   /**
    * Optional additional properties for static file remap behaviours
@@ -558,7 +561,7 @@ export class StaticHosting extends Construct {
     }
 
     if (enableStaticFileRemap) {
-      const staticFileRemapPrefixes = props.behaviourPrefixes?.map(
+      const staticFileRemapPrefixes = props.defaultBehaviourPrefixes?.map(
         prefix => `${prefix.prefix}/`
       ) || [""];
       staticFileRemapPrefixes.forEach(prefix => {
@@ -571,11 +574,11 @@ export class StaticHosting extends Construct {
       });
     }
 
-    props.behaviourPrefixes?.forEach(prefix => {
+    props.defaultBehaviourPrefixes?.forEach(prefix => {
       additionalBehaviors[`${prefix.prefix}*`] = {
         origin: s3Origin,
         viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        edgeLambdas: prefix.edgeLambdas,
+        edgeLambdas: prefix.behaviourOverride.edgeLambdas,
         originRequestPolicy: originRequestPolicy,
         cachePolicy: originCachePolicy,
         responseHeadersPolicy: responseHeadersPolicy,
