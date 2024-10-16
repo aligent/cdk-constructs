@@ -11,7 +11,6 @@ Construct | Description
 [feature-env-handlers](packages/feature-env-handlers) | Lambda@Edge handlers to support feature environments
 [geoip-redirect](packages/geoip-redirect) |
 [graphql-server](packages/graphql-server) |
-[lambda-at-edge-handlers](packages/lambda-at-edge-handlers) |
 [prerender-fargate](packages/prerender-fargate) |
 [prerender-proxy](packages/prerender-proxy) |
 [rabbitmq](packages/rabbitmq) |
