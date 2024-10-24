@@ -9,16 +9,17 @@ export class Esbuild implements ILocalBundling {
 
     // Override with default options
     Object.assign(this.options, {
-      logLevel: options.logLevel ?? "info",
-      sourcemap: options.sourcemap ?? false,
-      bundle: options.bundle ?? true,
-      minify: options.minify ?? true,
-      platform: options.platform ?? "node",
+      logLevel: "info",
+      sourcemap: false,
+      bundle: true,
+      minify: true,
+      platform: "node",
       // Do not minify identifiers, otherwise the exported `handler` function name gets minified failing to start
       // the lambda
       minifyIdentifiers: false,
-      minifyWhitespace: options.minifyWhitespace ?? true,
-      minifySyntax: options.minifySyntax ?? true,
+      minifyWhitespace: true,
+      minifySyntax: true,
+      ...options,
     });
   }
 
