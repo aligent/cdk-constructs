@@ -140,7 +140,7 @@ export interface StaticHostingProps {
   enableStaticFileRemap?: boolean;
 
   /**
-   * Overrides default behaviour paths with a prefix and takes in options to apply to each static file behaviour
+   * Overrides default behaviour paths with a prefix and takes in behviour options to apply on the prefix behaviour
    *
    * @default true
    */
@@ -576,12 +576,17 @@ export class StaticHosting extends Construct {
 
     props.defaultBehaviourPrefixes?.forEach(prefix => {
       additionalBehaviors[`${prefix.prefix}*`] = {
-        origin: s3Origin,
-        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        origin: prefix.behaviourOverride.origin ?? s3Origin,
+        viewerProtocolPolicy:
+          prefix.behaviourOverride.viewerProtocolPolicy ??
+          ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         edgeLambdas: prefix.behaviourOverride.edgeLambdas,
-        originRequestPolicy: originRequestPolicy,
-        cachePolicy: originCachePolicy,
-        responseHeadersPolicy: responseHeadersPolicy,
+        originRequestPolicy:
+          prefix.behaviourOverride.originRequestPolicy ?? originRequestPolicy,
+        cachePolicy: prefix.behaviourOverride.cachePolicy ?? originCachePolicy,
+        responseHeadersPolicy:
+          prefix.behaviourOverride.responseHeadersPolicy ??
+          responseHeadersPolicy,
       };
     });
 
