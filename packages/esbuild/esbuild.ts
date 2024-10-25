@@ -19,6 +19,7 @@ export class Esbuild implements ILocalBundling {
       minifyIdentifiers: false,
       minifyWhitespace: true,
       minifySyntax: true,
+      ...options,
     });
   }
 
