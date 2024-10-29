@@ -576,17 +576,15 @@ export class StaticHosting extends Construct {
 
     props.defaultBehaviourPrefixes?.forEach(prefix => {
       additionalBehaviors[`${prefix.prefix}*`] = {
-        origin: prefix.behaviourOverride.origin ?? s3Origin,
+        origin: s3Origin,
         viewerProtocolPolicy:
-          prefix.behaviourOverride.viewerProtocolPolicy ??
           ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         edgeLambdas: prefix.behaviourOverride.edgeLambdas,
-        originRequestPolicy:
-          prefix.behaviourOverride.originRequestPolicy ?? originRequestPolicy,
-        cachePolicy: prefix.behaviourOverride.cachePolicy ?? originCachePolicy,
+        originRequestPolicy: originRequestPolicy,
+        cachePolicy: originCachePolicy,
         responseHeadersPolicy:
-          prefix.behaviourOverride.responseHeadersPolicy ??
           responseHeadersPolicy,
+        ...prefix.behaviourOverride
       };
     });
 
