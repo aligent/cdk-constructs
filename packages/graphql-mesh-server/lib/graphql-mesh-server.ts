@@ -1,27 +1,21 @@
 import { Construct } from "constructs";
-import { MeshService } from "./fargate";
+import { MeshService, MeshServiceProps } from "./fargate";
 import { RedisService } from "./redis-construct";
 import { CodePipelineService } from "./pipeline";
 import { SecurityGroup, IVpc, Vpc } from "aws-cdk-lib/aws-ec2";
 import { Repository } from "aws-cdk-lib/aws-ecr";
-import { FargateService } from "aws-cdk-lib/aws-ecs";
+import { Cluster, FargateService } from "aws-cdk-lib/aws-ecs";
 import { CfnCacheCluster } from "aws-cdk-lib/aws-elasticache";
-import * as ssm from "aws-cdk-lib/aws-ssm";
-import {
-  AWSManagedRule,
-  WebApplicationFirewall,
-} from "./web-application-firewall";
-import { CfnWebACL } from "aws-cdk-lib/aws-wafv2";
-import { ScalingInterval } from "aws-cdk-lib/aws-autoscaling";
+import { WebApplicationFirewall } from "./web-application-firewall";
 import { PerformanceMetrics } from "./metrics";
 import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 import { Topic } from "aws-cdk-lib/aws-sns";
 import { Alarm } from "aws-cdk-lib/aws-cloudwatch";
 import { Maintenance } from "./maintenance";
-import { Secret } from "aws-cdk-lib/aws-ecs";
+import { TemporaryEnvironment } from "./temporary-environments";
 
-export type MeshHostingProps = {
+export interface MeshHostingProps extends Omit<MeshServiceProps, "redis"> {
   /**
    * VPC to attach Redis and Fargate instances to (default: create a vpc)
    */
@@ -35,62 +29,12 @@ export type MeshHostingProps = {
    */
   cacheNodeType?: string;
   /**
-   * Repository to pull the container image from
-   */
-  repository?: Repository;
-  /**
-   * ARN of the certificate to add to the load balancer
-   */
-  certificateArn?: string;
-  /**
-   * Minimum number of Fargate instances
-   */
-  minCapacity?: number;
-  /**
-   * Maximum number of Fargate instances
-   */
-  maxCapacity?: number;
-  /**
-   * Amount of vCPU per Fargate instance (default: 512)
-   */
-  cpu?: number;
-  /**
-   * Amount of memory per Fargate instance (default: 1024)
-   */
-  memory?: number;
-  /**
    * Redis configuration to use for mesh caching
    */
   redis?: {
     service: RedisService;
     database?: string;
   };
-  /**
-   * SSM values to pass through to the container as secrets
-   *
-   * @deprecated - Use secrets instead
-   */
-  ssmSecrets?: {
-    [key: string]: ssm.IStringParameter | ssm.IStringListParameter;
-  };
-
-  /**
-   * ECS Secrets to pass through to the container as secrets
-   *
-   * The key values can be referenced from either SSM or Secrets manager
-   */
-  secrets?: { [key: string]: Secret };
-
-  /**
-   * Pass custom cpu scaling steps
-   * Default value:
-   * [
-   *    { upper: 30, change: -1 },
-   *    { lower: 50, change: +1 },
-   *    { lower: 85, change: +3 },
-   * ]
-   */
-  cpuScalingSteps?: ScalingInterval[];
   /**
    * ARN of the SNS Topic to send deployment notifications to
    */
@@ -99,61 +43,6 @@ export type MeshHostingProps = {
    * Region of the SNS Topic that deployment notifications are sent to
    */
   notificationRegion?: string;
-  /**
-   * Name of the WAF
-   * Defaults to 'graphql-mesh-web-acl'
-   */
-  wafName?: string;
-  /**
-   * List of IPv4 addresses to block
-   */
-  blockedIps?: string[];
-  /**
-   * The waf rule priority.
-   * Defaults to 2
-   */
-  blockedIpPriority?: number;
-  /**
-   * List of IPv6 addresses to block
-   */
-  blockedIpv6s?: string[];
-  /**
-   * The waf rule priority.
-   * Defaults to 3
-   */
-  blockedIpv6Priority?: number;
-  /**
-   * If true, block all access to the endpoint. Use in conjunction with allowedIps to block public access
-   * @default false
-   */
-  blockAll?: boolean;
-  /**
-   * List of AWS Managed rules to add to the WAF
-   */
-  wafManagedRules?: AWSManagedRule[];
-  /**
-   * List of custom rules
-   */
-  wafRules?: CfnWebACL.RuleProperty[];
-  /**
-   * The limit on requests per 5-minute period
-   * If provided, rate limiting will be enabled
-   */
-  rateLimit?: number;
-  /**
-   * The waf rule priority. Only used when a rateLimit value is provided.
-   * Defaults to 10
-   */
-  rateLimitPriority?: number;
-  /**
-   * List of IPv4 addresses that can bypass all WAF block lists.
-   */
-  allowedIps?: string[];
-  /**
-   * Enable / disable container insights
-   * Defaults to true
-   */
-  containerInsights?: boolean;
   /**
    * Log stream prefix
    * Defaults to 'graphql-server'
@@ -226,11 +115,21 @@ export type MeshHostingProps = {
    * @default - AWS Generated name
    */
   dashboardName?: string;
-};
+
+  /**
+   * Whether mesh feature environments be enabled
+   *
+   * @default - false
+   */
+  temporaryEnvironments?: boolean;
+
+  targetUtilizationPercent?: number;
+}
 
 export class MeshHosting extends Construct {
   public readonly vpc: IVpc;
   public readonly repository: Repository;
+  public readonly cluster: Cluster;
   public readonly service: FargateService;
   public readonly loadBalancer: ApplicationLoadBalancer;
   public readonly logGroup: LogGroup;
@@ -267,6 +166,7 @@ export class MeshHosting extends Construct {
       },
     });
 
+    this.cluster = mesh.cluster;
     this.service = mesh.service;
     this.firewall = mesh.firewall;
     this.loadBalancer = mesh.loadBalancer;
@@ -300,5 +200,14 @@ export class MeshHosting extends Construct {
       logGroup: this.logGroup,
       firewall: this.firewall,
     });
+
+    if (props.temporaryEnvironments) {
+      new TemporaryEnvironment(this, "temporary-environments", {
+        cluster: this.cluster,
+        repository: this.repository,
+        securityGroup: mesh.securityGroup,
+        loadBalancer: this.loadBalancer,
+      });
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { Construct } from "constructs";
-import { Duration } from "aws-cdk-lib";
+import { Duration, IResolvable } from "aws-cdk-lib";
 import { RemovalPolicy } from "aws-cdk-lib";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as ecs from "aws-cdk-lib/aws-ecs";
@@ -22,14 +22,17 @@ import {
   AdjustmentType,
   BasicStepScalingPolicyProps,
 } from "aws-cdk-lib/aws-autoscaling";
-import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import {
+  ApplicationLoadBalancer,
+  ApplicationTargetGroup,
+} from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 import path = require("path");
 import { MetricOptions } from "aws-cdk-lib/aws-cloudwatch";
 
 export interface MeshServiceProps {
   /**
-   * VPC to attach Fargate instance to
+   * VPC to attach Redis instance to
    */
   vpc?: IVpc;
   /**
@@ -143,7 +146,7 @@ export interface MeshServiceProps {
   allowedIps?: string[];
   /**
    * Pass custom cpu scaling steps
-   * @default
+   * Default value:
    * [
    *    { upper: 30, change: -1 },
    *    { lower: 50, change: +1 },
@@ -167,6 +170,13 @@ export interface MeshServiceProps {
    * @default undefined
    */
   authenticationTable?: string;
+
+  /**
+   * Optional cluster to place service in
+   *
+   * @default - create a new cluster
+   */
+  cluster?: ecs.Cluster;
 
   /**
    * Specify a name for the ECS cluster
@@ -239,13 +249,21 @@ export interface MeshServiceProps {
    * }
    */
   cpuStepScalingOptions?: Partial<BasicStepScalingPolicyProps>;
+
+  xray?: boolean;
+  nameOverride?: string;
+  loadBalancerOverride?: string;
+  disableService?: boolean;
 }
 
 export class MeshService extends Construct {
   public readonly vpc: IVpc;
+  public readonly securityGroup: SecurityGroup;
   public readonly repository: ecr.Repository;
+  public readonly cluster: ecs.Cluster;
   public readonly service: ecs.FargateService;
   public readonly loadBalancer: ApplicationLoadBalancer;
+  public readonly targetGroup: ApplicationTargetGroup;
   public readonly logGroup: LogGroup;
   public readonly firewall: WebApplicationFirewall;
 
@@ -313,24 +331,28 @@ export class MeshService extends Construct {
 
     deployUser.attachInlinePolicy(deployPolicy);
 
-    const securityGroup = new SecurityGroup(this, "security-group", {
+    this.securityGroup = new SecurityGroup(this, "security-group", {
       vpc: this.vpc,
     });
 
-    const cluster = new ecs.Cluster(this, `cluster`, {
-      vpc: this.vpc,
-      containerInsights:
-        props.containerInsights !== undefined ? props.containerInsights : true,
-      clusterName:
-        props.clusterName !== undefined ? props.clusterName : undefined,
-    });
+    this.cluster =
+      props.cluster ||
+      new ecs.Cluster(this, `cluster`, {
+        vpc: this.vpc,
+        containerInsights:
+          props.containerInsights !== undefined
+            ? props.containerInsights
+            : true,
+        clusterName:
+          props.clusterName !== undefined ? props.clusterName : undefined,
+      });
 
     const environment: { [key: string]: string } = {};
 
     // If using Redis configure security group and pass connection string to container
     if (props.redis) {
       props.redis.service.securityGroup.addIngressRule(
-        securityGroup,
+        this.securityGroup,
         Port.tcp(props.redis.service.connectionPort)
       );
 
@@ -398,40 +420,49 @@ export class MeshService extends Construct {
       portMappings: [{ containerPort: 4000 }], // Main application listens on port 4000
     });
 
-    // Configure x-ray
-    taskDefinition.addContainer("xray", {
-      image: ecs.ContainerImage.fromRegistry("amazon/aws-xray-daemon"),
-      cpu: 32,
-      containerName: "xray",
-      memoryReservationMiB: 256,
-      essential: false,
-      healthCheck: {
-        command: ["CMD-SHELL", "pgrep xray || echo 'Health check failed'"],
-        startPeriod: Duration.seconds(5),
-      },
-      portMappings: [{ containerPort: 4000, protocol: ecs.Protocol.UDP }],
-    });
-
-    // Create a load-balanced Fargate service and make it public
-    const fargateService =
-      new ecsPatterns.ApplicationLoadBalancedFargateService(this, `fargate`, {
-        cluster,
-        serviceName:
-          props.serviceName !== undefined ? props.serviceName : undefined,
-        certificate,
-        enableExecuteCommand: true,
-        cpu: props.cpu || 512, // 0.5 vCPU
-        memoryLimitMiB: props.memory || 1024, // 1 GB
-        taskDefinition: taskDefinition,
-        publicLoadBalancer: true, // defult,
-        taskSubnets: {
-          subnets: [...this.vpc.privateSubnets],
+    if (props.xray || props.xray === undefined) {
+      // Configure x-ray
+      taskDefinition.addContainer("xray", {
+        image: ecs.ContainerImage.fromRegistry("amazon/aws-xray-daemon"),
+        cpu: 32,
+        containerName: "xray",
+        memoryReservationMiB: 256,
+        essential: false,
+        healthCheck: {
+          command: ["CMD-SHELL", "pgrep xray || echo 'Health check failed'"],
+          startPeriod: Duration.seconds(5),
         },
-        securityGroups: [securityGroup],
+        portMappings: [{ containerPort: 4000, protocol: ecs.Protocol.UDP }],
       });
+    }
 
-    this.service = fargateService.service;
-    this.loadBalancer = fargateService.loadBalancer;
+    if (!props.disableService) {
+      // Create a load-balanced Fargate service and make it public
+      const fargateService =
+        new ecsPatterns.ApplicationLoadBalancedFargateService(
+          this,
+          props.nameOverride || `fargate`,
+          {
+            cluster: this.cluster,
+            serviceName:
+              props.serviceName !== undefined ? props.serviceName : undefined,
+            certificate,
+            enableExecuteCommand: true,
+            cpu: props.cpu || 512, // 0.5 vCPU
+            memoryLimitMiB: props.memory || 1024, // 1 GB
+            taskDefinition: taskDefinition,
+            publicLoadBalancer: true, // defult,
+            taskSubnets: {
+              subnets: [...this.vpc.privateSubnets],
+            },
+            securityGroups: [this.securityGroup],
+          }
+        );
+
+      this.service = fargateService.service;
+      this.loadBalancer = fargateService.loadBalancer;
+      this.targetGroup = fargateService.targetGroup;
+    }
 
     taskDefinition.taskRole.addManagedPolicy({
       managedPolicyArn:
@@ -441,7 +472,8 @@ export class MeshService extends Construct {
       managedPolicyArn: "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess",
     });
 
-    if (props.authenticationTable) {
+    // TODO: this extra not statement shouldn't be required
+    if (props.authenticationTable && !props.disableService) {
       const authTable = new dynamodb.Table(this, "authenticationTable", {
         tableName: props.authenticationTable || "authentication-table",
         partitionKey: {
@@ -487,10 +519,12 @@ export class MeshService extends Construct {
         rules: [...(props.wafRules || [])],
       });
 
-    this.firewall.addAssociation(
-      props.loadBalancerOverride || `loadbalancer-association`,
-      this.loadBalancer.loadBalancerArn
-    );
+    if (this.loadBalancer) {
+      this.firewall.addAssociation(
+        props.loadBalancerOverride || `loadbalancer-association`,
+        this.loadBalancer.loadBalancerArn
+      );
+    }
 
     if (!props.firewall) {
       const allowedIpList = new CfnIPSet(this, "allowList", {
@@ -643,37 +677,41 @@ export class MeshService extends Construct {
         ).push(...defaultRules);
     }
 
-    fargateService.targetGroup.configureHealthCheck({
-      path: "/healthcheck",
-    });
+    if (this.targetGroup) {
+      this.targetGroup.configureHealthCheck({
+        path: "/healthcheck",
+      });
+    }
 
-    // Setup auto scaling policy
-    const scaling = this.service.autoScaleTaskCount({
-      minCapacity: props.minCapacity || 1,
-      maxCapacity: props.maxCapacity || 5,
-    });
+    if (this.service) {
+      // Setup auto scaling policy
+      const scaling = this.service.autoScaleTaskCount({
+        minCapacity: props.minCapacity || 1,
+        maxCapacity: props.maxCapacity || 5,
+      });
 
-    const cpuScalingSteps = props.cpuScalingSteps || [
-      { upper: 30, change: -1 },
-      { lower: 50, change: +1 },
-      { lower: 85, change: +3 },
-    ];
+      const cpuScalingSteps = props.cpuScalingSteps || [
+        { upper: 30, change: -1 },
+        { lower: 50, change: +1 },
+        { lower: 85, change: +3 },
+      ];
 
-    // These default options are based on testing
-    /// however they can be overwritten if required
-    const cpuUtilization = this.service.metricCpuUtilization({
-      period: Duration.minutes(1),
-      statistic: "max",
-      ...props.cpuScalingOptions,
-    });
+      // These default options are based on testing
+      /// however they can be overwritten if required
+      const cpuUtilization = this.service.metricCpuUtilization({
+        period: Duration.minutes(1),
+        statistic: "max",
+        ...props.cpuScalingOptions,
+      });
 
-    scaling.scaleOnMetric("auto-scale-cpu", {
-      metric: cpuUtilization,
-      scalingSteps: cpuScalingSteps,
-      adjustmentType: AdjustmentType.CHANGE_IN_CAPACITY,
-      evaluationPeriods: 3,
-      datapointsToAlarm: 2,
-      ...props.cpuStepScalingOptions,
-    });
+      scaling.scaleOnMetric("auto-scale-cpu", {
+        metric: cpuUtilization,
+        scalingSteps: cpuScalingSteps,
+        adjustmentType: AdjustmentType.CHANGE_IN_CAPACITY,
+        evaluationPeriods: 3,
+        datapointsToAlarm: 2,
+        ...props.cpuStepScalingOptions,
+      });
+    }
   }
 }
