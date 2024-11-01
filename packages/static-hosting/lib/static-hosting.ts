@@ -578,7 +578,7 @@ export class StaticHosting extends Construct {
       webAclId: props.webAclArn,
       comment: props.comment,
       defaultRootObject: defaultRootObject,
-      httpVersion: HttpVersion.HTTP3,
+      httpVersion: HttpVersion.HTTP2_AND_3,
       sslSupportMethod: SSLMethod.SNI,
       priceClass: PriceClass.PRICE_CLASS_ALL,
       enableLogging: props.enableCloudFrontAccessLogging,
