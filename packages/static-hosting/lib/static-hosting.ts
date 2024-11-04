@@ -140,6 +140,16 @@ export interface StaticHostingProps {
   enableStaticFileRemap?: boolean;
 
   /**
+   * Overrides default behaviour paths with a prefix and takes in behviour options to apply on the prefix behaviour
+   *
+   * @default true
+   */
+  defaultBehaviourPrefixes?: {
+    prefix: string;
+    behaviourOverride: Partial<BehaviorOptions>;
+  }[];
+
+  /**
    * Optional additional properties for static file remap behaviours
    *
    * @default none
@@ -292,7 +302,7 @@ export interface StaticHostingProps {
   comment?: string;
 }
 
-interface remapPath {
+export interface remapPath {
   from: string;
   to?: string;
   behaviour?: Partial<BehaviorOptions>;
@@ -537,16 +547,6 @@ export class StaticHosting extends Construct {
       }
     }
 
-    if (enableStaticFileRemap) {
-      for (const path of this.staticFiles) {
-        additionalBehaviors[`*.${path}`] = {
-          origin: s3Origin,
-          viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          ...props.staticFileRemapOptions,
-        };
-      }
-    }
-
     // Note: A given path may override if the same path is defined both remapPaths and remapBackendPaths. This is an
     // unlikely scenario but worth noting. e.g. `/robots.txt` should be defined in one of the above but not both.
     if (props.remapPaths) {
@@ -559,6 +559,31 @@ export class StaticHosting extends Construct {
         };
       }
     }
+
+    if (enableStaticFileRemap) {
+      const staticFileRemapPrefixes = props.defaultBehaviourPrefixes?.map(
+        prefix => `${prefix.prefix}/`
+      ) || [""];
+      staticFileRemapPrefixes.forEach(prefix => {
+        this.staticFiles.forEach(path => {
+          additionalBehaviors[`${prefix}*.${path}`] = {
+            origin: s3Origin,
+            viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          };
+        });
+      });
+    }
+
+    props.defaultBehaviourPrefixes?.forEach(prefix => {
+      additionalBehaviors[`${prefix.prefix}*`] = {
+        origin: s3Origin,
+        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        originRequestPolicy: originRequestPolicy,
+        cachePolicy: originCachePolicy,
+        responseHeadersPolicy: responseHeadersPolicy,
+        ...prefix.behaviourOverride,
+      };
+    });
 
     if (props.responseHeadersPolicies?.defaultBehaviorResponseHeaderPolicy) {
       defaultBehavior.responseHeadersPolicy =
