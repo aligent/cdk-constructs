@@ -14,7 +14,6 @@
 const prerender = require('prerender');
 const util = require('prerender/lib/util');
 const crypto = require('crypto');
-const s3Cache = require('prerender-aws-s3-cache');
 const logger = require('./utils/logger')
 
 /**
