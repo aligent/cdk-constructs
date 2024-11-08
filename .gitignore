@@ -69,3 +69,8 @@ cdk.out
 
 *.d.ts
 *.js
+
+
+
+.nx/cache
+.nx/workspace-data
