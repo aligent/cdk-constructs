@@ -1,11 +1,11 @@
 /* eslint-disable */
 export default {
-    displayName: 'feature-env-handlers',
-    preset: '../../jest.preset.js',
-    testEnvironment: 'node',
-    transform: {
-        '^.+\\.[tj]s$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
-    },
-    moduleFileExtensions: ['ts', 'js', 'html'],
-    coverageDirectory: '../../coverage/packages/feature-env-handlers',
+  displayName: "feature-env-handlers",
+  preset: "../../jest.preset.js",
+  testEnvironment: "node",
+  transform: {
+    "^.+\\.[tj]s$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.spec.json" }],
+  },
+  moduleFileExtensions: ["ts", "js", "html"],
+  coverageDirectory: "../../coverage/packages/feature-env-handlers",
 };

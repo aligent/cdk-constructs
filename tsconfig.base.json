@@ -19,7 +19,7 @@
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
     "typeRoots": ["./node_modules/@types"],
-    "baseUrl": ".",
+    "baseUrl": "."
   },
   "exclude": ["**/node_modules", "cdk.out", "**/handlers/**"]
 }
