@@ -52,7 +52,7 @@ try {
     const json = JSON.parse(readFileSync(`package.json`).toString());
     json.version = version;
     writeFileSync(`package.json`, JSON.stringify(json, null, 2));
-} catch (e) {
+} catch (_e) {
     console.error(`Error reading package.json file from library build output.`);
 }
 
