@@ -74,3 +74,4 @@ cdk.out
 
 .nx/cache
 .nx/workspace-data
+!jest.preset.js
