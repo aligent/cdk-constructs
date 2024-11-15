@@ -23,6 +23,10 @@
         "jestConfig": "packages/cloudfront-security-headers/jest.config.ts",
         "passWithNoTests": true
       }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs cloudfront-security-headers {args.ver} {args.tag}",
+      "dependsOn": ["build"]
     }
   },
   "tags": []

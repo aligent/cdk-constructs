@@ -23,6 +23,10 @@
         "jestConfig": "packages/rabbitmq/jest.config.ts",
         "passWithNoTests": true
       }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs rabbitmq {args.ver} {args.tag}",
+      "dependsOn": ["build"]
     }
   },
   "tags": []

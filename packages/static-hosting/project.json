@@ -23,6 +23,10 @@
         "jestConfig": "packages/static-hosting/jest.config.ts",
         "passWithNoTests": true
       }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs static-hosting {args.ver} {args.tag}",
+      "dependsOn": ["build"]
     }
   },
   "tags": []

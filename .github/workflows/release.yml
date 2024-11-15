@@ -2,43 +2,41 @@ name: Publish to NPM
 
 on:
   release:
-    tags: 
-      - '**-[0-9]+.[0-9]+.[0-9]+'
-      - '**-[0-9]+.[0-9]+.[0-9]+-*'
+    tags:
+      - "**-[0-9]+.[0-9]+.[0-9]+"
+      - "**-[0-9]+.[0-9]+.[0-9]+-*"
     types: [published]
 
 jobs:
   build-and-publish:
+    name: 🚀 Publish to NPM
     runs-on: ubuntu-latest
     steps:
-    # Source checkout
-    - uses: actions/checkout@v2
-      with:
-        ref: ${{ github.event.release.target_commitish }}
-    # Setting Node environment
-    - name: Setting up Node environment
-      uses: actions/setup-node@v1
-      with:
-        node-version: 16
-        registry-url: https://registry.npmjs.org/
-    # Environment configuration
-    - name: Preparing environment for release
-      run: | 
-        VERSION=$(echo $GITHUB_REF_NAME | sed 's/^.*[A-Za-z]-//g')
-        echo "VERSION=$VERSION" >> $GITHUB_ENV
-        echo "PACKAGE=$(echo $GITHUB_REF_NAME | sed "s/-${VERSION}//g")" >> $GITHUB_ENV
-    # Release process
-    - name: Release
-      run: | 
-        npm ci
-        git config --global user.name "Automated NPM Release"
-        git config --global user.email "sysadmin+npm-deploy@aligent.com.au"
-        npm version $VERSION --allow-same-version --workspace "@aligent/cdk-${{env.PACKAGE}}"
-        npm run build --workspace "@aligent/cdk-${{env.PACKAGE}}"
-        npm test --workspace "@aligent/cdk-${{env.PACKAGE}}" --if-present
-        npm publish --access public --workspace "@aligent/cdk-${{env.PACKAGE}}"
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-    - run: git push
-      env:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.target_commitish }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "yarn"
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install
+        run: yarn install
+
+      - name: Preparing environment for release
+        run: |
+          VERSION=$(echo $GITHUB_REF_NAME | sed 's/^.*[A-Za-z]-//g')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "PACKAGE=$(echo $GITHUB_REF_NAME | sed "s/-${VERSION}//g")" >> $GITHUB_ENV
+
+      - name: Release
+        run: |
+          git config --global user.name "Automated NPM Release"
+          git config --global user.email "devops+npm-deploy@aligent.com.au"
+          echo "Publishing $PACKAGE @ $VERSION"
+          yarn config set registry https://registry.npmjs.org/
+          yarn nx publish $PACKAGE --ver=$VERSION --tag=latest --verbose
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

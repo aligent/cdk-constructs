@@ -23,6 +23,10 @@
         "jestConfig": "packages/basic-auth/jest.config.ts",
         "passWithNoTests": true
       }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs basic-auth {args.ver} {args.tag}",
+      "dependsOn": ["build"]
     }
   },
   "tags": []

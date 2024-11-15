@@ -23,6 +23,10 @@
         "jestConfig": "packages/graphql-mesh-server/jest.config.ts",
         "passWithNoTests": true
       }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs graphql-mesh-server {args.ver} {args.tag}",
+      "dependsOn": ["build"]
     }
   },
   "tags": []
