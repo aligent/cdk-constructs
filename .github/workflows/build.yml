@@ -24,6 +24,6 @@ jobs:
         run: yarn install
 
       - name: Build all packages
-        run: yarn build
+        run: yarn nx run-many -t build
 
-      - run: yarn lint:check && yarn format:check
+      - run: yarn nx run-many -t lint && yarn nx format:check

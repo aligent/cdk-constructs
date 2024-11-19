@@ -17,15 +17,6 @@
     "url": "https://github.com/aligent/aws-cdk-constructs/issues"
   },
   "homepage": "https://github.com/aligent/aws-cdk-constructs#readme",
-  "scripts": {
-    "build": "nx exec -- tsc",
-    "lint": "eslint . --ignore-pattern '.pnp.*'",
-    "lint:check": "yarn run lint",
-    "lint:fix": "yarn run lint --fix",
-    "format": "prettier --ignore-path .prettierignore --check \"**/*.+(js|ts|json)\"",
-    "format:check": "yarn run format",
-    "format:fix": "prettier --ignore-path .prettierignore --write \"**/*.+(js|ts|json)\""
-  },
   "devDependencies": {
     "@nx/esbuild": "20.0.11",
     "@nx/eslint": "20.0.11",
