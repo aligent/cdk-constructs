@@ -226,6 +226,12 @@ export type MeshHostingProps = {
    * @default - AWS Generated name
    */
   dashboardName?: string;
+
+  /**
+   * Enable ECS Exec on the fargate containers
+   * @default true
+   */
+  enableEcsExec?: boolean;
 };
 
 export class MeshHosting extends Construct {
