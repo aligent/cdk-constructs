@@ -10,7 +10,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+
+      - name: Fetch target
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}
 
       - name: Enable Corepack
         run: corepack enable
