@@ -6,7 +6,7 @@ import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
 import { FileSystem } from "aws-cdk-lib/aws-efs";
 import { FargateService, MountPoint } from "aws-cdk-lib/aws-ecs";
-import path = require("path");
+import * as path from "path";
 import { PolicyStatement } from "aws-cdk-lib/aws-iam";
 
 interface MaintenanceProps {

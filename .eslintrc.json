@@ -51,6 +51,12 @@
           {
             "argsIgnorePattern": "^_"
           }
+        ],
+        "@nx/enforce-module-boundaries": [
+          "error",
+          {
+            "allow": ["@aligent/cdk-esbuild"]
+          }
         ]
       }
     },

@@ -42,7 +42,7 @@ export class CloudFrontCacheControl extends Construct {
                   options?.cacheKey ?? "x-prerender-requestid"
                 ),
                 "process.env.PRERENDER_CACHE_MAX_AGE": JSON.stringify(
-                  String(options?.maxAge) ?? "0"
+                  String(options?.maxAge ?? 0)
                 ),
               },
             }),
