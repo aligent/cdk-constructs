@@ -232,6 +232,12 @@ export interface MeshServiceProps {
    * }
    */
   cpuStepScalingOptions?: Partial<BasicStepScalingPolicyProps>;
+
+  /**
+   * Enable ECS Exec on the fargate containers
+   * @default true
+   */
+  enableEcsExec?: boolean;
 }
 
 export class MeshService extends Construct {
@@ -412,7 +418,7 @@ export class MeshService extends Construct {
         serviceName:
           props.serviceName !== undefined ? props.serviceName : undefined,
         certificate,
-        enableExecuteCommand: true,
+        enableExecuteCommand: props.enableEcsExec ?? true,
         cpu: props.cpu || 512, // 0.5 vCPU
         memoryLimitMiB: props.memory || 1024, // 1 GB
         taskDefinition: taskDefinition,
