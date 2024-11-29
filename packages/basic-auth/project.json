@@ -1,0 +1,33 @@
+{
+  "name": "basic-auth",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/basic-auth/lib",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "packages/basic-auth/index.ts",
+        "outputPath": "dist/basic-auth",
+        "tsConfig": "packages/basic-auth/tsconfig.app.json"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"]
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "packages/basic-auth/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs basic-auth {args.ver} {args.tag}",
+      "dependsOn": ["build"]
+    }
+  },
+  "tags": []
+}

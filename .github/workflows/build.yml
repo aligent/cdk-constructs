@@ -4,16 +4,29 @@ on: [pull_request]
 
 jobs:
   build:
+    name: 🏭 Build all packages
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
-        ref: ${{ github.event.release.target_commitish }}
-    - name: Use Node.js 20
-      uses: actions/setup-node@v1
-      with:
-        node-version: 20
-        registry-url: https://registry.npmjs.org/
-    - run: npm ci
-    - run: npm run lint:check && npm run format:check
-    - run: npm run build
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch target
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "yarn"
+
+      - name: Install
+        run: yarn install
+
+      - name: Build all packages
+        run: yarn nx run-many -t build
+
+      - run: yarn nx affected:lint --base=origin/${{ github.event.pull_request.base.ref }} --parallel --max-parallel=3 

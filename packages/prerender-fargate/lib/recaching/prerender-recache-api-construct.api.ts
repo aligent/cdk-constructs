@@ -175,6 +175,7 @@ const deleteCacheContentForUrls = async (
     },
   });
 
+  // eslint-disable-next-line @typescript-eslint/return-await
   return await s3Client.send(deleteObjects);
 };
 

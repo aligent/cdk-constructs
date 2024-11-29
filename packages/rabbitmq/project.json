@@ -1,0 +1,33 @@
+{
+  "name": "rabbitmq",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/rabbitmq/lib",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "packages/rabbitmq/index.ts",
+        "outputPath": "dist/rabbitmq",
+        "tsConfig": "packages/rabbitmq/tsconfig.app.json"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"]
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "packages/rabbitmq/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs rabbitmq {args.ver} {args.tag}",
+      "dependsOn": ["build"]
+    }
+  },
+  "tags": []
+}

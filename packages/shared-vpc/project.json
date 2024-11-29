@@ -1,0 +1,33 @@
+{
+  "name": "shared-vpc",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/shared-vpc/lib",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "packages/shared-vpc/index.ts",
+        "outputPath": "dist/shared-vpc",
+        "tsConfig": "packages/shared-vpc/tsconfig.app.json"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"]
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "packages/shared-vpc/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs shared-vpc {args.ver} {args.tag}",
+      "dependsOn": ["build"]
+    }
+  },
+  "tags": []
+}

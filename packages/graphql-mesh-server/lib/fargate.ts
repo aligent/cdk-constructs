@@ -24,7 +24,7 @@ import {
 } from "aws-cdk-lib/aws-autoscaling";
 import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
-import path = require("path");
+import * as path from "path";
 import { MetricOptions } from "aws-cdk-lib/aws-cloudwatch";
 
 export interface MeshServiceProps {

@@ -7,6 +7,15 @@
 node_modules/
 dist/
 
+# Yarn (https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored)
+.yarn/*
+!.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
 # Compiled Java class files
 *.class
 
@@ -60,3 +69,9 @@ cdk.out
 
 *.d.ts
 *.js
+
+
+
+.nx/cache
+.nx/workspace-data
+!jest.preset.js
