@@ -68,10 +68,12 @@ cdk.out
 *.tsbuildinfo
 
 *.d.ts
-*.js
 
 
 
 .nx/cache
 .nx/workspace-data
 !jest.preset.js
+
+# Used during the publish stage
+.npmignore

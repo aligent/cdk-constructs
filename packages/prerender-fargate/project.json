@@ -9,8 +9,10 @@
       "options": {
         "main": "packages/prerender-fargate/index.ts",
         "outputPath": "dist/prerender-fargate",
-        "tsConfig": "packages/prerender-fargate/tsconfig.app.json"
-      }
+        "tsConfig": "packages/prerender-fargate/tsconfig.app.json",
+        "assets": ["packages/prerender-fargate/lib/prerender/**"]
+      },
+      "dependsOn": ["merge-gitignore"]
     },
     "lint": {
       "executor": "@nx/eslint:lint",
@@ -27,6 +29,12 @@
     "publish": {
       "command": "node tools/scripts/publish.mjs prerender-fargate {args.ver} {args.tag}",
       "dependsOn": ["build"]
+    },
+    "merge-gitignore": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node tools/scripts/merge-gitignore.mjs prerender-fargate"
+      }
     }
   },
   "tags": []

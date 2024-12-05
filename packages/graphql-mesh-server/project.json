@@ -9,8 +9,10 @@
       "options": {
         "main": "packages/graphql-mesh-server/index.ts",
         "outputPath": "dist/graphql-mesh-server",
-        "tsConfig": "packages/graphql-mesh-server/tsconfig.app.json"
-      }
+        "tsConfig": "packages/graphql-mesh-server/tsconfig.app.json",
+        "assets": ["packages/graphql-mesh-server/assets/**"]
+      },
+      "dependsOn": ["merge-gitignore"]
     },
     "lint": {
       "executor": "@nx/eslint:lint",
@@ -27,6 +29,12 @@
     "publish": {
       "command": "node tools/scripts/publish.mjs graphql-mesh-server {args.ver} {args.tag}",
       "dependsOn": ["build"]
+    },
+    "merge-gitignore": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node tools/scripts/merge-gitignore.mjs graphql-mesh-server"
+      }
     }
   },
   "tags": []
