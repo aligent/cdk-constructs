@@ -51,6 +51,8 @@ function readIgnoreFile(fileName) {
         return path.join(fileRelativeDirectory, line);
       })
       .join("\n");
+  } else {
+    return "";
   }
 }
 
