@@ -9,8 +9,10 @@
       "options": {
         "main": "packages/cloudfront-security-headers/index.ts",
         "outputPath": "dist/cloudfront-security-headers",
-        "tsConfig": "packages/cloudfront-security-headers/tsconfig.app.json"
-      }
+        "tsConfig": "packages/cloudfront-security-headers/tsconfig.app.json",
+        "assets": ["packages/cloudfront-security-headers/lib/handlers/**"]
+      },
+      "dependsOn": ["merge-gitignore"]
     },
     "lint": {
       "executor": "@nx/eslint:lint",
@@ -27,6 +29,12 @@
     "publish": {
       "command": "node tools/scripts/publish.mjs cloudfront-security-headers {args.ver} {args.tag}",
       "dependsOn": ["build"]
+    },
+    "merge-gitignore": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node tools/scripts/merge-gitignore.mjs cloudfront-security-headers"
+      }
     }
   },
   "tags": []
