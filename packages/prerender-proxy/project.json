@@ -9,8 +9,10 @@
       "options": {
         "main": "packages/prerender-proxy/index.ts",
         "outputPath": "dist/prerender-proxy",
-        "tsConfig": "packages/prerender-proxy/tsconfig.app.json"
-      }
+        "tsConfig": "packages/prerender-proxy/tsconfig.app.json",
+        "assets": ["packages/prerender-proxy/lib/handlers/**"]
+      },
+      "dependsOn": ["merge-gitignore"]
     },
     "lint": {
       "executor": "@nx/eslint:lint",
@@ -30,6 +32,12 @@
     "publish": {
       "command": "node tools/scripts/publish.mjs prerender-proxy {args.ver} {args.tag}",
       "dependsOn": ["build"]
+    },
+    "merge-gitignore": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node tools/scripts/merge-gitignore.mjs prerender-proxy"
+      }
     }
   },
   "tags": []

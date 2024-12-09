@@ -9,8 +9,10 @@
       "options": {
         "main": "packages/static-hosting/index.ts",
         "outputPath": "dist/static-hosting",
-        "tsConfig": "packages/static-hosting/tsconfig.app.json"
-      }
+        "tsConfig": "packages/static-hosting/tsconfig.app.json",
+        "assets": ["packages/static-hosting/lib/handlers/**"]
+      },
+      "dependsOn": ["merge-gitignore"]
     },
     "lint": {
       "executor": "@nx/eslint:lint",
@@ -27,6 +29,12 @@
     "publish": {
       "command": "node tools/scripts/publish.mjs static-hosting {args.ver} {args.tag}",
       "dependsOn": ["build"]
+    },
+    "merge-gitignore": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node tools/scripts/merge-gitignore.mjs static-hosting"
+      }
     }
   },
   "tags": []
