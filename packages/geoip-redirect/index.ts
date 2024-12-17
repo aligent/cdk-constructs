@@ -1,3 +1,3 @@
-import { RedirectFunction } from "./lib/redirect-construct";
+import { RedirectFunction, GeoIpRegion, RedirectFunctionOptions } from "./lib/redirect-construct";
 
-export { RedirectFunction };
+export { RedirectFunction, GeoIpRegion, RedirectFunctionOptions };

@@ -5,12 +5,18 @@ import { Construct } from "constructs";
 import { join } from "path";
 import { Esbuild } from "@aligent/cdk-esbuild";
 
-export interface RedirectFunctionOptions {
-  redirectHost: string;
+export interface GeoIpRegion {
+  // The domain that services a region (www.example.com for US/CA www.example.com.au for AU/NZ)
+  regionDomain: string;
   // Case-sensitive regular expression matching cloudfront-viewer-country
-  supportedRegionsExpression: string;
+  supportedSubRegions: Record<string, string | undefined>;
+} // add an aboslute redirect URL such as yd.co.nz for eg
+
+export interface RedirectFunctionOptions {
+  supportedRegions: GeoIpRegion[]
   // default region code to use when not matched
-  defaultRegion: string;
+  defaultRegionCode: string;
+  defaultDomain: string;
 }
 
 export class RedirectFunction extends Construct {
@@ -37,10 +43,10 @@ export class RedirectFunction extends Construct {
             local: new Esbuild({
               entryPoints: [join(__dirname, "handlers/redirect.ts")],
               define: {
-                "process.env.REDIRECT_HOST": options.redirectHost,
+                "process.env.DEFAULT_DOMAIN": options.defaultDomain,
+                "process.env.DEFAULT_REGION": options.defaultRegionCode,
                 "process.env.SUPPORTED_REGIONS":
-                  options.supportedRegionsExpression,
-                "process.env.DEFAULT_REGION": options.defaultRegion,
+                  JSON.stringify(options.supportedRegions)
               },
             }),
           },
