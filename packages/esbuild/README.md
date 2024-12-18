@@ -1,9 +1,10 @@
 # ESbuild
-This repository provides a construct which runs the esbuild bundler for AWS through the ILocalBundling interface and allows AWS CDK's bundling process to use the esbuild tool to generate a bundled output
+Esbuild is a module bundler and minifier for JavaScript and CSS.
 
 ## Overview
+This repository provides a construct which runs the esbuild bundler for AWS through the ILocalBundling interface and allows AWS CDK's bundling process to use the esbuild tool to generate a bundled output
 
-## Usage and PrerenderFargateOptions
+## Usage and Default esbuild options
 ### `loglevels` (string)
 Options for the level of silence for esbuild warnings and/or error messages to the terminal
 
@@ -37,12 +38,16 @@ Default: **false**
 ### `minify` (booleans)
 Generated code will be minified instead of pretty-printed. Downloads faster, but harder to debug. Use minified codes in production but not in development.
 
-`minify` can be broken down into: 
-- `minifyWhitespace`
-- `minifyIdentifiers`
-- `minifySyntax`
-
 Default: **false**
+
+`minify` can be broken down into: 
+- `minifyWhitespace` (boolean)
+  - Default: **true**
+- `minifyIdentifiers` (boolean)
+  - Do not _minify_ identifiers. Exported 'handler' function name gets minified failing to start the lambda
+  - Default: **false**
+- `minifySyntax` (boolean)
+  - Default: **true**
 
 ### `platform` (string)
 Which platform esbuild's bundler will generate code for/
