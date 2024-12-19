@@ -1,8 +1,14 @@
 # ESbuild
 Esbuild is a module bundler and minifier for JavaScript and CSS.
 
+
+
 ## Overview
 This repository provides a construct which runs the esbuild bundler for AWS through the ILocalBundling interface and allows AWS CDK's bundling process to use the esbuild tool to generate a bundled output
+
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/esbuild/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/esbuild/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-esbuild?color=green)
+
+# CDK Constructs: Esbuild Package
 
 ## Usage and Default esbuild options
 ### `loglevels` (string)
