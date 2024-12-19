@@ -73,8 +73,6 @@ export class ExampleFunction extends Construct {
   constructor(scope: Construct, id: string) {
     super(scope, id);
 
-    const command = ["sh", "-c", 'echo "Docker build not supported. Please install esbuild."'];
-
     new Code(this, "example-function", {
       code: Code.fromAsset(join(__dirname, "handlers"), {
         assetHashType: AssetHashType.OUTPUT,
