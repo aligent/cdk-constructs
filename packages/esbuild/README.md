@@ -1,14 +1,10 @@
-# ESbuild
+# ESbuild 
 Esbuild is a module bundler and minifier for JavaScript and CSS.
-
-
 
 ## Overview
 This repository provides a construct which runs the esbuild bundler for AWS through the ILocalBundling interface and allows AWS CDK's bundling process to use the esbuild tool to generate a bundled output
 
 ![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/esbuild/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/esbuild/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-esbuild?color=green)
-
-# CDK Constructs: Esbuild Package
 
 ## Usage and Default esbuild options
 ### `loglevels` (string)
@@ -64,3 +60,46 @@ Which platform esbuild's bundler will generate code for/
 
 Default: **browser**
 
+## Example
+
+```
+import { join } from "path";
+import { AssetHashType, DockerImage } from "aws-cdk-lib";
+import { Code, Runtime, Version } from "aws-cdk-lib/aws-lambda";
+import { Construct } from "constructs";
+import { Esbuild } from "@aligent/cdk-esbuild";
+
+export class ExampleFunction extends Construct {
+  constructor(scope: Construct, id: string) {
+    super(scope, id);
+
+    const command = ["sh", "-c", 'echo "Docker build not supported. Please install esbuild."'];
+
+    new Code(this, "example-function", {
+      code: Code.fromAsset(join(__dirname, "handlers"), {
+        assetHashType: AssetHashType.OUTPUT,
+        bundling: {
+          command,
+          image: DockerImage.fromRegistry("busybox"),
+          local: new Esbuild({
+            entryPoints: [join(__dirname, "handlers/example.ts")],
+            define: {
+              "process.env.EXAMPLE_VAR": "exampleValue",
+            },
+          }),
+        },
+      }),
+      runtime: Runtime.NODEJS_18_X,
+      handler: "example.handler",
+    });
+  }
+
+  public getFunctionVersion(): Version {
+    return Version.fromVersionArn(
+      this,
+      "example-function-version",
+      this.exampleFunction.currentVersion.versionArn
+    );
+  }
+}
+```
