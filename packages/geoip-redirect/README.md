@@ -8,7 +8,7 @@ This library provides a construct which creates a Lambda@Edge function to perfor
 
 These functions are intended to be added to an existing Cloudfront distribution. When the Lambda@Edge function is triggered, the function is passed the CloudFrontRequestEvent.
 
-The Lambda@Edge function will check if the viewer's country code matches any supported regions:
+The Lambda@Edge function will check if the viewer's country code matches any supported regions. The country code is from each request is pulled from the `cloudfront-viewer-country` header:
 - if they do, they are redirected to `${redirectURL}${countryCode.toLowerCase()}${request.uri}`
 - if they do not, they are redirected to `${redirectURL}${DEFAULT_REGION.toLowerCase()}${request.uri}`
 
