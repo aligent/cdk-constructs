@@ -84,7 +84,7 @@ Default: **/index.html**
 
 ### `enableStaticFileRemap` (boolean)
 
-- CCreate behaviours for the following file extensions to route straight to the S3 origin:
+- Create behaviours for the following file extensions to route straight to the S3 origin:
   - js, css, json, svg, jpg, jpeg, png, gif, ico, woff, woff2, otf
 
 Default: **true**
@@ -136,7 +136,7 @@ Default: **true**
 
 ### `disableCSP` (boolean)
 
-- EDisable the use of the CSP header
+- Disable the use of the CSP header
 
 Default: **false**
 
