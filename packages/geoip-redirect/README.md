@@ -38,4 +38,3 @@ define: {
                 "process.env.DEFAULT_REGION": options.defaultRegion,
               },
 ```
-
