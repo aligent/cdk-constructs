@@ -4,16 +4,17 @@
 
 ## Overview
 
-This library provides a construct which creates a Lambda@Edge function to perform GeoIP redirects. The Aligent Esbuild CDK construct is used to builde the handler function from `handler/redirect.ts`.
+This library provides a construct which creates a Lambda@Edge function to perform GeoIP redirects. The Aligent Esbuild CDK construct is used to bundle the handler function from `handler/redirect.ts`.
 
 These functions are intended to be added to an existing Cloudfront distribution. When the Lambda@Edge function is triggered, the function is passed the CloudFrontRequestEvent.
 
-The Lambda@Edge function will check if the viewer's country code matches any supported regions. The country code is from each request is pulled from the `cloudfront-viewer-country` header:
-- if they do, they are redirected to `${redirectURL}${countryCode.toLowerCase()}${request.uri}`
-- if they do not, they are redirected to `${redirectURL}${DEFAULT_REGION.toLowerCase()}${request.uri}`
+The Lambda@Edge function will check if the viewer's country code matches any supported regions. The country code from each request is pulled from the `cloudfront-viewer-country` header:
+- if they match, they are redirected to `${redirectURL}${countryCode.toLowerCase()}${request.uri}`
+- if they do not match, they are redirected to `${redirectURL}${DEFAULT_REGION.toLowerCase()}${request.uri}`
 
 The `DEFAULT_REGION` is set as an option in the Lambda@Edge handler code
 
+## Diagram
 
 ![geoip lambda@edge diagram](docs/geoip-redirect.drawio.png)
 
