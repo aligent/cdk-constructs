@@ -43,9 +43,9 @@ export class RedirectFunction extends Construct {
             local: new Esbuild({
               entryPoints: [join(__dirname, "handlers/redirect.ts")],
               define: {
-                "process.env.DEFAULT_DOMAIN": options.defaultDomain,
-                "process.env.DEFAULT_REGION": options.defaultRegionCode,
-                "process.env.SUPPORTED_REGIONS":
+                "process.env.DEFAULT_DOMAIN": JSON.stringify(options.defaultDomain),
+                "process.env.DEFAULT_REGION_CODE": JSON.stringify(options.defaultRegionCode),
+                "process.env.SUPPORTED_REGIONS": // find out if this is passing as string or not, cloudW says not
                   JSON.stringify(options.supportedRegions)
               },
             }),
@@ -58,7 +58,7 @@ export class RedirectFunction extends Construct {
   }
 
   public getFunctionVersion(): IVersion {
-    return Version.fromVersionArn(
+    return Version.fromVersionArn( // SEE THE README ON YOUR DESKTOP (AND DELETE THESE COMMENTS)
       this,
       "redirect-fn-version",
       this.edgeFunction.currentVersion.edgeArn

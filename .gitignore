@@ -77,3 +77,4 @@ cdk.out
 
 # Used during the publish stage
 .npmignore
+*.tgz
