@@ -9,7 +9,7 @@ export interface GeoIpRegion {
   // The domain that services a region (www.example.com for US/CA www.example.com.au for AU/NZ)
   regionDomain: string;
   // Case-sensitive regular expression matching cloudfront-viewer-country
-  supportedSubRegions: Record<string, string | undefined>;
+  supportedSubRegions: Record<string, string | null>;
 } // add an aboslute redirect URL such as yd.co.nz for eg
 
 export interface RedirectFunctionOptions {
@@ -41,6 +41,10 @@ export class RedirectFunction extends Construct {
             command,
             image: DockerImage.fromRegistry("busybox"),
             local: new Esbuild({
+
+              minify: false,
+              minifyWhitespace: false,
+              minifySyntax: false,
               entryPoints: [join(__dirname, "handlers/redirect.ts")],
               define: {
                 "process.env.DEFAULT_DOMAIN": JSON.stringify(options.defaultDomain),
