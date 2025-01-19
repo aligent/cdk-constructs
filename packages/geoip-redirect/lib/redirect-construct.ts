@@ -48,9 +48,14 @@ export class RedirectFunction extends Construct {
             local: new Esbuild({
               entryPoints: [join(__dirname, "handlers/redirect.ts")],
               define: {
-                "process.env.DEFAULT_DOMAIN": JSON.stringify(options.defaultDomain),
-                "process.env.DEFAULT_REGION_CODE": JSON.stringify(options.defaultRegionCode.toLowerCase()),
-                "process.env.SUPPORTED_REGIONS": JSON.stringify(options.supportedRegions) ?? "{}"
+                "process.env.DEFAULT_DOMAIN": JSON.stringify(
+                  options.defaultDomain
+                ),
+                "process.env.DEFAULT_REGION_CODE": JSON.stringify(
+                  options.defaultRegionCode.toLowerCase()
+                ),
+                "process.env.SUPPORTED_REGIONS":
+                  JSON.stringify(options.supportedRegions) ?? "{}",
               },
             }),
           },
