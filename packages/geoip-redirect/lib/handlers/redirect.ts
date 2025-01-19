@@ -20,7 +20,7 @@ export const handler = async (
   options.defaultRegionCode = process.env.DEFAULT_REGION_CODE ?? "";
   const defaultRegion = options.defaultRegionCode.split("|")[0].toLowerCase();
   options.supportedRegions = {
-    ...process.env.SUPPORTED_REGIONS as Record<string, DomainOverwrite> ?? "{}",
+    ...process.env.SUPPORTED_REGIONS as Record<string, string> ?? "{}",
     ...{ [options.defaultRegionCode]: options.defaultDomain }
   };
 

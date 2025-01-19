@@ -5,8 +5,6 @@ import { Construct } from "constructs";
 import { join } from "path";
 import { Esbuild } from "@aligent/cdk-esbuild";
 
-export type DomainOverwrite = string | null
-
 /**
  * The default region, domain, and other supported regions for a website to redirect to.
  */
@@ -15,7 +13,7 @@ export interface RedirectFunctionOptions {
    * Regex formatted string to match region codes and redirect to the DomainOverwrite destination.
    * @default undefined
    */
-  supportedRegions?: Record<string, DomainOverwrite>;
+  supportedRegions?: Record<string, string>;
   /**
    * Regex for supported domain paths on the default domain eg .com/au
    */
@@ -48,10 +46,6 @@ export class RedirectFunction extends Construct {
             command,
             image: DockerImage.fromRegistry("busybox"),
             local: new Esbuild({
-
-              minify: false,
-              minifyWhitespace: false,
-              minifySyntax: false,
               entryPoints: [join(__dirname, "handlers/redirect.ts")],
               define: {
                 "process.env.DEFAULT_DOMAIN": JSON.stringify(options.defaultDomain),
@@ -68,7 +62,7 @@ export class RedirectFunction extends Construct {
   }
 
   public getFunctionVersion(): IVersion {
-    return Version.fromVersionArn( // SEE THE README ON YOUR DESKTOP (AND DELETE THESE COMMENTS)
+    return Version.fromVersionArn(
       this,
       "redirect-fn-version",
       this.edgeFunction.currentVersion.edgeArn
