@@ -20,32 +20,33 @@ interface RedirectFunctionOptions {
 }
 ```
 
-| Property            | Definition                                                                                                                                                                        |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| `supportedRegions`  | A record with domain codes as a key (regex) and a domain to redirect to as a value                                                                                                |
-| `defaultRegionCode` | The default region code(s) as regex. These are the regions supported by `defaultDomain`. When multiple codes are used the default will be the first code the default site eg. `AU | NZ`will treat`AU` as the default |
-| `defaultDomain`     | The website's main domain. This will act as a fallback for any unsupported regions                                                                                                |
+| Property | Definition |
+| -------- | ---------- |
+| `supportedRegions`  | A record with domain codes as a key (regex) and a domain to redirect to as a value |
+| `defaultRegionCode` | The default region code(s) as regex. These are the regions supported by `defaultDomain`. When multiple codes are used the default will be the first code the default site eg. `AU,NZ` will treat `AU` as the default |
+| `defaultDomain`     | The website's main domain. This will act as a fallback for any unsupported regions |
+| `enablePathRedirect` | Will toggle adding a path suffix for a region such as `.com/au` or whether it should just be `.com` |
 
 ### Using this package
 
 The two main ways you can use this package are as follows:
-First off your website has a basic domain let's say `www.iamawesome.com` and you serve all content for all regions of the world here such as `www.iamawesome.com/us` or `www.iamawesome.com/au`. For this approach you should use the below method
+First off your website has a basic domain let's say `www.aligent.com.au` and you serve all content for all regions of the world here such as `www.aligent.com.au/au` or `www.aligent.com.au/nz`. For this approach you should use the below method
 
 ```
 redirectBehaviourOptions: {
-	defaultDomain: "www.iamawesome.com",
-	defaultRegionCode: "AU|US",
+	defaultDomain: "www.iamawesome.com/au",
+	defaultRegionCode: "AU,NZ",
 }
 ```
 
-Any region codes that are regexed to be `XX|YY` (note the pipe `|`) will automatically add the matching region as a path suffix to the url.
+Any region codes that are regexed to be `XX,YY` (note the comma `,`) will automatically add the matching region as a path suffix to the url.
 
-However perhaps you also have `www.iamawesome.co.nz`. How to redirect to a website that is different from the base domain? To achieve this, you can "hardcode" a domain for a region to use by using the `supportedRegions` value.
+However in order to redirect to a website that is different from the base domain such as `www.aligent.co.nz` you can "hardcode" a domain for a region to use by using the `supportedRegions` value.
 
 ```
 redirectBehaviourOptions: {
 	defaultDomain: "www.example.com",
-	defaultRegionCode: "AU|US",
+	defaultRegionCode: "AU,US",
 	supportedRegions: { "NZ": "www.example.co.nz" }
 }
 ```

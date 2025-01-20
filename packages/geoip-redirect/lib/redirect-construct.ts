@@ -22,6 +22,11 @@ export interface RedirectFunctionOptions {
    * Default domain to redirect to unless otherwise specified.
    */
   defaultDomain: string;
+  /**
+   * Toggle whether to use a path suffix for a region such as `.com/au` or just `.com`  .
+   * @default false
+   */
+  enablePathRedirect?: boolean;
 }
 
 export class RedirectFunction extends Construct {
@@ -46,16 +51,23 @@ export class RedirectFunction extends Construct {
             command,
             image: DockerImage.fromRegistry("busybox"),
             local: new Esbuild({
+              minify: false,
+              minifySyntax: false,
+              minifyWhitespace: false,
               entryPoints: [join(__dirname, "handlers/redirect.ts")],
               define: {
                 "process.env.DEFAULT_DOMAIN": JSON.stringify(
                   options.defaultDomain
                 ),
                 "process.env.DEFAULT_REGION_CODE": JSON.stringify(
-                  options.defaultRegionCode.toLowerCase()
-                ),
-                "process.env.SUPPORTED_REGIONS":
-                  JSON.stringify(options.supportedRegions) ?? "{}",
+                  options.defaultRegionCode
+                ).toLowerCase(),
+                "process.env.SUPPORTED_REGIONS": JSON.stringify(
+                  options.supportedRegions
+                )?.toLowerCase(),
+                "process.env.ENABLE_PATH_REDIRECT": JSON.stringify(
+                  options.enablePathRedirect
+                )?.toLowerCase(),
               },
             }),
           },
