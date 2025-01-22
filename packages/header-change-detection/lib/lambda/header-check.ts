@@ -188,7 +188,7 @@ const dynamoBatchRequest = async (requestItems: Record<string, KeysAndAttributes
  * @param url the url to update - this is the primary key
  * @param attributes Record<string, AttributeValueUpdate>
  */
-const dynamoUpdateRequest = async (url: string, attributes: Record<string, AttributeValueUpdate>) => {
+const dynamoUpdateRequest = async (url: string, attributes: Record<string, AttributeValueUpdate>): Promise<UpdateItemCommandOutput> => {
   console.log(`Updating ${url} in table with: ${JSON.stringify(Object.entries(attributes))}`);
 
   const updateItemInput: UpdateItemCommandInput = {
