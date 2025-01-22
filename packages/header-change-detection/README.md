@@ -18,7 +18,7 @@ This service aims to comply with PCI DSS to cover the requirements outlined by s
 >     OR
 >   - Periodically (at the frequency defined in the entity’s targeted risk analysis, which is performed according to all elements specified in Requirement 12.3.1)
 
-## Default
+## Default config
 
 By default, the following headers are monitored:
 
@@ -35,6 +35,24 @@ By default, the following headers are monitored:
 - Permission-Policy
 - Cache-Control
 - Set-Cookie
+
+## Usage
+
+To include this in your CDK stack, add the following:
+
+```typescript
+// Import required packages
+import { SnsTopic } from "aws-cdk-lib/aws-events-targets";
+import { Topic } from "aws-cdk-lib/aws-sns";
+import { HeaderChangeDetection } from "@aligent/cdk-header-change-detection";
+
+// Create a new SNS topic
+const topic = new Topic(this, 'Topic');
+const snsTopic = new SnsTopic(topic);
+
+// Pass the required props
+new HeaderChangeDetection(this, 'HeaderChangeDetection', { snsTopic });
+```
 
 ## Local development
 
