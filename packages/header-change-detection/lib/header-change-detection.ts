@@ -9,6 +9,11 @@ import { Esbuild } from "@aligent/cdk-esbuild";
 
 export interface HeaderChangeDetectionProps {
   /**
+   * List of URLs to monitor for header changes
+   */
+  urls: string[];
+
+  /**
    * Optional list of additional headers to monitor
    * 
    * @default []
@@ -98,8 +103,8 @@ export class HeaderChangeDetection extends Construct {
         }
       }),
       environment: {
-        "URLS": "https://production.pwa.aligent.com.au/,https://production.pwa.aligent.com.au/checkout",
-        "HEADERS": defaultHeaders.join(','),
+        "URLS": props.urls.join(','),
+        "HEADERS": headers.join(','),
         "TABLE": table.tableName,
         "TOPIC_ARN": props.snsTopic.topic.topicArn
       }
