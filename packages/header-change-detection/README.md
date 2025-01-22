@@ -2,7 +2,11 @@
 
 ## Overview
 
-Creates a Lambda function that periodically scans security headers and 
+Creates a Lambda function that periodically scans security headers and sends the results to SNS.
+
+### Diagram
+
+![diagram](docs/diagram.jpg)
 
 This service aims to comply with PCI DSS to cover the requirements outlined by section 11.6.1.
 
@@ -33,6 +37,7 @@ By default, the following headers are monitored:
 - Set-Cookie
 
 ## Local development
+
 [NPM link](https://docs.npmjs.com/cli/v7/commands/npm-link) can be used to develop the module locally.
 1. Pull this repository locally
 2. `cd` into this repository
