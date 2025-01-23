@@ -1,5 +1,5 @@
 import axios from "axios";
-import { DynamoDBClient, BatchGetItemCommand, BatchGetItemCommandInput, KeysAndAttributes, UpdateItemCommandInput, UpdateItemCommand, AttributeValueUpdate } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, BatchGetItemCommand, BatchGetItemCommandInput, KeysAndAttributes, UpdateItemCommandInput, UpdateItemCommand, AttributeValueUpdate, UpdateItemCommandOutput } from "@aws-sdk/client-dynamodb";
 import { PublishCommand, PublishInput, SNSClient } from "@aws-sdk/client-sns";
 
 const URLS = process.env.URLS;
@@ -24,18 +24,18 @@ export const handler = async () => {
   ]);
 
   // Find any differences between the headers
-  const headerDifferences = new Map() as Map<string, Difference[]>;
+  const headerDifferences = new Map<string, Difference[]>();
   let differencesDetected = false;
   const dbUpdates = urls.map(url => {
-    const currentHeaders = currentUrlHeaders.get(url)
-    const storedHeaders = storedUrlHeaders.get(url) || new Map()
+    const currentHeaders = currentUrlHeaders.get(url);
+    const storedHeaders = storedUrlHeaders.get(url) || new Map<string, string | undefined>();
 
-    if (!currentHeaders) throw new Error(`Could not get current headers for ${url}`)
+    if (!currentHeaders) throw new Error(`Could not get current headers for ${url}`);
 
     // Check all headers that we care about
     headerDifferences.set(url, compareHeaders(securityHeaders, storedHeaders, currentHeaders));
 
-    const headersToUpdate: Headers = new Map();
+    const headersToUpdate: Headers = new Map<string, string | undefined>();
     headerDifferences.get(url)?.forEach(difference => {
       headersToUpdate.set(difference.header, difference.currentValue);
       differencesDetected = true;
@@ -55,13 +55,13 @@ export const handler = async () => {
  *
  * @param urls list of urls to fetch headers from
  */
-const fetchHeaders = async (urls: string[]) => {
-  const currentUrlHeaders: URLHeaders = new Map() as URLHeaders;
+const fetchHeaders = async (urls: string[]): Promise<URLHeaders> => {
+  const currentUrlHeaders: URLHeaders = new Map<string, Headers>();
 
   // Make an axios request for each url
   await Promise.all(urls.map(url => axios.get(url).then(response => {
     // Then get all the security headers from each response
-    const headers: Headers = new Map() as Headers;
+    const headers: Headers = new Map<string, string | undefined>();
 
     Object.entries(response.headers).forEach(([headerName, value]) => {
       if (securityHeaders?.includes(headerName))
@@ -85,7 +85,7 @@ const fetchHeaders = async (urls: string[]) => {
 const getStoredValues = async (keys: string[]): Promise<URLHeaders> => {
   if (keys.length === 0) {
     console.log("No keys were passed")
-    return new Map();
+    return new Map<string, Headers>();
   }
 
   // Construct the command input
@@ -112,7 +112,7 @@ const getStoredValues = async (keys: string[]): Promise<URLHeaders> => {
  * @param url the url to update - this is the primary key
  * @param headers record of headers to update
  */
-const updateStoredValues = async (url: string, headers: Headers) => {
+const updateStoredValues = async (url: string, headers: Headers): Promise<UpdateItemCommandOutput | undefined> => {
   // Convert headers to attribute value update attributes
   const attributes: Record<string, AttributeValueUpdate> = {};
   headers.forEach((value, headerName) => {
@@ -149,7 +149,7 @@ const dynamoBatchRequest = async (requestItems: Record<string, KeysAndAttributes
   console.log(`Starting batch request with items: ${JSON.stringify(requestItems)}`);
 
   // Validate that request items has values
-  if (Object.keys(requestItems || {})?.length === 0) return new Map();
+  if (Object.keys(requestItems || {})?.length === 0) return new Map<string, Headers>();
 
   const batchGetInput: BatchGetItemCommandInput = { RequestItems: requestItems }
   const batchGetCommand = new BatchGetItemCommand(batchGetInput);
@@ -160,9 +160,9 @@ const dynamoBatchRequest = async (requestItems: Record<string, KeysAndAttributes
 
   console.log(`Got following data from dynamo table: ${JSON.stringify(responses)}`);
 
-  const storedUrlHeaders: URLHeaders = new Map() as URLHeaders;
+  const storedUrlHeaders: URLHeaders = new Map<string, Headers>();
   Object.values(responses).forEach(headers => {
-    const urlHeaders: Headers = new Map() as Headers;
+    const urlHeaders: Headers = new Map<string, string | undefined>();
 
     let url = '';
     Object.entries(headers).forEach(([headerName, value]) => {
@@ -179,7 +179,7 @@ const dynamoBatchRequest = async (requestItems: Record<string, KeysAndAttributes
   const nextUrlHeaders = await dynamoBatchRequest(response.UnprocessedKeys);
 
   // Merge data into one object and return
-  return new Map([...storedUrlHeaders, ...nextUrlHeaders]);
+  return new Map<string, Headers>([...storedUrlHeaders, ...nextUrlHeaders]);
 }
 
 /**
