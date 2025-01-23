@@ -3,7 +3,7 @@
   "version": "2.2.0",
   "main": "index.js",
   "license": "GPL-3.0-only",
-  "homepage": "https://github.com/aligent/aws-cdk-header-change-detection-stack#readme",
+  "homepage": "https://github.com/aligent/cdk-constructs/packages/header-change-detection-stack#readme",
   "repository": {
     "type": "git",
     "url": "https://github.com/aligent/aws-cdk-header-change-detection-stack"
