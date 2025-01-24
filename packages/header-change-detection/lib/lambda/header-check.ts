@@ -12,6 +12,8 @@ const DB_CLIENT = new DynamoDBClient(config);
 const securityHeaders = HEADERS?.split(",") || []
 
 type Headers = Map<string, string | undefined>
+
+// A map of URLs and their headers
 type URLHeaders = Map<string, Headers>
 
 export const handler = async () => {
