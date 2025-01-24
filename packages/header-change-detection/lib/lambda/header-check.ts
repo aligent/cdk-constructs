@@ -1,28 +1,40 @@
+// We know the environment variables will exist so safe to ignore this
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 import axios from "axios";
-import { DynamoDBClient, BatchGetItemCommand, BatchGetItemCommandInput, KeysAndAttributes, UpdateItemCommandInput, UpdateItemCommand, AttributeValueUpdate, UpdateItemCommandOutput } from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDBClient,
+  BatchGetItemCommand,
+  BatchGetItemCommandInput,
+  KeysAndAttributes,
+  UpdateItemCommandInput,
+  UpdateItemCommand,
+  AttributeValueUpdate,
+  UpdateItemCommandOutput,
+} from "@aws-sdk/client-dynamodb";
 import { PublishCommand, PublishInput, SNSClient } from "@aws-sdk/client-sns";
 
 const URLS = process.env.URLS;
 const HEADERS = process.env.HEADERS;
 const TABLE = process.env.TABLE!;
 
-const config = ""
+const config = "";
 const DB_CLIENT = new DynamoDBClient(config);
 
-const securityHeaders = HEADERS?.split(",") || []
+const securityHeaders = HEADERS?.split(",") || [];
 
-type Headers = Map<string, string | undefined>
+type Headers = Map<string, string | undefined>;
 
 // A map of URLs and their headers
-type URLHeaders = Map<string, Headers>
+type URLHeaders = Map<string, Headers>;
 
 export const handler = async () => {
-  const urls = URLS?.split(',') || [];
+  const urls = URLS?.split(",") || [];
 
   // Fetch stored headers
   const [storedUrlHeaders, currentUrlHeaders] = await Promise.all([
     getStoredValues(urls),
-    fetchHeaders(urls)
+    fetchHeaders(urls),
   ]);
 
   // Find any differences between the headers
@@ -30,12 +42,17 @@ export const handler = async () => {
   let differencesDetected = false;
   const dbUpdates = urls.map(url => {
     const currentHeaders = currentUrlHeaders.get(url);
-    const storedHeaders = storedUrlHeaders.get(url) || new Map<string, string | undefined>();
+    const storedHeaders =
+      storedUrlHeaders.get(url) || new Map<string, string | undefined>();
 
-    if (!currentHeaders) throw new Error(`Could not get current headers for ${url}`);
+    if (!currentHeaders)
+      throw new Error(`Could not get current headers for ${url}`);
 
     // Check all headers that we care about
-    headerDifferences.set(url, compareHeaders(securityHeaders, storedHeaders, currentHeaders));
+    headerDifferences.set(
+      url,
+      compareHeaders(securityHeaders, storedHeaders, currentHeaders)
+    );
 
     const headersToUpdate: Headers = new Map<string, string | undefined>();
     headerDifferences.get(url)?.forEach(difference => {
@@ -44,7 +61,7 @@ export const handler = async () => {
     });
 
     return updateStoredValues(url, headersToUpdate);
-  })
+  });
 
   await Promise.all(dbUpdates);
 
@@ -61,20 +78,24 @@ const fetchHeaders = async (urls: string[]): Promise<URLHeaders> => {
   const currentUrlHeaders: URLHeaders = new Map<string, Headers>();
 
   // Make an axios request for each url
-  await Promise.all(urls.map(url => axios.get(url).then(response => {
-    // Then get all the security headers from each response
-    const headers: Headers = new Map<string, string | undefined>();
+  await Promise.all(
+    urls.map(url =>
+      axios.get(url).then(response => {
+        // Then get all the security headers from each response
+        const headers: Headers = new Map<string, string | undefined>();
 
-    Object.entries(response.headers).forEach(([headerName, value]) => {
-      if (securityHeaders?.includes(headerName))
-        headers.set(headerName, value as string);
-    });
+        Object.entries(response.headers).forEach(([headerName, value]) => {
+          if (securityHeaders?.includes(headerName))
+            headers.set(headerName, value as string);
+        });
 
-    currentUrlHeaders.set(url, headers);
-  })));
+        currentUrlHeaders.set(url, headers);
+      })
+    )
+  );
 
   return currentUrlHeaders;
-}
+};
 
 /**
  * Get values stored in DynamoDB table from a list of string keys.
@@ -86,7 +107,7 @@ const fetchHeaders = async (urls: string[]): Promise<URLHeaders> => {
  */
 const getStoredValues = async (keys: string[]): Promise<URLHeaders> => {
   if (keys.length === 0) {
-    console.log("No keys were passed")
+    console.log("No keys were passed");
     return new Map<string, Headers>();
   }
 
@@ -94,18 +115,18 @@ const getStoredValues = async (keys: string[]): Promise<URLHeaders> => {
   const primaryKeys = keys.map(url => {
     return {
       Url: {
-        "S": url
-      }
-    }
-  })
+        S: url,
+      },
+    };
+  });
   const requestItems = {
     [TABLE]: {
-      "Keys": primaryKeys
-    }
-  }
+      Keys: primaryKeys,
+    },
+  };
 
   return dynamoBatchRequest(requestItems);
-}
+};
 
 /**
  * Update stored headers for the given url.
@@ -114,7 +135,10 @@ const getStoredValues = async (keys: string[]): Promise<URLHeaders> => {
  * @param url the url to update - this is the primary key
  * @param headers record of headers to update
  */
-const updateStoredValues = async (url: string, headers: Headers): Promise<UpdateItemCommandOutput | undefined> => {
+const updateStoredValues = async (
+  url: string,
+  headers: Headers
+): Promise<UpdateItemCommandOutput | undefined> => {
   // Convert headers to attribute value update attributes
   const attributes: Record<string, AttributeValueUpdate> = {};
   headers.forEach((value, headerName) => {
@@ -122,14 +146,14 @@ const updateStoredValues = async (url: string, headers: Headers): Promise<Update
     if (value) {
       attributes[headerName] = {
         Value: {
-          "S": value
+          S: value,
         },
-        Action: 'PUT'
-      }
+        Action: "PUT",
+      };
     } else {
       attributes[headerName] = {
-        Action: 'DELETE'
-      }
+        Action: "DELETE",
+      };
     }
   });
 
@@ -139,7 +163,7 @@ const updateStoredValues = async (url: string, headers: Headers): Promise<Update
   }
 
   return dynamoUpdateRequest(url, attributes);
-}
+};
 
 /**
  * Recursive function to get multiple items from a DynamoDB table
@@ -147,26 +171,37 @@ const updateStoredValues = async (url: string, headers: Headers): Promise<Update
  * @param requestItems
  * @returns Promise<URLHeaders>
  */
-const dynamoBatchRequest = async (requestItems: Record<string, KeysAndAttributes> | undefined): Promise<URLHeaders> => {
-  console.log(`Starting batch request with items: ${JSON.stringify(requestItems)}`);
+const dynamoBatchRequest = async (
+  requestItems: Record<string, KeysAndAttributes> | undefined
+): Promise<URLHeaders> => {
+  console.log(
+    `Starting batch request with items: ${JSON.stringify(requestItems)}`
+  );
 
   // Validate that request items has values
-  if (Object.keys(requestItems || {})?.length === 0) return new Map<string, Headers>();
+  if (Object.keys(requestItems || {})?.length === 0)
+    return new Map<string, Headers>();
 
-  const batchGetInput: BatchGetItemCommandInput = { RequestItems: requestItems }
+  const batchGetInput: BatchGetItemCommandInput = {
+    RequestItems: requestItems,
+  };
   const batchGetCommand = new BatchGetItemCommand(batchGetInput);
 
   // Fetch stored stored headers
   const response = await DB_CLIENT.send(batchGetCommand);
-  const responses = response.Responses?.[TABLE]!;
+  const responses = response.Responses?.[TABLE];
 
-  console.log(`Got following data from dynamo table: ${JSON.stringify(responses)}`);
+  if (!responses) return new Map<string, Headers>();
+
+  console.log(
+    `Got following data from dynamo table: ${JSON.stringify(responses)}`
+  );
 
   const storedUrlHeaders: URLHeaders = new Map<string, Headers>();
   Object.values(responses).forEach(headers => {
     const urlHeaders: Headers = new Map<string, string | undefined>();
 
-    let url = '';
+    let url = "";
     Object.entries(headers).forEach(([headerName, value]) => {
       if (headerName === "Url") {
         url = value.S!;
@@ -182,7 +217,7 @@ const dynamoBatchRequest = async (requestItems: Record<string, KeysAndAttributes
 
   // Merge data into one object and return
   return new Map<string, Headers>([...storedUrlHeaders, ...nextUrlHeaders]);
-}
+};
 
 /**
  * Send an update command to DynamoDB
@@ -190,27 +225,32 @@ const dynamoBatchRequest = async (requestItems: Record<string, KeysAndAttributes
  * @param url the url to update - this is the primary key
  * @param attributes Record<string, AttributeValueUpdate>
  */
-const dynamoUpdateRequest = async (url: string, attributes: Record<string, AttributeValueUpdate>): Promise<UpdateItemCommandOutput> => {
-  console.log(`Updating ${url} in table with: ${JSON.stringify(Object.entries(attributes))}`);
+const dynamoUpdateRequest = async (
+  url: string,
+  attributes: Record<string, AttributeValueUpdate>
+): Promise<UpdateItemCommandOutput> => {
+  console.log(
+    `Updating ${url} in table with: ${JSON.stringify(Object.entries(attributes))}`
+  );
 
   const updateItemInput: UpdateItemCommandInput = {
     TableName: TABLE,
     Key: {
       Url: {
-        "S": url
-      }
+        S: url,
+      },
     },
-    AttributeUpdates: attributes
+    AttributeUpdates: attributes,
   };
   const updateItemCommand = new UpdateItemCommand(updateItemInput);
 
   return DB_CLIENT.send(updateItemCommand);
-}
+};
 
 interface Difference {
-  header: string
-  storedValue: string | undefined
-  currentValue: string | undefined
+  header: string;
+  storedValue: string | undefined;
+  currentValue: string | undefined;
 }
 
 /**
@@ -222,7 +262,11 @@ interface Difference {
  * @param current list of headers currently on the site
  * @returns
  */
-const compareHeaders = (headers: string[], stored: Headers, current: Headers): Difference[] => {
+const compareHeaders = (
+  headers: string[],
+  stored: Headers,
+  current: Headers
+): Difference[] => {
   const differences: Difference[] = [];
 
   headers.forEach(header => {
@@ -233,13 +277,13 @@ const compareHeaders = (headers: string[], stored: Headers, current: Headers): D
       differences.push({
         header,
         storedValue: storedValue,
-        currentValue: currentValue
+        currentValue: currentValue,
       });
     }
-  })
+  });
 
   return differences;
-}
+};
 
 /**
  * Format the differences so they can be easily read in an email.
@@ -275,14 +319,14 @@ const formatDifferences = (differences: Map<string, Difference[]>): string => {
 
     // Format headers nicely
     const headers = differences.get(url)?.reduce((headerText, header) => {
-      return headerText += `\r\nHeader: ${header.header}\r\nStored Value: ${header.storedValue}\r\nCurrent Value: ${header.currentValue}\r\n`;
+      return (headerText += `\r\nHeader: ${header.header}\r\nStored Value: ${header.storedValue}\r\nCurrent Value: ${header.currentValue}\r\n`);
     }, "");
 
-    return `${text}\r\n=== ${url} ===\r\n ${headers}`
+    return `${text}\r\n=== ${url} ===\r\n ${headers}`;
   }, "");
 
   return `Header differences found${message}`;
-}
+};
 
 const TOPIC_ARN = process.env.TOPIC_ARN!;
 const SNS_CLIENT = new SNSClient();
@@ -295,8 +339,8 @@ const SNS_CLIENT = new SNSClient();
 const sendToSns = async (message: string) => {
   const publishInput: PublishInput = {
     TopicArn: TOPIC_ARN,
-    Message: message
+    Message: message,
   };
   const publishCommand = new PublishCommand(publishInput);
   await SNS_CLIENT.send(publishCommand);
-}
+};

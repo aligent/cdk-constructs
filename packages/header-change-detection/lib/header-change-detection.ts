@@ -15,14 +15,14 @@ export interface HeaderChangeDetectionProps {
 
   /**
    * Optional list of additional headers to monitor
-   * 
+   *
    * @default []
    */
   additionalHeaders?: string[];
 
   /**
    * Optionally disable all the default headers
-   * 
+   *
    * @default false
    */
   disableDefaults?: boolean;
@@ -30,19 +30,19 @@ export interface HeaderChangeDetectionProps {
   /**
    * SNS Topic to send change detection notifications to
    */
-  snsTopic: SnsTopic
+  snsTopic: SnsTopic;
 
   /**
    * The schedule for performing the header check
-   * 
+   *
    * @default Schedule.rate(Duration.hours(1))
    */
-  schedule?: Schedule
+  schedule?: Schedule;
 
   /**
-   * Optionally pass any rule properties 
+   * Optionally pass any rule properties
    */
-  ruleProps?: Partial<RuleProps>
+  ruleProps?: Partial<RuleProps>;
 }
 
 const command = [
@@ -52,44 +52,45 @@ const command = [
 ];
 
 const defaultHeaders = [
-  'content-security-policy',
-  'content-security-policy-report-only',
-  'reporting-endpoints',
-  'strict-transport-security',
-  'x-frame-options',
-  'x-content-type-options',
-  'cross-origin-opener-policy',
-  'cross-origin-embedder-policy',
-  'cross-origin-resource-policy',
-  'referrer-policy',
-  'permission-policy',
-  'cache-control',
-  'set-cookie',
-]
+  "content-security-policy",
+  "content-security-policy-report-only",
+  "reporting-endpoints",
+  "strict-transport-security",
+  "x-frame-options",
+  "x-content-type-options",
+  "cross-origin-opener-policy",
+  "cross-origin-embedder-policy",
+  "cross-origin-resource-policy",
+  "referrer-policy",
+  "permission-policy",
+  "cache-control",
+  "set-cookie",
+];
 
 export class HeaderChangeDetection extends Construct {
-
   constructor(scope: Construct, id: string, props: HeaderChangeDetectionProps) {
     super(scope, id);
 
     const headers = props.disableDefaults ? [] : defaultHeaders;
 
-    headers.push(...props.additionalHeaders?.map(header => header.toLowerCase()) || []);
+    headers.push(
+      ...(props.additionalHeaders?.map(header => header.toLowerCase()) || [])
+    );
 
-    const table = new Table(this, 'Table', {
+    const table = new Table(this, "Table", {
       partitionKey: {
-        name: 'Url',
-        type: AttributeType.STRING
+        name: "Url",
+        type: AttributeType.STRING,
       },
-      billingMode: BillingMode.PAY_PER_REQUEST
-    })
-
-    const schedule = new Rule(this, 'EventRule', {
-      schedule: props.schedule || Schedule.rate(Duration.hours(1)),
-      ...props.ruleProps
+      billingMode: BillingMode.PAY_PER_REQUEST,
     });
 
-    const lambda = new Function(this, 'HeaderCheck', {
+    const schedule = new Rule(this, "EventRule", {
+      schedule: props.schedule || Schedule.rate(Duration.hours(1)),
+      ...props.ruleProps,
+    });
+
+    const lambda = new Function(this, "HeaderCheck", {
       architecture: Architecture.X86_64,
       runtime: Runtime.NODEJS_20_X,
       handler: "header-check.handler",
@@ -99,15 +100,15 @@ export class HeaderChangeDetection extends Construct {
           image: DockerImage.fromRegistry("busybox"),
           local: new Esbuild({
             entryPoints: [join(__dirname, "lambda/header-check.ts")],
-          })
-        }
+          }),
+        },
       }),
       environment: {
-        "URLS": props.urls.join(','),
-        "HEADERS": headers.join(','),
-        "TABLE": table.tableName,
-        "TOPIC_ARN": props.snsTopic.topic.topicArn
-      }
+        URLS: props.urls.join(","),
+        HEADERS: headers.join(","),
+        TABLE: table.tableName,
+        TOPIC_ARN: props.snsTopic.topic.topicArn,
+      },
     });
 
     schedule.addTarget(new LambdaFunction(lambda));
