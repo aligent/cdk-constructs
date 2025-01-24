@@ -238,16 +238,16 @@ server.use({
       }
 
       let headerMatch = headerMatchRegex.exec(head);
-        while (headerMatch) {
-            const decoded = he.decode(headerMatch[2] || headerMatch[4])
-            if (headerMatch[1].toLowerCase() == "location") {
-                s3Metadata.location = decoded
-                if (!decoded.startsWith('http') && !decoded.startsWith('/')) {
-                    s3Metadata.location = '/' + s3Metadata.location
-                }
-            } else {
-                s3Metadata.location = ""
-            }
+      while (headerMatch) {
+        const decoded = he.decode(headerMatch[2] || headerMatch[4]);
+        if (headerMatch[1].toLowerCase() == "location") {
+          s3Metadata.location = decoded;
+          if (!decoded.startsWith("http") && !decoded.startsWith("/")) {
+            s3Metadata.location = "/" + s3Metadata.location;
+          }
+        } else {
+          s3Metadata.location = "";
+        }
         res.setHeader(headerMatch[1] || headerMatch[3], s3Metadata.location);
         req.prerender.content = req.prerender.content
           .toString()

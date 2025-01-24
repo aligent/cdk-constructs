@@ -1,0 +1,40 @@
+{
+  "name": "header-change-detection",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/header-change-detection/lib",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "packages/header-change-detection/index.ts",
+        "outputPath": "dist/header-change-detection",
+        "tsConfig": "packages/header-change-detection/tsconfig.app.json"
+      },
+      "dependsOn": ["merge-gitignore"]
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"]
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "packages/header-change-detection/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs header-change-detection {args.ver} {args.tag}",
+      "dependsOn": ["build"]
+    },
+    "merge-gitignore": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node tools/scripts/merge-gitignore.mjs header-change-detection"
+      }
+    }
+  },
+  "tags": []
+}
