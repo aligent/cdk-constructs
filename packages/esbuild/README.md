@@ -1,5 +1,5 @@
 # ESbuild 
-Esbuild is a module bundler and minifier for JavaScript and CSS.
+Esbuild is a module bundler and minifier for JavaScript/Typescript.
 
 ## Overview
 This repository provides a construct which runs the esbuild bundler for AWS through the ILocalBundling interface and allows AWS CDK's bundling process to use the esbuild tool to generate a bundled output
@@ -39,7 +39,7 @@ new Esbuild({
   },
 });
 ```
-where `process.env.EXAMPLE_VAR` is replace with `exampleValue`
+where `process.env.EXAMPLE_VAR` is replaced with `exampleValue`
 
 More information can be found at [Define - Esbuild](https://esbuild.github.io/api/#target:~:text=%23-,Define,-Supported%20by%3A)
 
@@ -55,7 +55,7 @@ Options for the level of silence for esbuild warnings and/or error messages to t
 Default: **info**
 
 ### `sourcemap` (boolean, default)
-Source maps encode the information necessary to translate from a line/column offset in a generate output file back to a line/column offset in the corresponding original input file. Supported for both Javascript and CSS
+Source maps encode the information necessary to translate from a line/column offset in a generate output file back to a line/column offset in the corresponding original input file. Supported for both Javascript/Typescript.
 
 - **true (linked)**
 (source map generated into seperate `.js.map` output file and `.js` contains special `//# sourceMappingURL =` comment that points to the `.js.map` output file)
