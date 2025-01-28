@@ -16,7 +16,7 @@ The function is intended to be added to an existing Cloudfront.
 #### **Value Directives**:
 
 - **`max-age=<expire-time>` (seconds):** 
-    - Time is set to 108000s seconds / 30 hours. Specify the length of time that the browser should remember that the site can be only accessed using HTTPS
+    - Time is set to 108000s seconds / 30 hours. Specifies the length of time the browser should remember that site can only be accessed using HTTPS
 
 - **`includeSubdomains` (boolean, optional):**
     - Option is specifcied. The rule will apply to all of the site's subdomains
@@ -36,13 +36,13 @@ The function is intended to be added to an existing Cloudfront.
     - Defined as an option in `index.ts`. See **Usage and Default Options** above.
 
 ### `headers["x-content-type-options"]`
-- Indicates that the MIME types advertised in the `Content-Type` headers should be respected and not changed
+- Indicates that the MIME types advertised in the `Content-Type` headers should be respected and not changed.
 #### **Value**:
 - **`nosniff` (boolean):**
     - Option is specified. Blocks a request if request destination is of type `style` and the MIME type is not `test/css` or of type `script` and the MIME type is not a JavaScript MIME type.
 
 ### `headers["x-frame-options"]`
-- Indicates whether a browser should be allowed to render a page in a `<frame>`, `<iframe>`, `<embed>` or `<object>`. Helps to avoid clickjacking attacks by ensuring content is not embedded other sides.
+- Indicates whether a browser should be allowed to render a page in a `<frame>`, `<iframe>`, `<embed>` or `<object>`. Helps to avoid clickjacking attacks by ensuring content is not embedded into other sites.
 #### **Value Directives**:
 - **`DENY`(boolean, optional):**
     - Option is specified. The page cannot be displayed in a frame, regardless of the site attempting to do so.
