@@ -1,0 +1,101 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+# Dependabot processes patterns in groups sequentially, assigning dependencies to the first matching group and excluding them from subsequent groups. 
+# The wildcard group will capture dependencies that haven't matched any of the previous groups, ensuring no duplicates while acting as a fallback for unclassified updates.
+
+version: 2
+updates:
+  # NPM dependencies configuration
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "aligent/aligent-devops"
+    target-branch: "dependabot-test"
+    open-pull-requests-limit: 10
+    ignore:                    # Ignore major version updates
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:     
+      # AWS-related dependencies
+      aws:
+        patterns:
+          - "aws-cdk*"
+          - "@aws-sdk*"
+          - "@aws*"
+          - "@types/aws*"
+          - "constructs"
+
+      # Prerender-related dependencies
+      prerender:
+        patterns:
+          - "prerender*"
+
+      # Esbuild dependencies
+      esbuild:
+        patterns:
+          - "esbuild"
+          - "@aligent/cdk-esbuild"
+          - "@nx/esbuild*"
+
+      # Testing-related dependencies
+      testing-tools:
+        patterns:
+          - "jest"
+          - "@types/jest"
+          - "ts-jest"
+          - "@nx/jest*"
+
+      # Development tool dependencies
+      dev-tools:
+        patterns:
+          - "@nx/*"
+          - "eslint*"
+          - "prettier*"
+          - "@typescript-eslint/*"
+          - "@types/*"
+          - "ts-*"
+
+      # Core TypeScript updates
+      typescript:
+        patterns:
+          - "typescript"
+
+      # Catch-all group for unclassified dependencies
+      other-dependencies:
+        patterns:
+          - "*"
+
+  # Docker dependencies configuration
+  - package-ecosystem: "docker"       # Docker image dependencies.
+    directories:                      # Directories to scan for Dockerfile.
+      - "/packages/prerender-fargate/lib/prerender"
+      - "/packages/graphql-mesh-server/assets/nginx"
+    schedule:
+      interval: "weekly"
+    reviewers:                        # Reviewers for Docker image updates.    
+      - "aligent/aligent-devops"
+    target-branch: "dependabot-test"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      shared-docker-images:           # Groups all Docker image updates into a single PR.
+        patterns:
+          - "*"
+
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"                    # Monitors all workflows in the repository.
+    schedule:
+      interval: "weekly"
+    reviewers:                        # Reviewers for Docker image updates.    
+      - "aligent/aligent-devops"
+    target-branch: "dependabot-test"
+    open-pull-requests-limit: 5
