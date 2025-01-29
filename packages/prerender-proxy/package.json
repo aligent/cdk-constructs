@@ -30,7 +30,7 @@
     "aws-cdk-lib": "2.113.0",
     "axios": "^1.5.1",
     "constructs": "^10.3.0",
-    "esbuild": "^0.17.0",
+    "esbuild": "^0.24.2",
     "source-map-support": "^0.5.21"
   }
 }
