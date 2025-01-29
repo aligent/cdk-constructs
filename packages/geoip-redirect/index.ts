@@ -1,3 +1,6 @@
-import { RedirectFunction } from "./lib/redirect-construct";
+import {
+  RedirectFunction,
+  RedirectFunctionOptions,
+} from "./lib/redirect-construct";
 
-export { RedirectFunction };
+export { RedirectFunction, RedirectFunctionOptions };
