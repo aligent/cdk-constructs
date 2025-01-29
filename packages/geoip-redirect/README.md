@@ -8,6 +8,9 @@ This library provides a construct which creates a Lambda@Edge which is intended 
 
 The Lambda@Edge function will check if the viewer's country code matches any supported regions. The user's country code for each request is pulled from the `cloudfront-viewer-country`. The construct will match the code to the record with the corresponding regex lookup.
 
+## Digram
+![geoip lambda@edge diagram](docs/geoip-redirect.drawio.png)
+
 ## Usage and Default Geo-IP Redirect options
 
 ### `redirectHost` (string)
