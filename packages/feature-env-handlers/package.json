@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/aligent/cdk-constructs#readme",
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.122"
+    "@types/aws-lambda": "^8.10.147"
   },
   "dependencies": {
     "source-map-support": "^0.5.21"
