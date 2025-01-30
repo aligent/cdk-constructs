@@ -574,7 +574,7 @@ export class StaticHosting extends Construct {
     const cspRemapPaths = cspPaths.map(cspPath => {
       const { path, reportUri } = cspPath;
 
-      const requestFunction = new RequestFunction(this, 'CheckoutFunction', {
+      const requestFunction = new RequestFunction(this, 'AlternativePathFunction', {
         pathPrefix: path
       });
 
@@ -582,6 +582,7 @@ export class StaticHosting extends Construct {
         bucket: `${props.subDomainName}.${props.domainName}`,
         reportUri: reportUri
       });
+      this.bucket.grantRead(responseFunction.edgeFunction);
 
       const remap: remapPath = {
         from: path,
