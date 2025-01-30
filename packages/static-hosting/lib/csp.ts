@@ -37,7 +37,7 @@ class EdgeLambdaFunction extends Construct {
                         command,
                         image: DockerImage.fromRegistry("busybox"),
                         local: new Esbuild({
-                            entryPoints: [join(__dirname, `handlers/${options.handlerName}.ts`)],
+                            entryPoints: [join(__dirname, `handlers/csp-lambda/${options.handlerName}.ts`)],
                             define: options.define,
                             minify: false
                         }),
@@ -84,6 +84,7 @@ export interface ResponseFunctionOptions {
     bucket: string;
     cspObject?: string;
     reportUri?: string;
+    fallbackCsp?: string;
     functionOptions?: Partial<FunctionOptions>
 }
 
@@ -99,6 +100,9 @@ export class ResponseFunction extends EdgeLambdaFunction {
                 ),
                 "process.env.REPORT_URI": JSON.stringify(
                     options.reportUri ?? ""
+                ),
+                "process.env.FALLBACK_CSP": JSON.stringify(
+                    options.fallbackCsp ?? ""
                 )
             },
             functionOptions: {
