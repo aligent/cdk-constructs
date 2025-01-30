@@ -31,7 +31,7 @@ export class PathRemapFunction extends Construct {
             command,
             image: DockerImage.fromRegistry("busybox"),
             local: new Esbuild({
-              entryPoints: [join(__dirname, "handlers/remap.ts")],
+              entryPoints: [join(__dirname, "handlers/remap/remap.ts")],
               define: {
                 "process.env.REMAP_PATH": `"${options.path}"`,
               },
