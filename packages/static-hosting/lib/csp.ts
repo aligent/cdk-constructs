@@ -95,7 +95,7 @@ export class ResponseFunction extends EdgeLambdaFunction {
                 "process.env.S3_BUCKET": JSON.stringify(
                     options.bucket
                 ),
-                "process.env.Response_OBJECT": JSON.stringify(
+                "process.env.CSP_OBJECT": JSON.stringify(
                     options.cspObject ?? "csp.txt"
                 ),
                 "process.env.REPORT_URI": JSON.stringify(
