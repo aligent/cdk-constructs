@@ -323,6 +323,12 @@ export interface CSPConfig {
    * `Reporting-Endpoints: report_endpoint="${reportURI}"`
    */
   reportUri: string;
+
+  /**
+   * An optional CSP to fallback to in the event that the CSP from the S3 bucket cannot
+   * be retrieved or parsed.
+   */
+  fallbackCsp?: string;
 }
 
 export interface remapPath {
@@ -572,7 +578,7 @@ export class StaticHosting extends Construct {
 
     const cspPaths = props.cspPaths || [];
     const cspRemapPaths = cspPaths.map(cspPath => {
-      const { path, reportUri } = cspPath;
+      const { path, reportUri, fallbackCsp } = cspPath;
 
       const requestFunction = new RequestFunction(this, 'AlternativePathFunction', {
         pathPrefix: path
@@ -580,7 +586,8 @@ export class StaticHosting extends Construct {
 
       const responseFunction = new ResponseFunction(this, 'CSPFunction', {
         bucket: `${props.subDomainName}.${props.domainName}`,
-        reportUri: reportUri
+        reportUri: reportUri,
+        fallbackCsp: fallbackCsp
       });
       this.bucket.grantRead(responseFunction.edgeFunction);
 

@@ -64,7 +64,7 @@ export const handler = async (
         if (!FALLBACK_CSP) throw error;
 
         response.headers["content-security-policy"] = [
-
+            { key: "Content-Security-Policy", value: FALLBACK_CSP },
         ]
         throw error;
     }
