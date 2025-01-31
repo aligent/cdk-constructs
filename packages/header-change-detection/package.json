@@ -24,7 +24,7 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.726.1",
     "@aws-sdk/client-sns": "3.732.0",
-    "aws-cdk-lib": "2.113.0",
+    "aws-cdk-lib": "2.177.0",
     "axios": "^1.7.9",
     "constructs": "^10.3.0",
     "source-map-support": "^0.5.21"
