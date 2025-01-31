@@ -306,17 +306,23 @@ export interface StaticHostingProps {
   comment?: string;
 
   /**
-   * Configuration settings for CSP in the checkout
-   * If a value is passed through, CSP will be enabled
+   * Configuration settings for CSP at a specific path
+   * If a value is passed through, CSP will be enabled for the given path
    */
   cspPaths?: CSPConfig[];
 }
 
 export interface CSPConfig {
   /**
-   * Path to apply the CSP behaviour on
+   * Path to apply the CSP behaviour and also the path
    */
   path: string;
+
+  /**
+   * Optional path to a different index.html in the bucket. Will default to the path provided
+   * for the behaviour
+   */
+  indexPath?: string;
 
   /**
    * URI to send CSP reports to. Adds to a reporting endpoint called report_endpoint:
@@ -326,7 +332,7 @@ export interface CSPConfig {
 
   /**
    * An optional CSP to fallback to in the event that the CSP from the S3 bucket cannot
-   * be retrieved or parsed.
+   * be retrieved or parsed
    */
   fallbackCsp?: string;
 }
@@ -578,13 +584,13 @@ export class StaticHosting extends Construct {
 
     const cspPaths = props.cspPaths || [];
     const cspRemapPaths = cspPaths.map(cspPath => {
-      const { path, reportUri, fallbackCsp } = cspPath;
+      const { path, indexPath, reportUri, fallbackCsp } = cspPath;
 
       const requestFunction = new RequestFunction(
         this,
         "AlternativePathFunction",
         {
-          pathPrefix: path,
+          pathPrefix: indexPath || path,
         }
       );
 
