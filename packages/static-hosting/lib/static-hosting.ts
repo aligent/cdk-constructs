@@ -202,7 +202,7 @@ export interface StaticHostingProps {
    *
    * AWS limits the max header size to 1kb, this is too small for complex csp headers.
    * The main purpose of this csp header is to provide a method of setting a report-uri.
-   * 
+   *
    * For more complex CSP headers, it's recommended to use the cspPath property to apply
    * a CSP header to specific paths.
    *
@@ -309,7 +309,7 @@ export interface StaticHostingProps {
    * Configuration settings for CSP in the checkout
    * If a value is passed through, CSP will be enabled
    */
-  cspPaths?: CSPConfig[]
+  cspPaths?: CSPConfig[];
 }
 
 export interface CSPConfig {
@@ -319,7 +319,7 @@ export interface CSPConfig {
   path: string;
 
   /**
-   * URI to send CSP reports to. Adds to a reporting endpoint called report_endpoint: 
+   * URI to send CSP reports to. Adds to a reporting endpoint called report_endpoint:
    * `Reporting-Endpoints: report_endpoint="${reportURI}"`
    */
   reportUri: string;
@@ -580,14 +580,18 @@ export class StaticHosting extends Construct {
     const cspRemapPaths = cspPaths.map(cspPath => {
       const { path, reportUri, fallbackCsp } = cspPath;
 
-      const requestFunction = new RequestFunction(this, 'AlternativePathFunction', {
-        pathPrefix: path
-      });
+      const requestFunction = new RequestFunction(
+        this,
+        "AlternativePathFunction",
+        {
+          pathPrefix: path,
+        }
+      );
 
-      const responseFunction = new ResponseFunction(this, 'CSPFunction', {
+      const responseFunction = new ResponseFunction(this, "CSPFunction", {
         bucket: `${props.subDomainName}.${props.domainName}`,
         reportUri: reportUri,
-        fallbackCsp: fallbackCsp
+        fallbackCsp: fallbackCsp,
       });
       this.bucket.grantRead(responseFunction.edgeFunction);
 
@@ -602,14 +606,15 @@ export class StaticHosting extends Construct {
             {
               eventType: LambdaEdgeEventType.ORIGIN_RESPONSE,
               functionVersion: responseFunction.edgeFunction.currentVersion,
-            }
-          ]
-        }
-      }
+            },
+          ],
+        },
+      };
 
       return remap;
     });
-    props.remapPaths ? props.remapPaths.push(...cspRemapPaths) : props.remapPaths = cspRemapPaths;
+    if (props.remapPaths) props.remapPaths.push(...cspRemapPaths);
+    else props.remapPaths = cspRemapPaths;
 
     // Note: A given path may override if the same path is defined both remapPaths and remapBackendPaths. This is an
     // unlikely scenario but worth noting. e.g. `/robots.txt` should be defined in one of the above but not both.
