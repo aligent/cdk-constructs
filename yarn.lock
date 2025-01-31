@@ -185,7 +185,7 @@ __metadata:
     "@types/node": "npm:20.6.3"
     aws-cdk: "npm:2.113.0"
     aws-cdk-lib: "npm:2.113.0"
-    axios: "npm:^1.5.1"
+    axios: "npm:^1.7.9"
     constructs: "npm:^10.3.0"
     esbuild: "npm:^0.17.0"
     jest: "npm:^29.7.0"
@@ -6596,7 +6596,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.5.1, axios@npm:^1.7.4":
+"axios@npm:^1.7.4":
   version: 1.7.7
   resolution: "axios@npm:1.7.7"
   dependencies:
