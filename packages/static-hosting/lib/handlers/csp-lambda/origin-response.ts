@@ -13,8 +13,6 @@ const FALLBACK_CSP = process.env.FALLBACK_CSP;
 export const handler = async (
   event: CloudFrontResponseEvent
 ): Promise<CloudFrontResponse> => {
-  console.log("Lambda@Edge handler invoked");
-
   const response = event.Records[0].cf.response;
   response.headers = response.headers || {};
 
@@ -27,15 +25,12 @@ export const handler = async (
 
     // Add both report-to and report-uri for backwards compatibility
     csp += `report-uri ${REPORT_URI}; report-to report_endpoint; `;
-    console.log(`Added report uri to csp: ${csp}`);
   }
 
   try {
     if (!CSP_OBJECT || !S3_BUCKET) {
       throw new Error("CSP_FILE or S3_BUCKET environment variable is missing");
     }
-
-    console.log("Reading CSP file from S3");
 
     const params: S3.GetObjectRequest = {
       Bucket: S3_BUCKET,
@@ -55,8 +50,6 @@ export const handler = async (
     response.headers["content-security-policy"] = [
       { key: "Content-Security-Policy", value: csp },
     ];
-
-    console.log("CSP header added");
   } catch (error) {
     console.error("Error fetching CSP file or adding header:", error);
 
