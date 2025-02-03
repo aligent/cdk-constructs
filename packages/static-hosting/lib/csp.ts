@@ -120,7 +120,7 @@ export class ResponseFunction extends EdgeLambdaFunction {
         "process.env.FALLBACK_CSP": JSON.stringify(options.fallbackCsp ?? ""),
       },
       functionOptions: {
-        timeout: Duration.seconds(15),
+        timeout: Duration.seconds(3),
         memorySize: 512,
         ...options.functionOptions,
       },
