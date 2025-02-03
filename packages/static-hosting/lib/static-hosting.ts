@@ -588,13 +588,13 @@ export class StaticHosting extends Construct {
 
       const requestFunction = new RequestFunction(
         this,
-        "AlternativePathFunction",
+        `AlternativePathFunction-${path}`,
         {
           pathPrefix: indexPath || path,
         }
       );
 
-      const responseFunction = new ResponseFunction(this, "CSPFunction", {
+      const responseFunction = new ResponseFunction(this, `CSPFunction-${path}`, {
         bucket: `${props.subDomainName}.${props.domainName}`,
         reportUri: reportUri,
         fallbackCsp: fallbackCsp,
