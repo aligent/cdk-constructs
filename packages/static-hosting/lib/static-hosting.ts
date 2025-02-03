@@ -43,6 +43,7 @@ import {
 } from "aws-cdk-lib/aws-s3";
 import { CSP } from "../types/csp";
 import { PathRemapFunction } from "./path-remap";
+import { RequestFunction, ResponseFunction } from "./csp";
 
 export interface StaticHostingProps {
   /**
@@ -202,6 +203,9 @@ export interface StaticHostingProps {
    * AWS limits the max header size to 1kb, this is too small for complex csp headers.
    * The main purpose of this csp header is to provide a method of setting a report-uri.
    *
+   * For more complex CSP headers, it's recommended to use the cspPath property to apply
+   * a CSP header to specific paths.
+   *
    * @default undefined
    */
   csp?: CSP;
@@ -300,6 +304,37 @@ export interface StaticHostingProps {
    * @default undefined
    */
   comment?: string;
+
+  /**
+   * Configuration settings for CSP at a specific path
+   * If a value is passed through, CSP will be enabled for the given path
+   */
+  cspPaths?: CSPConfig[];
+}
+
+export interface CSPConfig {
+  /**
+   * Path to apply the CSP behaviour and also the path
+   */
+  path: string;
+
+  /**
+   * Optional path to a different index.html in the bucket. Will default to the path provided
+   * for the behaviour
+   */
+  indexPath?: string;
+
+  /**
+   * URI to send CSP reports to. Adds to a reporting endpoint called report_endpoint:
+   * `Reporting-Endpoints: report_endpoint="${reportURI}"`
+   */
+  reportUri: string;
+
+  /**
+   * An optional CSP to fallback to in the event that the CSP from the S3 bucket cannot
+   * be retrieved or parsed
+   */
+  fallbackCsp?: string;
 }
 
 export interface remapPath {
@@ -546,6 +581,50 @@ export class StaticHosting extends Construct {
         }
       }
     }
+
+    const cspPaths = props.cspPaths || [];
+    const cspRemapPaths = cspPaths.map(cspPath => {
+      const { path, indexPath, reportUri, fallbackCsp } = cspPath;
+
+      const requestFunction = new RequestFunction(
+        this,
+        `AlternativePathFunction-${path}`,
+        {
+          pathPrefix: indexPath || path,
+        }
+      );
+
+      const responseFunction = new ResponseFunction(
+        this,
+        `CSPFunction-${path}`,
+        {
+          bucket: `${props.subDomainName}.${props.domainName}`,
+          reportUri: reportUri,
+          fallbackCsp: fallbackCsp,
+        }
+      );
+      this.bucket.grantRead(responseFunction.edgeFunction);
+
+      const remap: remapPath = {
+        from: path,
+        behaviour: {
+          edgeLambdas: [
+            {
+              eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
+              functionVersion: requestFunction.edgeFunction.currentVersion,
+            },
+            {
+              eventType: LambdaEdgeEventType.ORIGIN_RESPONSE,
+              functionVersion: responseFunction.edgeFunction.currentVersion,
+            },
+          ],
+        },
+      };
+
+      return remap;
+    });
+    if (props.remapPaths) props.remapPaths.push(...cspRemapPaths);
+    else props.remapPaths = cspRemapPaths;
 
     // Note: A given path may override if the same path is defined both remapPaths and remapBackendPaths. This is an
     // unlikely scenario but worth noting. e.g. `/robots.txt` should be defined in one of the above but not both.
