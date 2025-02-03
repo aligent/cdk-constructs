@@ -594,11 +594,15 @@ export class StaticHosting extends Construct {
         }
       );
 
-      const responseFunction = new ResponseFunction(this, `CSPFunction-${path}`, {
-        bucket: `${props.subDomainName}.${props.domainName}`,
-        reportUri: reportUri,
-        fallbackCsp: fallbackCsp,
-      });
+      const responseFunction = new ResponseFunction(
+        this,
+        `CSPFunction-${path}`,
+        {
+          bucket: `${props.subDomainName}.${props.domainName}`,
+          reportUri: reportUri,
+          fallbackCsp: fallbackCsp,
+        }
+      );
       this.bucket.grantRead(responseFunction.edgeFunction);
 
       const remap: remapPath = {
