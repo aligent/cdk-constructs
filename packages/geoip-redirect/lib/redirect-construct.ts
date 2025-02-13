@@ -5,12 +5,28 @@ import { Construct } from "constructs";
 import { join } from "path";
 import { Esbuild } from "@aligent/cdk-esbuild";
 
+/**
+ * The default region, domain, and other supported regions for a website to redirect to.
+ */
 export interface RedirectFunctionOptions {
-  redirectHost: string;
-  // Case-sensitive regular expression matching cloudfront-viewer-country
-  supportedRegionsExpression: string;
-  // default region code to use when not matched
-  defaultRegion: string;
+  /**
+   * Regex formatted string to match region codes and redirect to the DomainOverwrite destination.
+   * @default undefined
+   */
+  supportedRegions?: Record<string, string>;
+  /**
+   * Regex for supported domain paths on the default domain eg .com/au
+   */
+  defaultRegionCode: string;
+  /**
+   * Default domain to redirect to unless otherwise specified.
+   */
+  defaultDomain: string;
+  /**
+   * Toggle whether to use a path suffix for a region such as `.com/au` or just `.com`  .
+   * @default false
+   */
+  enablePathRedirect?: boolean;
 }
 
 export class RedirectFunction extends Construct {
@@ -35,12 +51,23 @@ export class RedirectFunction extends Construct {
             command,
             image: DockerImage.fromRegistry("busybox"),
             local: new Esbuild({
+              minify: false,
+              minifySyntax: false,
+              minifyWhitespace: false,
               entryPoints: [join(__dirname, "handlers/redirect.ts")],
               define: {
-                "process.env.REDIRECT_HOST": options.redirectHost,
-                "process.env.SUPPORTED_REGIONS":
-                  options.supportedRegionsExpression,
-                "process.env.DEFAULT_REGION": options.defaultRegion,
+                "process.env.DEFAULT_DOMAIN": JSON.stringify(
+                  options.defaultDomain
+                ),
+                "process.env.DEFAULT_REGION_CODE": JSON.stringify(
+                  options.defaultRegionCode
+                ).toLowerCase(),
+                "process.env.SUPPORTED_REGIONS": JSON.stringify(
+                  options.supportedRegions
+                )?.toLowerCase(),
+                "process.env.ENABLE_PATH_REDIRECT": JSON.stringify(
+                  options.enablePathRedirect
+                )?.toLowerCase(),
               },
             }),
           },
