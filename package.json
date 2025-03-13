@@ -41,6 +41,7 @@
   },
   "packageManager": "yarn@4.5.1",
   "dependencies": {
-    "eslint-config-prettier": "^9.1.0"
+    "eslint-config-prettier": "^9.1.0",
+    "jsonpath-plus": "6.x.x"
   }
 }
