@@ -9,7 +9,8 @@
       "options": {
         "main": "packages/header-change-detection/index.ts",
         "outputPath": "dist/header-change-detection",
-        "tsConfig": "packages/header-change-detection/tsconfig.app.json"
+        "tsConfig": "packages/header-change-detection/tsconfig.app.json",
+        "assets": ["packages/header-change-detection/lib/lambda/**"]
       },
       "dependsOn": ["merge-gitignore"]
     },
