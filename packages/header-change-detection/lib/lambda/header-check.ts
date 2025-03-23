@@ -157,7 +157,7 @@ const updateStoredValues = async (
     if (value) {
       attributes[headerName] = {
         Value: {
-          S: value,
+          S: Array.isArray(value) ? value.join("; ") : value,
         },
         Action: "PUT",
       };
