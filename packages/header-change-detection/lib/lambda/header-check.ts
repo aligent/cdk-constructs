@@ -89,7 +89,9 @@ const fetchHeaders = async (urls: string[]): Promise<URLHeaders> => {
     urls.map(url =>
       axios.get(url, { validateStatus: () => true }).then(response => {
         if (!ACCEPTED_HTTP_STATUS.includes(response.status)) {
-          console.warn(`Skipping ${url} — status ${response.status} not allowed`);
+          console.warn(
+            `Skipping ${url} — status ${response.status} not allowed`
+          );
           return;
         }
 
