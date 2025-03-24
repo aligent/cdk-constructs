@@ -43,6 +43,13 @@ export interface HeaderChangeDetectionProps {
    * Optionally pass any rule properties
    */
   ruleProps?: Partial<RuleProps>;
+
+  /**
+   * Optionally accept HTTP status codes other than 200
+   *
+   * @default ["200"]
+   */
+  acceptedHttpStatus?: string[];
 }
 
 const command = [
@@ -108,6 +115,7 @@ export class HeaderChangeDetection extends Construct {
         HEADERS: headers.join(","),
         TABLE: table.tableName,
         TOPIC_ARN: props.snsTopic.topic.topicArn,
+        ACCEPTED_HTTP_STATUS: (props.acceptedHttpStatus || ["200"]).join(","),
       },
     });
 

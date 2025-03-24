@@ -23,6 +23,13 @@ const DB_CLIENT = new DynamoDBClient(config);
 
 const securityHeaders = HEADERS?.split(",") || [];
 
+// Accept status 200 default
+const ACCEPTED_HTTP_STATUS = (process.env.ACCEPTED_HTTP_STATUS || "200")
+  .split(",")
+  .map(code => parseInt(code.trim(), 10));
+
+console.log("ACCEPTED_HTTP_STATUS:", ACCEPTED_HTTP_STATUS);
+
 type Headers = Map<string, string | undefined>;
 
 // A map of URLs and their headers
@@ -80,8 +87,14 @@ const fetchHeaders = async (urls: string[]): Promise<URLHeaders> => {
   // Make an axios request for each url
   await Promise.all(
     urls.map(url =>
-      axios.get(url).then(response => {
-        // Then get all the security headers from each response
+      axios.get(url, { validateStatus: () => true }).then(response => {
+        if (!ACCEPTED_HTTP_STATUS.includes(response.status)) {
+          console.warn(
+            `Skipping ${url} — status ${response.status} not allowed`
+          );
+          return;
+        }
+
         const headers: Headers = new Map<string, string | undefined>();
 
         Object.entries(response.headers).forEach(([headerName, value]) => {
@@ -146,7 +159,7 @@ const updateStoredValues = async (
     if (value) {
       attributes[headerName] = {
         Value: {
-          S: value,
+          S: Array.isArray(value) ? value.join("; ") : value,
         },
         Action: "PUT",
       };
