@@ -8,6 +8,7 @@ These are all written for CDK v2. See the offical AWS guide for how to migrate f
 | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | [basic-auth](packages/basic-auth)                                   | Restricts CloudFront access behind authentication                                                                            |
 | [cloudfront-security-headers](packages/cloudfront-security-headers) | Adds HTTP security headers to origin responses                                                                               |
+| [esbuild](packages/esbuild)                                         | Provides a construct which allows AWS CDK's bundling process to use the esbuild tool to generate a bundled output            |
 | [feature-env-handlers](packages/feature-env-handlers)               | Lambda@Edge handlers to support feature environments                                                                         |
 | [geoip-redirect](packages/geoip-redirect)                           | Lambda@Edge handlers to redirect users based on region                                                                       |
 | [graphql-server](packages/graphql-mesh-server)                      | Creates a [GraphQL Mesh](https://the-guild.dev/graphql/mesh) server to assist with data transformation from multiple sources |
