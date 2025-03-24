@@ -1,8 +1,29 @@
-name: Build
+name: Pull Request
 
 on: [pull_request]
 
 jobs:
+  check-readme:
+    name: 📖 Check readme for updates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Compare package list against readme
+        run: |
+          PACKAGES="$(ls -1 packages | wc -l)"
+          README_PACKAGES="$(grep -Ff <(ls packages) README.md | wc -l)"
+          if [ "$PACKAGES" -eq "$README_PACKAGES" ]; then
+            echo "README correctly lists all packages."
+            exit 0
+          else
+            echo "Mismatch: Found $PACKAGES packages, but README lists $README_PACKAGES."
+            exit 1
+          fi
+
   build:
     name: 🏭 Build all packages
     runs-on: ubuntu-latest
