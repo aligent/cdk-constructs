@@ -11,6 +11,7 @@ These are all written for CDK v2. See the offical AWS guide for how to migrate f
 | [feature-env-handlers](packages/feature-env-handlers)               | Lambda@Edge handlers to support feature environments                                                                         |
 | [geoip-redirect](packages/geoip-redirect)                           | Lambda@Edge handlers to redirect users based on region                                                                       |
 | [graphql-server](packages/graphql-mesh-server)                      | Creates a [GraphQL Mesh](https://the-guild.dev/graphql/mesh) server to assist with data transformation from multiple sources |
+| [header-change-detection](packages/header-change-detection)         | Creates a Lambda function that periodically scans security headers and sends the results to SNS                              |
 | [prerender-fargate](packages/prerender-fargate)                     | Self-hosted prerender to handle prerender bot requests                                                                       |
 | [prerender-proxy](packages/prerender-proxy)                         | Provides an functions to adjust self-hosted prerender behaviour                                                              |
 | [rabbitmq](packages/rabbitmq)                                       | Create a RabbitMQ cluster within CDK                                                                                         |
