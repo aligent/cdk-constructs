@@ -17,7 +17,7 @@ export interface RedirectFunctionOptions {
   /**
    * Regex for supported domain paths on the default domain eg .com/au
    */
-  defaultRegionCode: string;
+  defaultRegionCodes: string[];
   /**
    * Default domain to redirect to unless otherwise specified.
    */
@@ -60,13 +60,13 @@ export class RedirectFunction extends Construct {
                   options.defaultDomain
                 ),
                 "process.env.DEFAULT_REGION_CODE": JSON.stringify(
-                  options.defaultRegionCode
+                  options.defaultRegionCodes.join(",")
                 ).toLowerCase(),
                 "process.env.SUPPORTED_REGIONS": JSON.stringify(
                   options.supportedRegions
                 )?.toLowerCase(),
                 "process.env.ENABLE_PATH_REDIRECT": JSON.stringify(
-                  options.enablePathRedirect
+                  options.enablePathRedirect ?? false
                 )?.toLowerCase(),
               },
             }),

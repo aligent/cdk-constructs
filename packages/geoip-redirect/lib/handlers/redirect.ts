@@ -69,7 +69,7 @@ export const handler = async (
         location: [
           {
             key: "Location",
-            value: redirectURL.replace("/index.html", ""),
+            value: redirectURL,
           },
         ],
       },
