@@ -7,7 +7,7 @@ import {
 
 const options = {
   defaultDomain: process.env.DEFAULT_DOMAIN ?? "",
-  defaultRegionCode: process.env.DEFAULT_REGION_CODE ?? "",
+  defaultRegionCodes: process.env.DEFAULT_REGION_CODES?.split(",") ?? [],
   supportedRegions: { "": "" } as Record<string, string>,
   enablePathRedirect:
     process.env.ENABLE_PATH_REDIRECT === "true" ? true : false,
@@ -17,10 +17,12 @@ options.supportedRegions = {
   ...(JSON.parse(
     JSON.stringify(process.env.SUPPORTED_REGIONS ?? "{}")
   ) as Record<string, string>),
-  ...{ [options.defaultRegionCode]: options.defaultDomain },
+  ...Object.fromEntries(
+    options.defaultRegionCodes.map(code => [code, options.defaultDomain])
+  ),
 };
 
-const defaultRegion = options.defaultRegionCode.split(",")[0].toLowerCase();
+const defaultRegion = options.defaultRegionCodes[0].toLowerCase();
 
 export const handler = async (
   event: CloudFrontRequestEvent

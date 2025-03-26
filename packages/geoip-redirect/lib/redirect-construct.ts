@@ -59,8 +59,8 @@ export class RedirectFunction extends Construct {
                 "process.env.DEFAULT_DOMAIN": JSON.stringify(
                   options.defaultDomain
                 ),
-                "process.env.DEFAULT_REGION_CODE": JSON.stringify(
-                  options.defaultRegionCodes.join(",")
+                "process.env.DEFAULT_REGION_CODES": JSON.stringify(
+                  options.defaultRegionCodes
                 ).toLowerCase(),
                 "process.env.SUPPORTED_REGIONS": JSON.stringify(
                   options.supportedRegions
