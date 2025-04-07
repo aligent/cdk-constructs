@@ -150,6 +150,10 @@ export type MeshHostingProps = {
    */
   allowedIps?: string[];
   /**
+   * List of IPv6 addresses that can bypass all WAF block lists.
+   */
+  allowedIpv6s?: string[];
+  /**
    * Enable / disable container insights
    * Defaults to true
    */
