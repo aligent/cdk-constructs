@@ -21,7 +21,7 @@ __metadata:
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
     ts-node: "npm:^10.9.1"
-    typescript: "npm:~5.3.2"
+    typescript: "npm:~5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -40,7 +40,7 @@ __metadata:
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
     ts-node: "npm:^10.9.1"
-    typescript: "npm:~5.3.2"
+    typescript: "npm:~5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -67,7 +67,7 @@ __metadata:
     nx: "npm:20.6.4"
     prettier: "npm:^3.3.3"
     ts-jest: "npm:^29.1.0"
-    typescript: "npm:^5.6.3"
+    typescript: "npm:^5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -85,7 +85,7 @@ __metadata:
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
     ts-node: "npm:^10.9.1"
-    typescript: "npm:~5.3.2"
+    typescript: "npm:~5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -113,7 +113,7 @@ __metadata:
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
     ts-node: "npm:^10.9.1"
-    typescript: "npm:~5.3.2"
+    typescript: "npm:~5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -134,7 +134,7 @@ __metadata:
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
     ts-node: "npm:^10.9.1"
-    typescript: "npm:~5.3.2"
+    typescript: "npm:~5.8.3"
     yaml: "npm:^2.7.1"
   languageName: unknown
   linkType: soft
@@ -155,7 +155,7 @@ __metadata:
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
     ts-node: "npm:^10.9.1"
-    typescript: "npm:~5.3.2"
+    typescript: "npm:~5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -192,7 +192,7 @@ __metadata:
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
     ts-node: "npm:^10.9.1"
-    typescript: "npm:~5.3.2"
+    typescript: "npm:~5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -209,7 +209,7 @@ __metadata:
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
     ts-node: "npm:^10.9.1"
-    typescript: "npm:~5.3.2"
+    typescript: "npm:~5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -226,7 +226,7 @@ __metadata:
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
     ts-node: "npm:^10.9.1"
-    typescript: "npm:~5.3.2"
+    typescript: "npm:~5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -246,7 +246,7 @@ __metadata:
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
     ts-node: "npm:^10.9.1"
-    typescript: "npm:~5.3.2"
+    typescript: "npm:~5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -263,7 +263,7 @@ __metadata:
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
     ts-node: "npm:^10.9.1"
-    typescript: "npm:~5.3.2"
+    typescript: "npm:~5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -10858,23 +10858,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.6.3":
-  version: 5.6.3
-  resolution: "typescript@npm:5.6.3"
+"typescript@npm:^5.8.3, typescript@npm:~5.8.3":
+  version: 5.8.3
+  resolution: "typescript@npm:5.8.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/44f61d3fb15c35359bc60399cb8127c30bae554cd555b8e2b46d68fa79d680354b83320ad419ff1b81a0bdf324197b29affe6cc28988cd6a74d4ac60c94f9799
-  languageName: node
-  linkType: hard
-
-"typescript@npm:~5.3.2":
-  version: 5.3.3
-  resolution: "typescript@npm:5.3.3"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 10c0/e33cef99d82573624fc0f854a2980322714986bc35b9cb4d1ce736ed182aeab78e2cb32b385efa493b2a976ef52c53e20d6c6918312353a91850e2b76f1ea44f
+  checksum: 10c0/5f8bb01196e542e64d44db3d16ee0e4063ce4f3e3966df6005f2588e86d91c03e1fb131c2581baf0fb65ee79669eea6e161cd448178986587e9f6844446dbb48
   languageName: node
   linkType: hard
 
@@ -10888,23 +10878,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.6.3#optional!builtin<compat/typescript>":
-  version: 5.6.3
-  resolution: "typescript@patch:typescript@npm%3A5.6.3#optional!builtin<compat/typescript>::version=5.6.3&hash=8c6c40"
+"typescript@patch:typescript@npm%3A^5.8.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A~5.8.3#optional!builtin<compat/typescript>":
+  version: 5.8.3
+  resolution: "typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=cef18b"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/7c9d2e07c81226d60435939618c91ec2ff0b75fbfa106eec3430f0fcf93a584bc6c73176676f532d78c3594fe28a54b36eb40b3d75593071a7ec91301533ace7
-  languageName: node
-  linkType: hard
-
-"typescript@patch:typescript@npm%3A~5.3.2#optional!builtin<compat/typescript>":
-  version: 5.3.3
-  resolution: "typescript@patch:typescript@npm%3A5.3.3#optional!builtin<compat/typescript>::version=5.3.3&hash=e012d7"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 10c0/1d0a5f4ce496c42caa9a30e659c467c5686eae15d54b027ee7866744952547f1be1262f2d40de911618c242b510029d51d43ff605dba8fb740ec85ca2d3f9500
+  checksum: 10c0/92ea03509e06598948559ddcdd8a4ae5a7ab475766d5589f1b796f5731b3d631a4c7ddfb86a3bd44d58d10102b132cd4b4994dda9b63e6273c66d77d6a271dbd
   languageName: node
   linkType: hard
 
