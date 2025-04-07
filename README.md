@@ -8,9 +8,11 @@ These are all written for CDK v2. See the offical AWS guide for how to migrate f
 | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | [basic-auth](packages/basic-auth)                                   | Restricts CloudFront access behind authentication                                                                            |
 | [cloudfront-security-headers](packages/cloudfront-security-headers) | Adds HTTP security headers to origin responses                                                                               |
+| [esbuild](packages/esbuild)                                         | Provides a construct which allows AWS CDK's bundling process to use the esbuild tool to generate a bundled output            |
 | [feature-env-handlers](packages/feature-env-handlers)               | Lambda@Edge handlers to support feature environments                                                                         |
 | [geoip-redirect](packages/geoip-redirect)                           | Lambda@Edge handlers to redirect users based on region                                                                       |
 | [graphql-server](packages/graphql-mesh-server)                      | Creates a [GraphQL Mesh](https://the-guild.dev/graphql/mesh) server to assist with data transformation from multiple sources |
+| [header-change-detection](packages/header-change-detection)         | Creates a Lambda function that periodically scans security headers and sends the results to SNS                              |
 | [prerender-fargate](packages/prerender-fargate)                     | Self-hosted prerender to handle prerender bot requests                                                                       |
 | [prerender-proxy](packages/prerender-proxy)                         | Provides an functions to adjust self-hosted prerender behaviour                                                              |
 | [rabbitmq](packages/rabbitmq)                                       | Create a RabbitMQ cluster within CDK                                                                                         |
