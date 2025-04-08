@@ -262,10 +262,10 @@ export class MeshService extends Construct {
 
     const certificate = props.certificateArn
       ? acm.Certificate.fromCertificateArn(
-        this,
-        `certificate`,
-        props.certificateArn
-      )
+          this,
+          `certificate`,
+          props.certificateArn
+        )
       : undefined;
 
     if (!certificate) throw Error("Must pass certificate");
@@ -498,139 +498,139 @@ export class MeshService extends Construct {
 
     const defaultRules: CfnWebACL.RuleProperty[] = props.blockAll
       ? [
-        {
-          name: "BlockNonAllowedIps",
-          priority: props.allowedIpPriority || 2,
-          statement: {
-            notStatement: {
-              statement: {
-                orStatement: {
-                  statements: [
-                    {
-                      ipSetReferenceStatement: {
-                        arn: allowedIpList.attrArn,
-                        ipSetForwardedIpConfig: {
-                          fallbackBehavior: "MATCH",
-                          headerName: "X-Forwarded-For",
-                          position: "FIRST",
+          {
+            name: "BlockNonAllowedIps",
+            priority: props.allowedIpPriority || 2,
+            statement: {
+              notStatement: {
+                statement: {
+                  orStatement: {
+                    statements: [
+                      {
+                        ipSetReferenceStatement: {
+                          arn: allowedIpList.attrArn,
+                          ipSetForwardedIpConfig: {
+                            fallbackBehavior: "MATCH",
+                            headerName: "X-Forwarded-For",
+                            position: "FIRST",
+                          },
                         },
                       },
-                    },
-                    {
-                      ipSetReferenceStatement: {
-                        arn: allowedIpv6List.attrArn,
-                        ipSetForwardedIpConfig: {
-                          fallbackBehavior: "MATCH",
-                          headerName: "X-Forwarded-For",
-                          position: "FIRST",
+                      {
+                        ipSetReferenceStatement: {
+                          arn: allowedIpv6List.attrArn,
+                          ipSetForwardedIpConfig: {
+                            fallbackBehavior: "MATCH",
+                            headerName: "X-Forwarded-For",
+                            position: "FIRST",
+                          },
                         },
                       },
-                    }
-                  ]
+                    ],
+                  },
                 },
-              }
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPAllowList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              block: {},
             },
           },
-          visibilityConfig: {
-            cloudWatchMetricsEnabled: true,
-            metricName: "IPAllowList",
-            sampledRequestsEnabled: true,
-          },
-          action: {
-            block: {},
-          },
-        },
-      ]
+        ]
       : [
-        {
-          name: "IPAllowList",
-          priority: props.allowedIpPriority || 2,
-          statement: {
-            ipSetReferenceStatement: {
-              arn: allowedIpList.attrArn,
-              ipSetForwardedIpConfig: {
-                fallbackBehavior: "MATCH",
-                headerName: "X-Forwarded-For",
-                position: "FIRST",
+          {
+            name: "IPAllowList",
+            priority: props.allowedIpPriority || 2,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: allowedIpList.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST",
+                },
               },
             },
-          },
-          visibilityConfig: {
-            cloudWatchMetricsEnabled: true,
-            metricName: "IPAllowList",
-            sampledRequestsEnabled: true,
-          },
-          action: {
-            allow: {},
-          },
-        },
-        {
-          name: "IPv6AllowList",
-          priority: props.allowedIpv6Priority || 3,
-          statement: {
-            ipSetReferenceStatement: {
-              arn: allowedIpv6List.attrArn,
-              ipSetForwardedIpConfig: {
-                fallbackBehavior: "MATCH",
-                headerName: "X-Forwarded-For",
-                position: "FIRST",
-              },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPAllowList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              allow: {},
             },
           },
-          visibilityConfig: {
-            cloudWatchMetricsEnabled: true,
-            metricName: "IPv6AllowList",
-            sampledRequestsEnabled: true,
-          },
-          action: {
-            allow: {},
-          },
-        },
-        {
-          name: "IPBlockList",
-          priority: props.blockedIpPriority || 4,
-          statement: {
-            ipSetReferenceStatement: {
-              arn: blockedIpList.attrArn,
-              ipSetForwardedIpConfig: {
-                fallbackBehavior: "MATCH",
-                headerName: "X-Forwarded-For",
-                position: "FIRST",
+          {
+            name: "IPv6AllowList",
+            priority: props.allowedIpv6Priority || 3,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: allowedIpv6List.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST",
+                },
               },
             },
-          },
-          visibilityConfig: {
-            cloudWatchMetricsEnabled: true,
-            metricName: "IPBlockList",
-            sampledRequestsEnabled: true,
-          },
-          action: {
-            block: {},
-          },
-        },
-        {
-          name: "IPv6BlockList",
-          priority: (props.blockedIpPriority || 4) + 1,
-          statement: {
-            ipSetReferenceStatement: {
-              arn: blockedIpv6List.attrArn,
-              ipSetForwardedIpConfig: {
-                fallbackBehavior: "MATCH",
-                headerName: "X-Forwarded-For",
-                position: "FIRST",
-              },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPv6AllowList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              allow: {},
             },
           },
-          visibilityConfig: {
-            cloudWatchMetricsEnabled: true,
-            metricName: "IPv6BlockList",
-            sampledRequestsEnabled: true,
+          {
+            name: "IPBlockList",
+            priority: props.blockedIpPriority || 4,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: blockedIpList.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST",
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPBlockList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              block: {},
+            },
           },
-          action: {
-            block: {},
+          {
+            name: "IPv6BlockList",
+            priority: (props.blockedIpPriority || 4) + 1,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: blockedIpv6List.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST",
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPv6BlockList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              block: {},
+            },
           },
-        },
-      ];
+        ];
 
     if (props.rateLimit && !props.blockAll) {
       defaultRules.push({
