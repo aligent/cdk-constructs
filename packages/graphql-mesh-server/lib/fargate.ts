@@ -131,9 +131,18 @@ export interface MeshServiceProps {
    */
   allowedIpPriority?: number;
   /**
+   * The waf allowed ip rule priority.
+   * Defaults to 3
+   */
+  allowedIpv6Priority?: number;
+  /**
    * List of IPv4 addresses that can bypass all WAF block lists.
    */
   allowedIps?: string[];
+  /**
+   * List of IPv6 addresses that can bypass all WAF block lists.
+   */
+  allowedIpv6s?: string[];
   /**
    * Pass custom cpu scaling steps
    * @default
@@ -473,6 +482,13 @@ export class MeshService extends Construct {
       description: "List of IPs blocked by WAF",
     });
 
+    const allowedIpv6List = new CfnIPSet(this, "allowListIpv6", {
+      addresses: props.allowedIpv6s || [],
+      ipAddressVersion: "IPV6",
+      scope: "REGIONAL",
+      description: "List of IPv6s that are whitelisted from rate limiting",
+    });
+
     const blockedIpv6List = new CfnIPSet(this, "BlockedIpv6List", {
       addresses: props.blockedIpv6s || [],
       ipAddressVersion: "IPV6",
@@ -488,13 +504,29 @@ export class MeshService extends Construct {
             statement: {
               notStatement: {
                 statement: {
-                  ipSetReferenceStatement: {
-                    arn: allowedIpList.attrArn,
-                    ipSetForwardedIpConfig: {
-                      fallbackBehavior: "MATCH",
-                      headerName: "X-Forwarded-For",
-                      position: "FIRST",
-                    },
+                  orStatement: {
+                    statements: [
+                      {
+                        ipSetReferenceStatement: {
+                          arn: allowedIpList.attrArn,
+                          ipSetForwardedIpConfig: {
+                            fallbackBehavior: "MATCH",
+                            headerName: "X-Forwarded-For",
+                            position: "FIRST",
+                          },
+                        },
+                      },
+                      {
+                        ipSetReferenceStatement: {
+                          arn: allowedIpv6List.attrArn,
+                          ipSetForwardedIpConfig: {
+                            fallbackBehavior: "MATCH",
+                            headerName: "X-Forwarded-For",
+                            position: "FIRST",
+                          },
+                        },
+                      },
+                    ],
                   },
                 },
               },
@@ -533,8 +565,30 @@ export class MeshService extends Construct {
             },
           },
           {
+            name: "IPv6AllowList",
+            priority: props.allowedIpv6Priority || 3,
+            statement: {
+              ipSetReferenceStatement: {
+                arn: allowedIpv6List.attrArn,
+                ipSetForwardedIpConfig: {
+                  fallbackBehavior: "MATCH",
+                  headerName: "X-Forwarded-For",
+                  position: "FIRST",
+                },
+              },
+            },
+            visibilityConfig: {
+              cloudWatchMetricsEnabled: true,
+              metricName: "IPv6AllowList",
+              sampledRequestsEnabled: true,
+            },
+            action: {
+              allow: {},
+            },
+          },
+          {
             name: "IPBlockList",
-            priority: props.blockedIpPriority || 3,
+            priority: props.blockedIpPriority || 4,
             statement: {
               ipSetReferenceStatement: {
                 arn: blockedIpList.attrArn,
@@ -556,7 +610,7 @@ export class MeshService extends Construct {
           },
           {
             name: "IPv6BlockList",
-            priority: (props.blockedIpPriority || 3) + 1,
+            priority: (props.blockedIpPriority || 4) + 1,
             statement: {
               ipSetReferenceStatement: {
                 arn: blockedIpv6List.attrArn,
