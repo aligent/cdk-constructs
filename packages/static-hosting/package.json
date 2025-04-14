@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-static-hosting",
-  "version": "2.4.0",
+  "version": "2.7.1-beta",
   "main": "index.js",
   "license": "GPL-3.0-only",
   "homepage": "https://github.com/aligent/aws-cdk-static-hosting-stack#readme",
@@ -24,6 +24,7 @@
     "typescript": "^5.3.2"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.787.0",
     "source-map-support": "^0.5.21"
   },
   "peerDependencies": {
