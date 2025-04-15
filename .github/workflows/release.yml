@@ -38,8 +38,8 @@ jobs:
         run: |
           git config --global user.name "Automated NPM Release"
           git config --global user.email "devops+npm-deploy@aligent.com.au"
-          echo "Publishing $PACKAGE @ $VERSION"
+          echo "Publishing ${{ env.PACKAGE }} @ ${{ env.VERSION }}"
           npm config set registry https://registry.npmjs.org/
-          yarn nx publish $PACKAGE --ver=$VERSION --tag=latest --verbose
+          yarn nx publish ${{ env.PACKAGE }} --ver=${{ env.VERSION }} --tag=latest --verbose
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
