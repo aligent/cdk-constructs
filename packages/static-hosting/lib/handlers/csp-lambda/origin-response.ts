@@ -1,5 +1,5 @@
 import { CloudFrontResponseEvent, CloudFrontResponse } from "aws-lambda";
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3"; 
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const s3 = new S3Client({});
 
@@ -36,7 +36,6 @@ export const handler = async (
       Bucket: S3_BUCKET,
       Key: CSP_OBJECT,
     };
-
 
     const s3Object = await s3.send(
       new GetObjectCommand(params)
