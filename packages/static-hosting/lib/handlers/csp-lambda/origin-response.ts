@@ -32,15 +32,9 @@ export const handler = async (
       throw new Error("CSP_FILE or S3_BUCKET environment variable is missing");
     }
 
-    const params = {
-      Bucket: S3_BUCKET,
-      Key: CSP_OBJECT,
-    };
+    const params = { Bucket: S3_BUCKET, Key: CSP_OBJECT };
 
-    const s3Object = await s3.send(
-      new GetObjectCommand(params)
-
-    )
+    const s3Object = await s3.send(new GetObjectCommand(params));
 
     if (!s3Object.Body) {
       throw new Error("CSP file is empty or missing");
