@@ -1,7 +1,7 @@
 import { CloudFrontResponseEvent, CloudFrontResponse } from "aws-lambda";
-import { S3 } from "aws-sdk"; // Lambda comes pre-bundled with SDK v2, so use that instead of v3 for now
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
-const s3 = new S3();
+const s3 = new S3Client({});
 
 const CSP_OBJECT = process.env.CSP_OBJECT;
 const S3_BUCKET = process.env.S3_BUCKET;
@@ -32,18 +32,15 @@ export const handler = async (
       throw new Error("CSP_FILE or S3_BUCKET environment variable is missing");
     }
 
-    const params: S3.GetObjectRequest = {
-      Bucket: S3_BUCKET,
-      Key: CSP_OBJECT,
-    };
+    const params = { Bucket: S3_BUCKET, Key: CSP_OBJECT };
 
-    const s3Object = await s3.getObject(params).promise();
+    const s3Object = await s3.send(new GetObjectCommand(params));
 
     if (!s3Object.Body) {
       throw new Error("CSP file is empty or missing");
     }
 
-    csp += s3Object.Body.toString("utf-8");
+    csp += s3Object.Body.toString();
 
     console.log("CSP file retrieved:", csp);
 
