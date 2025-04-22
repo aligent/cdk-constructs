@@ -606,8 +606,6 @@ export class StaticHosting extends Construct {
       );
       this.bucket.grantRead(responseFunction.edgeFunction);
 
-      this.bucket.env.region
-
       const remap: remapPath = {
         from: path,
         behaviour: {
