@@ -1,7 +1,9 @@
 import { CloudFrontResponseEvent, CloudFrontResponse } from "aws-lambda";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
-const s3 = new S3Client({});
+const s3 = new S3Client({
+  region: process.env.BUCKET_REGION,
+});
 
 const CSP_OBJECT = process.env.CSP_OBJECT;
 const S3_BUCKET = process.env.S3_BUCKET;

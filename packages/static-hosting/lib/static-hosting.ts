@@ -601,9 +601,12 @@ export class StaticHosting extends Construct {
           bucket: `${props.subDomainName}.${props.domainName}`,
           reportUri: reportUri,
           fallbackCsp: fallbackCsp,
+          bucketRegion: this.bucket.env.region
         }
       );
       this.bucket.grantRead(responseFunction.edgeFunction);
+
+      this.bucket.env.region
 
       const remap: remapPath = {
         from: path,
