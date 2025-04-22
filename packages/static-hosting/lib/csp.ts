@@ -119,7 +119,9 @@ export class ResponseFunction extends EdgeLambdaFunction {
         ),
         "process.env.REPORT_URI": JSON.stringify(options.reportUri ?? ""),
         "process.env.FALLBACK_CSP": JSON.stringify(options.fallbackCsp ?? ""),
-        "process.env.BUCKET_REGION": JSON.stringify(options.bucketRegion ?? "us-east-1"),
+        "process.env.BUCKET_REGION": JSON.stringify(
+          options.bucketRegion ?? "us-east-1"
+        ),
       },
       functionOptions: {
         timeout: Duration.seconds(3),

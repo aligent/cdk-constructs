@@ -601,7 +601,7 @@ export class StaticHosting extends Construct {
           bucket: `${props.subDomainName}.${props.domainName}`,
           reportUri: reportUri,
           fallbackCsp: fallbackCsp,
-          bucketRegion: this.bucket.env.region
+          bucketRegion: this.bucket.env.region,
         }
       );
       this.bucket.grantRead(responseFunction.edgeFunction);
