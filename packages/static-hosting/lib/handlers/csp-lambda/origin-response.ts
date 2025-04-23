@@ -42,7 +42,7 @@ export const handler = async (
       throw new Error("CSP file is empty or missing");
     }
 
-    csp += s3Object.Body.toString();
+    csp += await s3Object.Body.transformToString();
 
     console.log("CSP file retrieved:", csp);
 
