@@ -1,7 +1,9 @@
 import { CloudFrontResponseEvent, CloudFrontResponse } from "aws-lambda";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
-const s3 = new S3Client({});
+const s3 = new S3Client({
+  region: process.env.BUCKET_REGION,
+});
 
 const CSP_OBJECT = process.env.CSP_OBJECT;
 const S3_BUCKET = process.env.S3_BUCKET;
@@ -40,7 +42,7 @@ export const handler = async (
       throw new Error("CSP file is empty or missing");
     }
 
-    csp += s3Object.Body.toString();
+    csp += await s3Object.Body.transformToString();
 
     console.log("CSP file retrieved:", csp);
 

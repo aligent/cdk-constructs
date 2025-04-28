@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-esbuild",
-  "version": "2.0.0",
+  "version": "2.3.0",
   "description": "Esbuild implementation for CDK",
   "main": "index.js",
   "types": "index.d.ts",
@@ -20,7 +20,7 @@
   "dependencies": {
     "aws-cdk-lib": "^2.113.0",
     "constructs": "^10.3.0",
-    "esbuild": "^0.17.0",
+    "esbuild": "^0.18.0",
     "source-map-support": "^0.5.21"
   }
 }
