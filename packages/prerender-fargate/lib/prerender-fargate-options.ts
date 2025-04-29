@@ -204,6 +204,11 @@ export interface PrerenderFargateScalingOptions {
    * @default - 5
    */
   unhealthyThresholdCount?: number;
+  /**
+   * The target average CPU load for auto scaling.
+   * @default - 10 
+   */
+  targetUtilizationPercent?: number;
 }
 
 /**
