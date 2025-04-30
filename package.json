@@ -12,7 +12,7 @@
     "type": "git",
     "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
   },
-  "license": "GPL-3.0-only",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/aligent/aws-cdk-constructs/issues"
   },

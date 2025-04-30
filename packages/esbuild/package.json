@@ -4,7 +4,7 @@
   "description": "Esbuild implementation for CDK",
   "main": "index.js",
   "types": "index.d.ts",
-  "license": "GPL-3.0-only",
+  "license": "MIT",
   "scripts": {
     "build": "tsc"
   },

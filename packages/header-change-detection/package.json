@@ -2,7 +2,7 @@
   "name": "@aligent/cdk-header-change-detection",
   "version": "2.2.0",
   "main": "index.js",
-  "license": "GPL-3.0-only",
+  "license": "MIT",
   "homepage": "https://github.com/aligent/cdk-constructs/packages/header-change-detection-stack#readme",
   "repository": {
     "type": "git",
