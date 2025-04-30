@@ -238,7 +238,8 @@ export class PrerenderFargate extends Construct {
       minCapacity: minInstanceCount || 1,
     });
     scaling.scaleOnCpuUtilization(`${prerenderName}-scaling`, {
-      targetUtilizationPercent: 50,
+      targetUtilizationPercent:
+        prerenderFargateScalingOptions?.targetUtilizationPercent || 10,
       scaleInCooldown: Duration.seconds(
         prerenderFargateScalingOptions?.scaleInCooldown || 60
       ),
