@@ -335,6 +335,11 @@ export interface CSPConfig {
    * be retrieved or parsed
    */
   fallbackCsp?: string;
+
+  /**
+   * File containing CSP rules. Default: `csp.txt`
+   */
+  cspObject?: string;
 }
 
 export interface remapPath {
