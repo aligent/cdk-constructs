@@ -335,6 +335,11 @@ export interface CSPConfig {
    * be retrieved or parsed
    */
   fallbackCsp?: string;
+
+  /**
+   * File containing CSP rules. Default: `csp.txt`
+   */
+  cspObject?: string;
 }
 
 export interface remapPath {
@@ -584,7 +589,7 @@ export class StaticHosting extends Construct {
 
     const cspPaths = props.cspPaths || [];
     const cspRemapPaths = cspPaths.map(cspPath => {
-      const { path, indexPath, reportUri, fallbackCsp } = cspPath;
+      const { path, indexPath, reportUri, fallbackCsp, cspObject } = cspPath;
 
       const requestFunction = new RequestFunction(
         this,
@@ -599,9 +604,10 @@ export class StaticHosting extends Construct {
         `CSPFunction-${path}`,
         {
           bucket: `${props.subDomainName}.${props.domainName}`,
-          reportUri: reportUri,
-          fallbackCsp: fallbackCsp,
+          reportUri,
+          fallbackCsp,
           bucketRegion: this.bucket.env.region,
+          cspObject,
         }
       );
       this.bucket.grantRead(responseFunction.edgeFunction);
