@@ -35,7 +35,6 @@ By default, the following headers are monitored:
 - Referrer-Policy
 - Permission-Policy
 - Cache-Control
-- Set-Cookie
 
 ## Usage
 

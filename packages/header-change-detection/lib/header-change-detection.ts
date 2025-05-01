@@ -71,7 +71,6 @@ const defaultHeaders = [
   "referrer-policy",
   "permission-policy",
   "cache-control",
-  "set-cookie",
 ];
 
 export class HeaderChangeDetection extends Construct {
