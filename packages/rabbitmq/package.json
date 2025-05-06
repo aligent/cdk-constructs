@@ -2,7 +2,7 @@
   "name": "@aligent/cdk-rabbitmq",
   "version": "2.0.0",
   "main": "index.js",
-  "license": "GPL-3.0-only",
+  "license": "MIT",
   "homepage": "https://github.com/aligent/aws-rabbitmq-waf-stack#readme",
   "repository": {
     "type": "git",
