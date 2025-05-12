@@ -12,6 +12,13 @@ jobs:
     name: 🚀 Publish to NPM
     runs-on: ubuntu-latest
     steps:
+      - name: check branch/release constraint
+        run: |
+          if [[ ${{ github.event.release.target_commitish }} != 'main' ]]; then
+            echo "Any release must be from the main branch. Aborting."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.release.target_commitish }}
