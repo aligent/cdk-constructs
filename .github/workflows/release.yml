@@ -13,11 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: check branch/release constraint
+        if: github.event.release.target_commitish != 'main'
         run: |
-          if [[ ${{ github.event.release.target_commitish }} != 'main' ]]; then
-            echo "Any release must be from the main branch. Aborting."
-            exit 1
-          fi
+          echo "Any release must be from the main branch. Aborting."
+          exit 1
 
       - uses: actions/checkout@v4
         with:
