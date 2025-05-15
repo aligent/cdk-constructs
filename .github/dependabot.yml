@@ -15,7 +15,7 @@ updates:
       interval: "weekly"
     reviewers:
       - "aligent/aligent-devops"
-    target-branch: "dependabot-test"
+    target-branch: "main"
     open-pull-requests-limit: 10
     ignore:                    # Ignore major version updates
       - dependency-name: "*"
@@ -79,7 +79,7 @@ updates:
       interval: "weekly"
     reviewers:                        # Reviewers for Docker image updates.    
       - "aligent/aligent-devops"
-    target-branch: "dependabot-test"
+    target-branch: "main"
     open-pull-requests-limit: 10
     ignore:
       - dependency-name: "*"
@@ -97,5 +97,5 @@ updates:
       interval: "weekly"
     reviewers:                        # Reviewers for Docker image updates.    
       - "aligent/aligent-devops"
-    target-branch: "dependabot-test"
+    target-branch: "main"
     open-pull-requests-limit: 5
