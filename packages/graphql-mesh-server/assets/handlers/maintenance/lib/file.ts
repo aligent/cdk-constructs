@@ -26,7 +26,7 @@ export const getFilePath = (): string => {
   }
 
   // If the maintenance file wasn't found, create one
-  writeFileSync(PATHS[0], JSON.stringify({whitelist: [], sites: {}}));
+  writeFileSync(PATHS[0], JSON.stringify({ whitelist: [], sites: {} }));
   return PATHS[0];
 };
 
@@ -36,25 +36,31 @@ export const getMaintenanceFile = (): MaintenanceFile => {
 };
 
 export const setWhitelist = (whitelist: Array<string>): void => {
-  if (!validateIps(whitelist)) throw new Error("List of IP addresses is not valid");
-  let maintFile = getMaintenanceFile();
-  maintFile.whitelist = [...new Set(whitelist)]
+  if (!validateIps(whitelist))
+    throw new Error("List of IP addresses is not valid");
+  const maintFile = getMaintenanceFile();
+  maintFile.whitelist = [...new Set(whitelist)];
 
-  writeFileSync(getFilePath(), JSON.stringify(maintFile), { encoding: "utf-8" });
+  writeFileSync(getFilePath(), JSON.stringify(maintFile), {
+    encoding: "utf-8",
+  });
 };
 
 export const updateWhitelist = (whitelist: Array<string>): void => {
-  if (!validateIps(whitelist)) throw new Error("List of IP addresses is not valid");
+  if (!validateIps(whitelist))
+    throw new Error("List of IP addresses is not valid");
   const maintFile = getMaintenanceFile();
 
   setWhitelist(maintFile.whitelist.concat(whitelist));
 };
 
 export const updateMaintenanceStatus = (sites: Record<string, boolean>) => {
-  let maintFile = getMaintenanceFile();
+  const maintFile = getMaintenanceFile();
   maintFile.sites = sites;
-  writeFileSync(getFilePath(), JSON.stringify(maintFile), { encoding: "utf-8" });
-}
+  writeFileSync(getFilePath(), JSON.stringify(maintFile), {
+    encoding: "utf-8",
+  });
+};
 
 export const toggleMaintenanceStatus = (status: boolean) => {
   const desiredStatus = status ? "enabled" : "disabled";
