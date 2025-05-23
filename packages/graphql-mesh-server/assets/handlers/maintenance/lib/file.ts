@@ -50,16 +50,14 @@ export const updateWhitelist = (whitelist: Array<string>): void => {
   setWhitelist(maintFile.whitelist.concat(whitelist));
 };
 
-export const getCurrentStatus = (): "disabled" | "enabled" => {
-  return inMaintenanceMode() ? "enabled" : "disabled";
-};
+export const updateMaintenanceStatus = (sites: Record<string, boolean>) => {
+  let maintFile = getMaintenanceFile();
+  maintFile.sites = sites;
+  writeFileSync(getFilePath(), JSON.stringify(maintFile), { encoding: "utf-8" });
+}
 
-export const inMaintenanceMode = (): boolean => {
-  return getFilePath().includes("enabled");
-};
-
-export const toggleMaintenanceStatus = () => {
-  const desiredStatus = inMaintenanceMode() ? "disabled" : "enabled";
+export const toggleMaintenanceStatus = (status: boolean) => {
+  const desiredStatus = status ? "enabled" : "disabled";
 
   renameSync(
     getFilePath(),
