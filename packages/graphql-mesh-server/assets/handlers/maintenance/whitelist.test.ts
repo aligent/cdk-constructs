@@ -68,10 +68,10 @@ describe('Lambda handler', () => {
         expect(JSON.parse(result.body)).toEqual({ whitelist: ['127.0.0.1'] });
     });
 
-    it('should return 403 for unsupported methods', async () => {
+    it('should return 501 for unsupported methods', async () => {
         const event = createMockEvent('DELETE');
         const result = await handler(event);
-        expect(result.statusCode).toBe(403);
+        expect(result.statusCode).toBe(501);
     });
 
     it('should return 403 for invalid ips', async () => {

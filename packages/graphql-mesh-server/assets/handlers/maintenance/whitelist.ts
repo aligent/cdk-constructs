@@ -40,7 +40,7 @@ export const handler = async (
 
   let status = 501;
   let response: WhitelistErrorResponse|WhitelistResponse = {
-    error: "Method not implemented"
+    error: `Method not implemented - Received ${event.httpMethod}, with body ${event.body}.`
   };
 
   try {
@@ -68,7 +68,7 @@ export const handler = async (
         }
         break;
       default:
-        throw new Error(`Received ${event.httpMethod}, with body ${event.body}.`)
+        break;
     }
   } catch (error) {
     if (error instanceof Error) {
