@@ -19,6 +19,7 @@ const createMockEvent = (
   queryStringParameters: null,
   multiValueQueryStringParameters: null,
   stageVariables: null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   requestContext: {} as any,
   resource: "/",
 });

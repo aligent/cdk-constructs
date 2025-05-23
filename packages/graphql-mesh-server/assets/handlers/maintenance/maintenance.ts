@@ -50,13 +50,14 @@ export const handler = async (
 
   try {
     switch (event.httpMethod) {
-      case "GET":
+      case "GET": {
         status = 200;
         response = {
           sites: getMaintenanceFile().sites,
         };
         break;
-      case "POST":
+      }
+      case "POST": {
         const maintenanceRequest = parseBody(event.body);
 
         // if any site is in maintenance update the file to .enabled
@@ -72,6 +73,7 @@ export const handler = async (
           sites: getMaintenanceFile().sites,
         };
         break;
+      }
       default:
         status = 501;
     }

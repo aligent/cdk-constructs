@@ -2,7 +2,7 @@
 import { cwd } from "process";
 import { handler } from "./maintenance";
 import { APIGatewayProxyEvent } from "aws-lambda";
-import { setWhitelist, updateMaintenanceStatus } from "./lib/file";
+import { updateMaintenanceStatus } from "./lib/file";
 import { existsSync, rmSync } from "fs";
 
 const createMockEvent = (
@@ -19,6 +19,7 @@ const createMockEvent = (
   queryStringParameters: null,
   multiValueQueryStringParameters: null,
   stageVariables: null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   requestContext: {} as any,
   resource: "/",
 });

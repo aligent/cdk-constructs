@@ -47,13 +47,14 @@ export const handler = async (
 
   try {
     switch (event.httpMethod) {
-      case "GET":
+      case "GET": {
         status = 200;
         response = {
           whitelist: getMaintenanceFile().whitelist,
         };
         break;
-      case "PUT":
+      }
+      case "PUT": {
         const replaceBody = parseBody(event.body);
         setWhitelist(replaceBody.whitelist);
         status = 200;
@@ -61,7 +62,8 @@ export const handler = async (
           whitelist: getMaintenanceFile().whitelist,
         };
         break;
-      case "PATCH":
+      }
+      case "PATCH": {
         const updateBody = parseBody(event.body);
         updateWhitelist(updateBody.whitelist);
         status = 200;
@@ -69,6 +71,7 @@ export const handler = async (
           whitelist: getMaintenanceFile().whitelist,
         };
         break;
+      }
       default:
         break;
     }
