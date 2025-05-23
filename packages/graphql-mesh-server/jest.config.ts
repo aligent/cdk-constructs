@@ -8,4 +8,5 @@ export default {
   },
   moduleFileExtensions: ["ts", "js", "html"],
   coverageDirectory: "../../coverage/packages/graphql-mesh-server",
+  setupFiles: ['./jest.mock-env.ts'],
 };

@@ -143,12 +143,6 @@ export class Maintenance extends Construct {
     const maintenanceInt = new apigateway.LambdaIntegration(maintenanceLambda);
     maintenance.addMethod("GET", maintenanceInt, methodOptions);
     maintenance.addMethod("POST", maintenanceInt, methodOptions);
-    maintenance
-      .addResource("enable")
-      .addMethod("POST", maintenanceInt, methodOptions);
-    maintenance
-      .addResource("disable")
-      .addMethod("POST", maintenanceInt, methodOptions);
 
     const whitelist = maintenance.addResource("whitelist");
     const whitelistLambda = new NodejsFunction(this, "whitelist-lambda", {
