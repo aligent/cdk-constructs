@@ -1,51 +1,102 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { getCurrentStatus, toggleMaintenanceStatus } from "./lib/file";
+import {
+  getMaintenanceFile,
+  toggleMaintenanceStatus,
+  updateMaintenanceStatus,
+} from "./lib/file";
 
 const MAINTENANCE_FILE_PATH = process.env.MAINTENANCE_FILE_PATH;
+
+interface MaintenanceRequest {
+  sites: Record<string, boolean>;
+}
+
+interface MaintenanceResponse {
+  sites: Record<string, boolean>;
+}
+
+interface MaintenanceErrorResponse {
+  error: string;
+}
+
+const parseBody = function (body: string | null): MaintenanceRequest {
+  if (!body) {
+    throw new Error("Update requests must contain a JSON body.");
+  }
+
+  const maintenanceRequest = JSON.parse(body);
+
+  if (
+    !("sites" in maintenanceRequest) ||
+    !(typeof maintenanceRequest.sites == "object")
+  ) {
+    throw new Error(
+      "Maintenance request updates must contain a record of which sites to place in maintenance mode."
+    );
+  }
+
+  return maintenanceRequest;
+};
 
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  if (!MAINTENANCE_FILE_PATH) throw new Error("a");
-  let body = "Method not implemented";
-  let status = 200;
+  if (!MAINTENANCE_FILE_PATH)
+    throw new Error("Maintenance File path is missing.");
+  let status = 501;
+  let response: MaintenanceErrorResponse | MaintenanceResponse = {
+    error: "Method not implemented",
+  };
 
-  switch (event.httpMethod) {
-    case "GET":
-      body = getCurrentStatus();
-      break;
-    case "POST":
-      body = changeMaintenanceStatus(extractDesiredStatusFromEvent(event));
-      break;
-    default:
-      status = 501;
+  try {
+    switch (event.httpMethod) {
+      case "GET": {
+        status = 200;
+        response = {
+          sites: getMaintenanceFile().sites,
+        };
+        break;
+      }
+      case "POST": {
+        const maintenanceRequest = parseBody(event.body);
+
+        // if any site is in maintenance update the file to .enabled
+        const enabled = Object.values(maintenanceRequest.sites).some(
+          value => value === true
+        );
+        toggleMaintenanceStatus(enabled);
+
+        // Update contents of file
+        updateMaintenanceStatus(maintenanceRequest.sites);
+        status = 200;
+        response = {
+          sites: getMaintenanceFile().sites,
+        };
+        break;
+      }
+      default:
+        status = 501;
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      status = 403;
+      response = {
+        error: error.message,
+      };
+    } else {
+      console.error(JSON.stringify(error));
+      status = 500;
+      response = {
+        error: "An Unkown error ocurred.",
+      };
+    }
   }
 
   return {
-    body: body,
+    body: JSON.stringify(response),
     statusCode: status,
+    headers: {
+      "content-type": "application/json",
+    },
   };
-};
-const extractDesiredStatusFromEvent = (
-  event: APIGatewayProxyEvent
-): "enabled" | "disabled" | undefined => {
-  if (event.resource.includes("enable")) return "enabled";
-  if (event.resource.includes("disable")) return "disabled";
-  return undefined;
-};
-
-const changeMaintenanceStatus = (
-  desiredStatus?: "enabled" | "disabled"
-): string => {
-  // If no status is provided then toggle
-  if (desiredStatus === undefined) {
-    toggleMaintenanceStatus();
-    return getCurrentStatus();
-  }
-
-  const currentStatus = getCurrentStatus();
-  if (currentStatus === desiredStatus) return currentStatus;
-
-  toggleMaintenanceStatus();
-  return getCurrentStatus();
 };

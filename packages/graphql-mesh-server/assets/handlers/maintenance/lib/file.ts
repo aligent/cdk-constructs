@@ -13,6 +13,11 @@ const PATHS = [
   `${MAINTENANCE_FILE_PATH}/${FILE_NAME}.enabled`,
 ];
 
+export interface MaintenanceFile {
+  whitelist: Array<string>;
+  sites: Record<string, boolean>;
+}
+
 export const getFilePath = (): string => {
   for (const path of PATHS) {
     if (existsSync(path)) {
@@ -21,38 +26,44 @@ export const getFilePath = (): string => {
   }
 
   // If the maintenance file wasn't found, create one
-  writeFileSync(PATHS[0], "");
+  writeFileSync(PATHS[0], JSON.stringify({ whitelist: [], sites: {} }));
   return PATHS[0];
 };
 
-export const getFileContents = (): string => {
-  return readFileSync(getFilePath(), "utf-8");
+export const getMaintenanceFile = (): MaintenanceFile => {
+  const fileContents = readFileSync(getFilePath(), "utf-8");
+  return JSON.parse(fileContents) as MaintenanceFile;
 };
 
-export const setFileContents = (input: string): void => {
-  if (!validateIps(input)) throw new Error("List of IP addresses not valid");
-  const uniqueIps = [...new Set(input.split(","))].join(",");
+export const setWhitelist = (whitelist: Array<string>): void => {
+  if (!validateIps(whitelist))
+    throw new Error("List of IP addresses is not valid");
+  const maintFile = getMaintenanceFile();
+  maintFile.whitelist = [...new Set(whitelist)];
 
-  writeFileSync(getFilePath(), uniqueIps, { encoding: "utf-8" });
+  writeFileSync(getFilePath(), JSON.stringify(maintFile), {
+    encoding: "utf-8",
+  });
 };
 
-export const updateFileContents = (input: string): void => {
-  if (!input) throw new Error("Nothing to update.");
-  if (!validateIps(input)) throw new Error("List of IP addresses not valid");
+export const updateWhitelist = (whitelist: Array<string>): void => {
+  if (!validateIps(whitelist))
+    throw new Error("List of IP addresses is not valid");
+  const maintFile = getMaintenanceFile();
 
-  setFileContents(`${getFileContents()},${input}`);
+  setWhitelist(maintFile.whitelist.concat(whitelist));
 };
 
-export const getCurrentStatus = (): "disabled" | "enabled" => {
-  return inMaintenanceMode() ? "enabled" : "disabled";
+export const updateMaintenanceStatus = (sites: Record<string, boolean>) => {
+  const maintFile = getMaintenanceFile();
+  maintFile.sites = sites;
+  writeFileSync(getFilePath(), JSON.stringify(maintFile), {
+    encoding: "utf-8",
+  });
 };
 
-export const inMaintenanceMode = (): boolean => {
-  return getFilePath().includes("enabled");
-};
-
-export const toggleMaintenanceStatus = () => {
-  const desiredStatus = inMaintenanceMode() ? "disabled" : "enabled";
+export const toggleMaintenanceStatus = (status: boolean) => {
+  const desiredStatus = status ? "enabled" : "disabled";
 
   renameSync(
     getFilePath(),
@@ -60,9 +71,8 @@ export const toggleMaintenanceStatus = () => {
   );
 };
 
-const validateIps = (ipList: string) => {
-  const ips = ipList.split(",");
+const validateIps = (ipList: Array<string>) => {
   return (
-    ips.find(ip => !IP_REGEX.test(ip) && !IP_V6_REGEX.test(ip)) === undefined
+    ipList.find(ip => !IP_REGEX.test(ip) && !IP_V6_REGEX.test(ip)) === undefined
   );
 };
