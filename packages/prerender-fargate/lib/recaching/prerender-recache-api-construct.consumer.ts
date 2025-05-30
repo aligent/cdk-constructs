@@ -18,7 +18,7 @@ export const handler = async (event: SQSEvent, _context: Context) => {
       },
       validateStatus: function (status) {
         return status < 500; // Don't throw an error on anything that isn't a server error
-      }
+      },
     });
     console.log(
       `Fetched URL: ${url}, Response Code: ${JSON.stringify(res.status)}`
