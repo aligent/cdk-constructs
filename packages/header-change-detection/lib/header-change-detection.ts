@@ -50,6 +50,11 @@ export interface HeaderChangeDetectionProps {
    * @default ["200"]
    */
   acceptedHttpStatus?: string[];
+
+  /**
+   * For extended Lambda timeout. Default: 10 seconds
+   */
+  lambdaTimeout?: Duration;
 }
 
 const command = [
@@ -100,6 +105,7 @@ export class HeaderChangeDetection extends Construct {
       architecture: Architecture.X86_64,
       runtime: Runtime.NODEJS_20_X,
       handler: "header-check.handler",
+      timeout: props.lambdaTimeout || Duration.seconds(10),
       code: Code.fromAsset(join(__dirname, "lambda"), {
         bundling: {
           command,
