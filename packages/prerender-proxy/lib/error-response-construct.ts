@@ -48,7 +48,7 @@ export class ErrorResponseFunction extends Construct {
             }),
           },
         }),
-        runtime: Runtime.NODEJS_18_X,
+        runtime: Runtime.NODEJS_22_X,
         handler: "error-response.handler",
       }
     );
