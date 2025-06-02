@@ -136,7 +136,7 @@ export class CodePipelineService extends Construct {
             "../assets/handlers/invalidate-cloudfront-cache.ts"
           ),
           description: "Lambda function to invalidate CloudFront cache.",
-          runtime: Runtime.NODEJS_18_X,
+          runtime: Runtime.NODEJS_22_X,
           handler: "index.handler",
           timeout: Duration.seconds(5),
           environment: {
@@ -174,7 +174,7 @@ export class CodePipelineService extends Construct {
         entry: path.resolve(__dirname, "../assets/handlers/notify-sns.ts"),
         description:
           "Lambda function to forward SNS messages to another account.",
-        runtime: Runtime.NODEJS_18_X,
+        runtime: Runtime.NODEJS_22_X,
         handler: "index.handler",
         timeout: Duration.seconds(10),
         environment: {
