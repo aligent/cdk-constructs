@@ -353,7 +353,7 @@ const sendToSns = async (message: string) => {
   const publishInput: PublishInput = {
     TopicArn: TOPIC_ARN,
     Message: message,
-    Subject: "Security Header Change detected"
+    Subject: "Security Header Change detected",
   };
   const publishCommand = new PublishCommand(publishInput);
   await SNS_CLIENT.send(publishCommand);
