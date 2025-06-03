@@ -41,5 +41,9 @@
   "packageManager": "yarn@4.5.1",
   "dependencies": {
     "eslint-config-prettier": "^9.1.0"
-  }
+  },
+  "resolutions": {
+    "esbuild": "0.25.0"
+  },
+  "scripts": null
 }
