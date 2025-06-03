@@ -103,7 +103,7 @@ export class HeaderChangeDetection extends Construct {
 
     const lambda = new Function(this, "HeaderCheck", {
       architecture: Architecture.X86_64,
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_22_X,
       handler: "header-check.handler",
       timeout: props.lambdaTimeout || Duration.seconds(10),
       code: Code.fromAsset(join(__dirname, "lambda"), {
