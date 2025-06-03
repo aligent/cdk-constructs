@@ -128,7 +128,7 @@ export class Maintenance extends Construct {
         "../assets/handlers/maintenance/maintenance.ts"
       ),
       description: "Lambda manage the maintenance mode status",
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_22_X,
       handler: "index.handler",
       timeout: Duration.seconds(5),
       filesystem: lambda.FileSystem.fromEfsAccessPoint(
@@ -151,7 +151,7 @@ export class Maintenance extends Construct {
         "../assets/handlers/maintenance/whitelist.ts"
       ),
       description: "Lambda to manage the maintenance whitelist",
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_22_X,
       handler: "index.handler",
       timeout: Duration.seconds(5),
       filesystem: lambda.FileSystem.fromEfsAccessPoint(

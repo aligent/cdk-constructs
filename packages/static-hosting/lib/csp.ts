@@ -61,7 +61,7 @@ class EdgeLambdaFunction extends Construct {
             }),
           },
         }),
-        runtime: Runtime.NODEJS_20_X,
+        runtime: Runtime.NODEJS_22_X,
         handler: `${options.handlerName}.handler`,
         ...options.functionOptions,
       }
