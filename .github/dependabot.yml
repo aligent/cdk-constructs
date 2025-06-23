@@ -13,8 +13,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    reviewers:
-      - "aligent/aligent-devops"
     target-branch: "main"
     open-pull-requests-limit: 10
     ignore:                    # Ignore major version updates
@@ -77,8 +75,6 @@ updates:
       - "/packages/graphql-mesh-server/assets/nginx"
     schedule:
       interval: "weekly"
-    reviewers:                        # Reviewers for Docker image updates.    
-      - "aligent/aligent-devops"
     target-branch: "main"
     open-pull-requests-limit: 10
     ignore:
@@ -95,7 +91,5 @@ updates:
     directory: "/"                    # Monitors all workflows in the repository.
     schedule:
       interval: "weekly"
-    reviewers:                        # Reviewers for Docker image updates.    
-      - "aligent/aligent-devops"
     target-branch: "main"
     open-pull-requests-limit: 5
