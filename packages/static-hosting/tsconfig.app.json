@@ -5,6 +5,11 @@
     "module": "commonjs",
     "types": ["node"]
   },
-  "exclude": ["./jest.config.ts", "lib/handlers"],
+  "exclude": [
+    "./jest.config.ts",
+    "lib/handlers",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
   "include": ["lib/**/*.ts", "index.ts"]
 }
