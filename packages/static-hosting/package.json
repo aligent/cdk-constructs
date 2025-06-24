@@ -3,14 +3,16 @@
   "version": "2.7.2",
   "main": "index.js",
   "license": "MIT",
-  "homepage": "https://github.com/aligent/aws-cdk-static-hosting-stack#readme",
+  "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/static-hosting#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aligent/aws-cdk-static-hosting-stack"
+    "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
   },
   "types": "index.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "npx nx test static-hosting",
+    "lint": "npx nx lint static-hosting"
   },
   "devDependencies": {
     "@aligent/cdk-esbuild": "^2.0",

@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "watch": "tsc -w",
-    "test": "echo \"No test specified\" && exit 0"
+    "test": "npx nx test feature-env-handlers",
+    "lint": "npx nx lint feature-env-handlers"
   },
   "repository": {
     "type": "git",
