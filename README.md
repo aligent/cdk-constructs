@@ -32,6 +32,26 @@ Make your changes in the package of choice then
 
 From here anytime you rerun the `npm pack` step your changes will be in sync.
 
+### Testing
+
+To run tests for the entire monorepo:
+
+```bash
+yarn nx run-many -t test
+```
+
+To run tests for a specific package:
+
+```bash
+yarn nx test <package-name>
+```
+
+To run a single test file:
+
+```bash
+yarn nx test <package-name> --testFile=<test-file-name>
+```
+
 ### Merging
 
 Once happy with the changes and there's no errors update the readme (if there's any functional changes) and [create a PR](https://github.com/aligent/cdk-constructs/compare) for your branch
