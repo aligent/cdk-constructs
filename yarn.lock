@@ -257,8 +257,13 @@ __metadata:
     ts-node: "npm:^10.9.1"
     typescript: "npm:^5.3.2"
   peerDependencies:
-    aws-cdk-lib: ^2.168.0
-    constructs: ^10.4.2
+    aws-cdk-lib: ^2.120.0
+    constructs: ^10.0.0
+  peerDependenciesMeta:
+    aws-cdk-lib:
+      optional: false
+    constructs:
+      optional: false
   languageName: unknown
   linkType: soft
 
