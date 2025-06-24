@@ -77,3 +77,6 @@ cdk.out
 
 # Used during the publish stage
 .npmignore
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md

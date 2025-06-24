@@ -17,6 +17,26 @@ It has the following features that can optionally be enabled:
 
 ![static hosting diagram](docs/static_hosting.png)
 
+## Installation
+
+```bash
+npm install @aligent/cdk-static-hosting aws-cdk-lib constructs
+```
+
+Or with yarn:
+
+```bash
+yarn add @aligent/cdk-static-hosting aws-cdk-lib constructs
+```
+
+### Peer Dependencies
+
+This package has peer dependencies on:
+- `aws-cdk-lib` (^2.120.0)
+- `constructs` (^10.0.0)
+
+Make sure to install compatible versions of these packages in your CDK application.
+
 ## Usage and PrerenderFargateOptions
 ### `domainName`(string)
 - Domain name for the stack. Combined with the subDomainName it is used as the name for the S3 origin and an alternative domain name for the CloudFront distribution
