@@ -4,17 +4,19 @@
   "description": "A Cloudfront Lambda@Edge stack for performing basic auth protection",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && cd ./lib/handlers && npm ci"
+    "build": "tsc && cd ./lib/handlers && npm ci",
+    "test": "npx nx test basic-auth",
+    "lint": "npx nx lint basic-auth"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aligent/aws-cdk-prerender-proxy-stack.git"
+    "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/aligent/aws-cdk-prerender-proxy-stack/issues"
+    "url": "https://github.com/aligent/aws-cdk-constructs/issues"
   },
-  "homepage": "https://github.com/aligent/aws-cdk-prerender-proxy-stack#readme",
+  "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/basic-auth#readme",
   "devDependencies": {
     "@aligent/cdk-esbuild": "^2.0",
     "@types/aws-lambda": "^8.10.150",

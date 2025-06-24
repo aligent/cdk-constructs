@@ -3,14 +3,16 @@
   "version": "2.2.0",
   "main": "index.js",
   "license": "MIT",
-  "homepage": "https://github.com/aligent/aws-cdk-waf-stack#readme",
+  "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/waf#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aligent/aws-cdk-waf-stack"
+    "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
   },
   "types": "index.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "npx nx test waf",
+    "lint": "npx nx lint waf"
   },
   "devDependencies": {
     "@types/jest": "^29.5.10",
