@@ -1,7 +1,7 @@
 // Note: These tests have been removed due to architectural issues with environment variable handling.
-// The origin-response handler reads environment variables at module import time, which makes 
+// The origin-response handler reads environment variables at module import time, which makes
 // them very difficult to test properly in Jest without significant architectural changes.
-// 
+//
 // Key issues:
 // 1. Environment variables are read at import time, not at runtime
 // 2. Mocking environment variables requires clearing module cache
