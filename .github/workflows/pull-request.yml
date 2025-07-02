@@ -54,3 +54,35 @@ jobs:
 
     env:
       PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+
+  test:
+    name: 🧪 Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch target
+        run: git fetch origin ${{ env.PR_BASE_REF }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "yarn"
+
+      - name: Install
+        run: yarn install
+
+      - name: Build all packages
+        run: yarn nx run-many -t build
+
+      - name: Test affected packages
+        run: yarn nx affected:test --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3
+
+    env:
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
