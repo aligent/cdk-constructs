@@ -4,17 +4,19 @@
   "description": "A Cloudfront Lambda@Edge stack for performing redirection based on CloudFront-Viewer-Country",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && cd ./lib/handlers && npm ci"
+    "build": "tsc && cd ./lib/handlers && npm ci",
+    "test": "npx nx test geoip-redirect",
+    "lint": "npx nx lint geoip-redirect"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aligent/aws-cdk-prerender-proxy-stack.git"
+    "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/aligent/aws-cdk-prerender-proxy-stack/issues"
+    "url": "https://github.com/aligent/aws-cdk-constructs/issues"
   },
-  "homepage": "https://github.com/aligent/aws-cdk-prerender-proxy-stack#readme",
+  "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/geoip-redirect#readme",
   "devDependencies": {
     "@aligent/cdk-esbuild": "^2.0",
     "@types/aws-lambda": "^8.10.150",

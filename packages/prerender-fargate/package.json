@@ -4,7 +4,9 @@
   "description": "A construct to host Prerender in Fargate",
   "main": "index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "npx nx test prerender-fargate",
+    "lint": "npx nx lint prerender-fargate"
   },
   "repository": {
     "type": "git",

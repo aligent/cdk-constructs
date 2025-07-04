@@ -3,14 +3,19 @@
   "version": "2.0.0",
   "main": "index.js",
   "license": "MIT",
-  "homepage": "https://github.com/aligent/aws-rabbitmq-waf-stack#readme",
+  "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/rabbitmq#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aligent/aws-rabbitmq-waf-stack"
+    "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aligent/aws-cdk-constructs/issues"
   },
   "types": "index.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "npx nx test rabbitmq",
+    "lint": "npx nx lint rabbitmq"
   },
   "devDependencies": {
     "@types/jest": "^29.5.10",

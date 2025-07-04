@@ -6,8 +6,8 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc && cd ./lib/handlers && npm ci",
-    "watch": "tsc -w",
-    "test": "jest"
+    "test": "npx nx test cloudfront-security-headers",
+    "lint": "npx nx lint cloudfront-security-headers"
   },
   "devDependencies": {
     "@aligent/cdk-esbuild": "^2.0",
