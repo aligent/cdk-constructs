@@ -2,7 +2,7 @@ import "source-map-support/register";
 import { CloudFrontRequest, CloudFrontRequestEvent } from "aws-lambda";
 
 const IS_BOT =
-  /googlebot|bingbot|yandex|baiduspider|facebookexternalhit|facebookbot|twitterbot|linkedinbot|embedly|showyoubot|outbrain|pinterestbot|slackbot|vkShare|W3C_Validator|whatsapp|ImgProxy|flipboard|tumblr|bitlybot|skype|nuzzel|discordbot|google|qwantify|pinterest|lighthouse|telegrambo|Google-InspectionTool|Schema-Markup-Validator|SchemaBot|chrome-lighthouse|adsbot-google|Feedfetcher-Google|Facebot|rogerbot|quora link preview|SiteAuditBot|Storebot|Mediapartners-Google|AdIdxBot|BingPreview|Yahoo! Slurp|duckduckbot|applebot|gptbot/i;
+  /googlebot|bingbot|yandex|baiduspider|facebookexternalhit|facebookbot|twitterbot|linkedinbot|embedly|showyoubot|outbrain|pinterestbot|slackbot|vkShare|W3C_Validator|whatsapp|ImgProxy|flipboard|tumblr|bitlybot|skype|nuzzel|discordbot|google|qwantify|pinterest|lighthouse|telegrambo|Google-InspectionTool|Schema-Markup-Validator|SchemaBot|chrome-lighthouse|adsbot-google|Feedfetcher-Google|Facebot|rogerbot|quora link preview|SiteAuditBot|Storebot|Mediapartners-Google|AdIdxBot|BingPreview|Yahoo! Slurp|duckduckbot|applebot|gptbot|OAI-SearchBot|ChatGPT|ClaudeBot|Amazonbot|Perplexity|PerplexityBot|Petalbot|Bytespider|Anthropic-ai|CCBot/i;
 
 const IS_FILE =
   /\.(js|css|xml|less|png|jpg|jpeg|gif|pdf|doc|txt|ico|rss|zip|mp3|rar|exe|wmv|avi|ppt|mpg|mpeg|tif|wav|mov|psd|ai|xls|mp4|m4a|swf|dat|dmg|iso|flv|m4v|woff|ttf|svg|webmanifest|eot|torrent)$/;
