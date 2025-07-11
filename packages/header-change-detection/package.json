@@ -2,14 +2,19 @@
   "name": "@aligent/cdk-header-change-detection",
   "main": "index.js",
   "license": "MIT",
-  "homepage": "https://github.com/aligent/cdk-constructs/packages/header-change-detection-stack#readme",
+  "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/header-change-detection#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aligent/aws-cdk-header-change-detection-stack"
+    "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aligent/aws-cdk-constructs/issues"
   },
   "types": "index.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "npx nx test header-change-detection",
+    "lint": "npx nx lint header-change-detection"
   },
   "devDependencies": {
     "@types/jest": "^29.5.10",
