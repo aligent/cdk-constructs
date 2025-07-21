@@ -4,7 +4,9 @@
   "description": "A construct to host Graphql Mesh in Fargate",
   "main": "index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "npx nx test graphql-mesh-server",
+    "lint": "npx nx lint graphql-mesh-server"
   },
   "repository": {
     "type": "git",

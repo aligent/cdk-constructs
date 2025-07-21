@@ -4,17 +4,19 @@
   "description": "Cloudfront Lambda@Edge constructs for integrating with prerender.io",
   "main": "index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "npx nx test prerender-proxy",
+    "lint": "npx nx lint prerender-proxy"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aligent/aws-cdk-prerender-proxy-stack.git"
+    "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/aligent/aws-cdk-prerender-proxy-stack/issues"
+    "url": "https://github.com/aligent/aws-cdk-constructs/issues"
   },
-  "homepage": "https://github.com/aligent/aws-cdk-prerender-proxy-stack#readme",
+  "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/prerender-proxy#readme",
   "devDependencies": {
     "@aligent/cdk-esbuild": "^2.0",
     "@types/aws-lambda": "^8.10.150",
