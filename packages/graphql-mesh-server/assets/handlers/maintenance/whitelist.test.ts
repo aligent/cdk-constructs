@@ -41,7 +41,8 @@ const mockAllowlist = [
   "2001:4860:4860::8888", // Google DNS IPv6
 ];
 describe("Lambda handler", () => {
-  beforeAll(() => {
+  beforeEach(() => {
+    // Reset the whitelist before each test to ensure test isolation
     setWhitelist(mockAllowlist);
   });
 

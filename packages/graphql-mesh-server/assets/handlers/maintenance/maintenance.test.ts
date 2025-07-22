@@ -26,7 +26,8 @@ const createMockEvent = (
 const mockSites = { "example.com": false, "example.com.au": false };
 
 describe("Lambda handler", () => {
-  beforeAll(() => {
+  beforeEach(() => {
+    // Reset the maintenance status before each test to ensure test isolation
     updateMaintenanceStatus(mockSites);
   });
 
