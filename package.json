@@ -17,7 +17,18 @@
     "url": "https://github.com/aligent/aws-cdk-constructs/issues"
   },
   "homepage": "https://github.com/aligent/aws-cdk-constructs#readme",
+  "scripts": {
+    "changeset": "changeset",
+    "changeset:version": "changeset version",
+    "changeset:publish": "changeset publish",
+    "release": "changeset publish",
+    "changeset:status": "changeset status",
+    "affected": "nx show projects --affected",
+    "affected:packages": "nx show projects --affected --json | jq -r '.[]' | grep -E '^(graphql-mesh-server|prerender-alpine|cloudfront-security-headers|header-change-detection|feature-env-handlers|prerender-fargate|prerender-proxy|geoip-redirect|static-hosting|basic-auth|shared-vpc|rabbitmq|esbuild|waf)$' | sed 's/^/@aligent\\/cdk-/' || echo 'No affected packages'"
+  },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.5.1",
+    "@changesets/cli": "^2.29.5",
     "@nx/esbuild": "20.0.11",
     "@nx/eslint": "20.0.11",
     "@nx/eslint-plugin": "20.0.11",
