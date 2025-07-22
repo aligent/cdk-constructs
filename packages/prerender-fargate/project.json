@@ -13,7 +13,7 @@
         "assets": [
           "packages/prerender-fargate/lib/prerender/**",
           "packages/prerender-fargate/README.md",
-          "packages/prerender-fargate/tokenSecret.png"
+          "packages/prerender-fargate/docs/**"
         ]
       },
       "dependsOn": ["merge-gitignore"]

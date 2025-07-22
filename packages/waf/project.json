@@ -12,7 +12,7 @@
         "tsConfig": "packages/waf/tsconfig.app.json",
         "assets": [
           "packages/waf/README.md",
-          "packages/waf/CdkPipelineCrossAccountDeploy.jpeg"
+          "packages/waf/docs/**"
         ]
       },
       "dependsOn": ["merge-gitignore"]

@@ -12,7 +12,7 @@
         "tsConfig": "packages/rabbitmq/tsconfig.app.json",
         "assets": [
           "packages/rabbitmq/README.md",
-          "packages/rabbitmq/CDKPipeline-RabbitMQ.jpeg"
+          "packages/rabbitmq/docs/**"
         ]
       },
       "dependsOn": ["merge-gitignore"]

@@ -32,7 +32,7 @@ To use the PrerenderFargate construct, you can instantiate it with suitable Prer
 
 - A pre-configured AWS SecretsManager Secret name with the value being in the format of `Map<String: String[]>`, for example, `{"token1": "https://www.example1.com,https://www.mydomain1.com", "token2":"https://www.example2.com,https://www.mydomain2.com"}`. This map is referenced for Prerender and Recaching service authentication.
 
-![Example Secret](./tokenSecret.png "Example Secret")
+![Example Secret](./docs/tokenSecret.png "Example Secret")
 
 ### `vpcId` (string, optional)
 
