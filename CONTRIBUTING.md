@@ -154,18 +154,86 @@ Your efforts in updating and improving the documentation are highly appreciated.
 
 ## Creating a Release
 
-The following section outlines the release process for maintainers.
+The following section outlines the release process for maintainers using Changesets.
 
-Each construct or package in this monorepo has an independent release cycle. Once the changes have been approved and merged into the main branch, you can create a release.
+### Release Process Overview
 
-**Note that for all the finalized releases, the source branch should be the main branch.**
+This repository uses [Changesets](https://github.com/changesets/changesets) for automated version management and releases. Each construct or package in this monorepo has an independent release cycle.
 
-If the release is experimental, you may use the `main` or the feature branch.
+### Developer Workflow
 
-For example:
+When contributing changes that should trigger a release:
 
-- Experimental release: `basic-auth-1.1.0-beta`
-- Finalized release: `basic-auth-1.1.0`
+1. **Check which packages are affected** by your changes:
+   ```sh
+   yarn affected:packages
+   ```
+   This uses Nx to accurately detect which packages are affected by your changes.
+
+2. **Add a changeset** for your changes:
+   ```sh
+   yarn changeset
+   ```
+   
+3. Follow the prompts to:
+   - Select the affected packages (use the output from step 1 as a guide)
+   - Choose the type of change (major, minor, patch)
+   - Provide a summary of the changes
+
+4. Commit the generated changeset file along with your changes
+
+**Pro tip:** The Nx-powered affected detection is more accurate than manual selection because it analyzes the dependency graph and understands which packages are truly impacted by your changes.
+
+### Release Workflow
+
+The automated release process works as follows:
+
+1. **When changes are merged to main:**
+   - GitHub Actions automatically creates or updates a "Release: Version Packages" PR
+   - This PR contains version updates and CHANGELOG.md updates for affected packages
+
+2. **When the Release PR is merged:**
+   - Packages are automatically published to NPM
+   - GitHub releases are created with generated release notes
+   - Changelogs are updated with links to PRs and commits
+
+### Manual Release Commands
+
+For maintainers, you can also run releases manually:
+
+```sh
+# Check the status of changesets
+yarn changeset:status
+
+# Update versions based on changesets (creates/updates Release PR)
+yarn changeset:version
+
+# Publish packages (run after version updates are merged)
+yarn release
+```
+
+### Release Types
+
+- **Patch** (`1.0.1`): Bug fixes, documentation updates
+- **Minor** (`1.1.0`): New features, backwards-compatible changes  
+- **Major** (`2.0.0`): Breaking changes
+
+### Pre-release Versions
+
+For experimental or beta releases, you can use pre-release modes:
+
+```sh
+# Enter pre-release mode
+yarn changeset pre enter beta
+
+# Add changesets as normal
+yarn changeset
+
+# Exit pre-release mode when ready
+yarn changeset pre exit
+```
+
+This will generate versions like `1.1.0-beta.1`, `2.0.0-alpha.2`, etc.
 
 ## Note for Maintainers
 
