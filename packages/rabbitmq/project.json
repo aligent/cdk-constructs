@@ -10,10 +10,7 @@
         "main": "packages/rabbitmq/index.ts",
         "outputPath": "dist/rabbitmq",
         "tsConfig": "packages/rabbitmq/tsconfig.app.json",
-        "assets": [
-          "packages/rabbitmq/README.md",
-          "packages/rabbitmq/docs/**"
-        ]
+        "assets": ["packages/rabbitmq/README.md", "packages/rabbitmq/docs/**"]
       },
       "dependsOn": ["merge-gitignore"]
     },
