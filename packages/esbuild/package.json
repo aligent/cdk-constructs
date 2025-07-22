@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-esbuild",
-  "version": "2.3.0",
+  "version": "2.4.1",
   "description": "Esbuild implementation for CDK",
   "main": "index.js",
   "types": "index.d.ts",

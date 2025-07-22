@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-rabbitmq",
-  "version": "2.0.0",
+  "version": "0.2.0",
   "main": "index.js",
   "license": "MIT",
   "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/rabbitmq#readme",
