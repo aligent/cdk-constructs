@@ -9,7 +9,11 @@
       "options": {
         "main": "packages/rabbitmq/index.ts",
         "outputPath": "dist/rabbitmq",
-        "tsConfig": "packages/rabbitmq/tsconfig.app.json"
+        "tsConfig": "packages/rabbitmq/tsconfig.app.json",
+        "assets": [
+          "packages/rabbitmq/README.md",
+          "packages/rabbitmq/CDKPipeline-RabbitMQ.jpeg"
+        ]
       },
       "dependsOn": ["merge-gitignore"]
     },

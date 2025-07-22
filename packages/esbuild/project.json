@@ -9,7 +9,8 @@
       "options": {
         "main": "packages/esbuild/index.ts",
         "outputPath": "dist/esbuild",
-        "tsConfig": "packages/esbuild/tsconfig.app.json"
+        "tsConfig": "packages/esbuild/tsconfig.app.json",
+        "assets": ["packages/esbuild/README.md"]
       },
       "dependsOn": ["merge-gitignore"]
     },

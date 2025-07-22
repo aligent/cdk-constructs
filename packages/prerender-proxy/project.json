@@ -10,7 +10,10 @@
         "main": "packages/prerender-proxy/index.ts",
         "outputPath": "dist/prerender-proxy",
         "tsConfig": "packages/prerender-proxy/tsconfig.app.json",
-        "assets": ["packages/prerender-proxy/lib/handlers/**"]
+        "assets": [
+          "packages/prerender-proxy/lib/handlers/**",
+          "packages/prerender-proxy/README.md"
+        ]
       },
       "dependsOn": ["merge-gitignore"]
     },

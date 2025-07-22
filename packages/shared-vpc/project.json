@@ -9,7 +9,8 @@
       "options": {
         "main": "packages/shared-vpc/index.ts",
         "outputPath": "dist/shared-vpc",
-        "tsConfig": "packages/shared-vpc/tsconfig.app.json"
+        "tsConfig": "packages/shared-vpc/tsconfig.app.json",
+        "assets": ["packages/shared-vpc/README.md"]
       },
       "dependsOn": ["merge-gitignore"]
     },

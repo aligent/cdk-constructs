@@ -9,7 +9,11 @@
       "options": {
         "main": "packages/waf/index.ts",
         "outputPath": "dist/waf",
-        "tsConfig": "packages/waf/tsconfig.app.json"
+        "tsConfig": "packages/waf/tsconfig.app.json",
+        "assets": [
+          "packages/waf/README.md",
+          "packages/waf/CdkPipelineCrossAccountDeploy.jpeg"
+        ]
       },
       "dependsOn": ["merge-gitignore"]
     },

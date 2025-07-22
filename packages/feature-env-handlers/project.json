@@ -9,7 +9,11 @@
       "options": {
         "main": "packages/feature-env-handlers/index.ts",
         "outputPath": "dist/feature-env-handlers",
-        "tsConfig": "packages/feature-env-handlers/tsconfig.app.json"
+        "tsConfig": "packages/feature-env-handlers/tsconfig.app.json",
+        "assets": [
+          "packages/feature-env-handlers/README.md",
+          "packages/feature-env-handlers/docs/**"
+        ]
       },
       "dependsOn": ["merge-gitignore"]
     },
