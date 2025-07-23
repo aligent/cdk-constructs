@@ -43,8 +43,22 @@ jobs:
           echo "Getting affected packages from Nx..."
           AFFECTED_PACKAGES=$(npx nx show projects --affected --base=${{ github.event.pull_request.base.sha }} --head=HEAD --json 2>/dev/null || echo "[]")
           
-          # Filter for publishable CDK construct projects and map to package names
-          PUBLISHABLE_AFFECTED=$(echo "$AFFECTED_PACKAGES" | jq -r '.[]' | grep -E '^(graphql-mesh-server|prerender-alpine|cloudfront-security-headers|header-change-detection|feature-env-handlers|prerender-fargate|prerender-proxy|geoip-redirect|static-hosting|basic-auth|shared-vpc|rabbitmq|esbuild|waf)$' | sed 's/^/@aligent\/cdk-/' || echo "")
+          # Get all publishable CDK package names dynamically
+          ALL_PUBLISHABLE_PACKAGES=$(find packages -maxdepth 1 -type d -not -path packages | xargs -n1 basename | sed 's/^/@aligent\/cdk-/')
+          
+          # Filter affected packages to only include publishable CDK constructs
+          PUBLISHABLE_AFFECTED=""
+          for affected in $(echo "$AFFECTED_PACKAGES" | jq -r '.[]'); do
+            package_name="@aligent/cdk-$affected"
+            if echo "$ALL_PUBLISHABLE_PACKAGES" | grep -q "^$package_name$"; then
+              if [ -z "$PUBLISHABLE_AFFECTED" ]; then
+                PUBLISHABLE_AFFECTED="$package_name"
+              else
+                PUBLISHABLE_AFFECTED="$PUBLISHABLE_AFFECTED\n$package_name"
+              fi
+            fi
+          done
+          PUBLISHABLE_AFFECTED=$(echo -e "$PUBLISHABLE_AFFECTED")
           
           echo "Affected publishable packages:"
           echo "$PUBLISHABLE_AFFECTED"
