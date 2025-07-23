@@ -10,7 +10,10 @@
         "main": "packages/cloudfront-security-headers/index.ts",
         "outputPath": "dist/cloudfront-security-headers",
         "tsConfig": "packages/cloudfront-security-headers/tsconfig.app.json",
-        "assets": ["packages/cloudfront-security-headers/lib/handlers/**"]
+        "assets": [
+          "packages/cloudfront-security-headers/lib/handlers/**",
+          "packages/cloudfront-security-headers/README.md"
+        ]
       },
       "dependsOn": ["merge-gitignore"]
     },

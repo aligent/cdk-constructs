@@ -10,7 +10,11 @@
         "main": "packages/header-change-detection/index.ts",
         "outputPath": "dist/header-change-detection",
         "tsConfig": "packages/header-change-detection/tsconfig.app.json",
-        "assets": ["packages/header-change-detection/lib/lambda/**"]
+        "assets": [
+          "packages/header-change-detection/lib/lambda/**",
+          "packages/header-change-detection/README.md",
+          "packages/header-change-detection/docs/**"
+        ]
       },
       "dependsOn": ["merge-gitignore"]
     },

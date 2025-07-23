@@ -10,7 +10,11 @@
         "main": "packages/prerender-fargate/index.ts",
         "outputPath": "dist/prerender-fargate",
         "tsConfig": "packages/prerender-fargate/tsconfig.app.json",
-        "assets": ["packages/prerender-fargate/lib/prerender/**"]
+        "assets": [
+          "packages/prerender-fargate/lib/prerender/**",
+          "packages/prerender-fargate/README.md",
+          "packages/prerender-fargate/docs/**"
+        ]
       },
       "dependsOn": ["merge-gitignore"]
     },

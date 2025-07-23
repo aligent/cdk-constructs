@@ -10,7 +10,11 @@
         "main": "packages/static-hosting/index.ts",
         "outputPath": "dist/static-hosting",
         "tsConfig": "packages/static-hosting/tsconfig.app.json",
-        "assets": ["packages/static-hosting/lib/handlers/**"]
+        "assets": [
+          "packages/static-hosting/lib/handlers/**",
+          "packages/static-hosting/README.md",
+          "packages/static-hosting/docs/**"
+        ]
       },
       "dependsOn": ["merge-gitignore"]
     },

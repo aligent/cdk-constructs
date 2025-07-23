@@ -10,7 +10,10 @@
         "main": "packages/geoip-redirect/index.ts",
         "outputPath": "dist/geoip-redirect",
         "tsConfig": "packages/geoip-redirect/tsconfig.app.json",
-        "assets": ["packages/geoip-redirect/lib/handlers/**"]
+        "assets": [
+          "packages/geoip-redirect/lib/handlers/**",
+          "packages/geoip-redirect/README.md"
+        ]
       },
       "dependsOn": ["merge-gitignore"]
     },

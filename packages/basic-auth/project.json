@@ -10,7 +10,10 @@
         "main": "packages/basic-auth/index.ts",
         "outputPath": "dist/basic-auth",
         "tsConfig": "packages/basic-auth/tsconfig.app.json",
-        "assets": ["packages/basic-auth/lib/handlers/**"]
+        "assets": [
+          "packages/basic-auth/lib/handlers/**",
+          "packages/basic-auth/README.md"
+        ]
       },
       "dependsOn": ["merge-gitignore"]
     },

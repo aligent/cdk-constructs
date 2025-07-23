@@ -10,7 +10,11 @@
         "main": "packages/graphql-mesh-server/index.ts",
         "outputPath": "dist/graphql-mesh-server",
         "tsConfig": "packages/graphql-mesh-server/tsconfig.app.json",
-        "assets": ["packages/graphql-mesh-server/assets/**"]
+        "assets": [
+          "packages/graphql-mesh-server/assets/**",
+          "packages/graphql-mesh-server/README.md",
+          "packages/graphql-mesh-server/docs/**"
+        ]
       },
       "dependsOn": ["merge-gitignore"]
     },
