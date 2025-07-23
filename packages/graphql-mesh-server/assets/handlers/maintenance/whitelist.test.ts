@@ -41,7 +41,15 @@ const mockAllowlist = [
   "2001:4860:4860::8888", // Google DNS IPv6
 ];
 describe("Lambda handler", () => {
-  beforeAll(() => {
+  beforeEach(() => {
+    // Clean up any existing maintenance files before each test
+    if (existsSync(`${cwd()}/maintenance.enabled`)) {
+      rmSync(`${cwd()}/maintenance.enabled`);
+    }
+    if (existsSync(`${cwd()}/maintenance.disabled`)) {
+      rmSync(`${cwd()}/maintenance.disabled`);
+    }
+    // Reset the whitelist before each test to ensure test isolation
     setWhitelist(mockAllowlist);
   });
 

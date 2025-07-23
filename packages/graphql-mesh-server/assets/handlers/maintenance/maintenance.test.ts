@@ -26,7 +26,15 @@ const createMockEvent = (
 const mockSites = { "example.com": false, "example.com.au": false };
 
 describe("Lambda handler", () => {
-  beforeAll(() => {
+  beforeEach(() => {
+    // Clean up any existing maintenance files before each test
+    if (existsSync(`${cwd()}/maintenance.enabled`)) {
+      rmSync(`${cwd()}/maintenance.enabled`);
+    }
+    if (existsSync(`${cwd()}/maintenance.disabled`)) {
+      rmSync(`${cwd()}/maintenance.disabled`);
+    }
+    // Reset the maintenance status before each test to ensure test isolation
     updateMaintenanceStatus(mockSites);
   });
 
@@ -51,7 +59,17 @@ describe("Lambda handler", () => {
   });
 
   it("should handle POST'ing a disable all sites", async () => {
+    // First enable a site to set up the required state
+    const enableUpdate = {
+      sites: { "example.com": false, "example.com.au": true },
+    };
+    const enableEvent = createMockEvent("POST", JSON.stringify(enableUpdate));
+    await handler(enableEvent);
+
+    // Verify the file is in enabled state as expected
     expect(existsSync(`${cwd()}/maintenance.enabled`)).toBe(true);
+
+    // Now test disabling all sites
     const mockUpdate = {
       sites: { "example.com": false, "example.com.au": false },
     };
