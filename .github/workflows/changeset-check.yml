@@ -54,10 +54,20 @@ jobs:
           echo "$PUBLISHABLE_AFFECTED" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
           
-          # Check if there are affected packages that might need changesets
+          # Check if there are changesets present (regardless of affected packages)
+          CHANGESET_FILES=$(find .changeset -name "*.md" -not -name "README.md" | wc -l)
+          
+          # If there are changesets, we don't need to check affected packages
+          if [ "$CHANGESET_FILES" -gt 0 ]; then
+            echo "needs_changeset=false" >> $GITHUB_OUTPUT
+            echo "Changesets detected: $CHANGESET_FILES"
+            exit 0
+          fi
+          
+          # If no changesets and no affected packages, no changeset needed
           if [ -z "$PUBLISHABLE_AFFECTED" ] || [ "$PUBLISHABLE_AFFECTED" = "" ]; then
             echo "needs_changeset=false" >> $GITHUB_OUTPUT
-            echo "No publishable packages affected"
+            echo "No publishable packages affected and no changesets present"
             exit 0
           fi
           
