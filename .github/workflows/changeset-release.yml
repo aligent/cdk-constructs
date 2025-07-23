@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/DO-1284-mono-repo-init
   workflow_dispatch:
 
 concurrency:
