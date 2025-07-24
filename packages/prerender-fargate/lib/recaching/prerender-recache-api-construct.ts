@@ -102,6 +102,7 @@ export class PrerenderRecacheApi extends Construct {
       existingConsumerLambdaObj: new NodejsFunction(this, "consumer", {
         reservedConcurrentExecutions: options.maxConcurrentExecutions,
         timeout: Duration.seconds(120),
+        runtime: lambda.Runtime.NODEJS_22_X
       }),
       deployDeadLetterQueue: false,
       queueProps: {
@@ -129,6 +130,7 @@ const createApiLambdaFunction = (
 ): NodejsFunction => {
   const apiHandler = new NodejsFunction(scope, "api", {
     timeout: Duration.seconds(60),
+    runtime: lambda.Runtime.NODEJS_22_X
   });
 
   apiHandler.addEnvironment(
