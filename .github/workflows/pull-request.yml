@@ -45,7 +45,7 @@ jobs:
           cache: "yarn"
 
       - name: Install
-        run: yarn install
+        run: yarn install --frozen-lockfile
 
       - name: Build all packages
         run: yarn nx run-many -t build
@@ -76,7 +76,7 @@ jobs:
           cache: "yarn"
 
       - name: Install
-        run: yarn install
+        run: yarn install --frozen-lockfile
 
       - name: Build all packages
         run: yarn nx run-many -t build
