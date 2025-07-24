@@ -39,9 +39,10 @@ jobs:
         run: |
           set +e  # Don't exit on error
           
-          # Get affected packages using Nx (more accurate than changeset detection)
-          echo "Getting affected packages from Nx..."
-          AFFECTED_PACKAGES=$(npx nx show projects --affected --base=${{ github.event.pull_request.base.sha }} --head=HEAD --json 2>/dev/null || echo "[]")
+          # Get affected packages using git diff (avoid nx lockfile issues)
+          echo "Getting affected packages from git diff..."
+          AFFECTED_PACKAGES_NAMES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD | grep '^packages/' | cut -d'/' -f2 | sort | uniq)
+          AFFECTED_PACKAGES=$(echo "$AFFECTED_PACKAGES_NAMES" | jq -R . | jq -s . 2>/dev/null || echo "[]")
           
           # Get all publishable CDK package names dynamically
           ALL_PUBLISHABLE_PACKAGES=$(find packages -maxdepth 1 -type d -not -path packages | xargs -n1 basename | sed 's/^/@aligent\/cdk-/')
