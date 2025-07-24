@@ -17,7 +17,18 @@
     "url": "https://github.com/aligent/aws-cdk-constructs/issues"
   },
   "homepage": "https://github.com/aligent/aws-cdk-constructs#readme",
+  "scripts": {
+    "changeset": "changeset",
+    "changeset:version": "changeset version",
+    "changeset:publish": "changeset publish",
+    "release": "changeset publish",
+    "changeset:status": "changeset status",
+    "affected": "nx show projects --affected",
+    "affected:packages": "ALL_PACKAGES=$(find packages -maxdepth 1 -type d -not -path packages | xargs -n1 basename | sed 's/^/@aligent\\/cdk-/'); AFFECTED=$(nx show projects --affected --json | jq -r '.[]'); for pkg in $AFFECTED; do echo \"$ALL_PACKAGES\" | grep -q \"@aligent/cdk-$pkg\" && echo \"@aligent/cdk-$pkg\"; done || echo 'No affected packages'"
+  },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.5.1",
+    "@changesets/cli": "^2.29.5",
     "@nx/esbuild": "20.0.11",
     "@nx/eslint": "20.0.11",
     "@nx/eslint-plugin": "20.0.11",
@@ -44,6 +55,5 @@
   },
   "resolutions": {
     "esbuild": "0.25.0"
-  },
-  "scripts": null
+  }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-basic-auth",
-  "version": "2.0.0",
+  "version": "0.2.1",
   "description": "A Cloudfront Lambda@Edge stack for performing basic auth protection",
   "main": "index.js",
   "scripts": {

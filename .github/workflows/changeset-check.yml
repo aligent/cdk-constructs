@@ -1,0 +1,241 @@
+name: Changeset Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  changeset-check:
+    name: 📝 Changeset Check
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "yarn"
+
+      - name: Install Dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Check Nx Affected Packages and Changesets
+        id: changeset-check
+        run: |
+          set +e  # Don't exit on error
+          
+          # Get affected packages using Nx (more accurate than changeset detection)
+          echo "Getting affected packages from Nx..."
+          AFFECTED_PACKAGES=$(npx nx show projects --affected --base=${{ github.event.pull_request.base.sha }} --head=HEAD --json 2>/dev/null || echo "[]")
+          
+          # Get all publishable CDK package names dynamically
+          ALL_PUBLISHABLE_PACKAGES=$(find packages -maxdepth 1 -type d -not -path packages | xargs -n1 basename | sed 's/^/@aligent\/cdk-/')
+          
+          # Filter affected packages to only include publishable CDK constructs
+          PUBLISHABLE_AFFECTED=""
+          for affected in $(echo "$AFFECTED_PACKAGES" | jq -r '.[]'); do
+            package_name="@aligent/cdk-$affected"
+            if echo "$ALL_PUBLISHABLE_PACKAGES" | grep -q "^$package_name$"; then
+              if [ -z "$PUBLISHABLE_AFFECTED" ]; then
+                PUBLISHABLE_AFFECTED="$package_name"
+              else
+                PUBLISHABLE_AFFECTED="$PUBLISHABLE_AFFECTED\n$package_name"
+              fi
+            fi
+          done
+          PUBLISHABLE_AFFECTED=$(echo -e "$PUBLISHABLE_AFFECTED")
+          
+          echo "Affected publishable packages:"
+          echo "$PUBLISHABLE_AFFECTED"
+          
+          # Save affected packages to output
+          echo "affected_packages<<EOF" >> $GITHUB_OUTPUT
+          echo "$PUBLISHABLE_AFFECTED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Check if there are changesets present (regardless of affected packages)
+          CHANGESET_FILES=$(find .changeset -name "*.md" -not -name "README.md" | wc -l)
+          
+          # If there are changesets, we don't need to check affected packages
+          if [ "$CHANGESET_FILES" -gt 0 ]; then
+            echo "needs_changeset=false" >> $GITHUB_OUTPUT
+            echo "Changesets detected: $CHANGESET_FILES"
+            exit 0
+          fi
+          
+          # If no changesets and no affected packages, no changeset needed
+          if [ -z "$PUBLISHABLE_AFFECTED" ] || [ "$PUBLISHABLE_AFFECTED" = "" ]; then
+            echo "needs_changeset=false" >> $GITHUB_OUTPUT
+            echo "No publishable packages affected and no changesets present"
+            exit 0
+          fi
+          
+          # Check changeset status
+          CHANGESET_STATUS=$(yarn changeset status --output=json 2>/dev/null)
+          CHANGESET_EXIT_CODE=$?
+          
+          # Determine if changesets are needed
+          if [ $CHANGESET_EXIT_CODE -ne 0 ]; then
+            echo "needs_changeset=true" >> $GITHUB_OUTPUT
+            echo "Affected packages found but no changesets detected"
+          else
+            # Parse changeset status to see if all affected packages are covered
+            PACKAGES_WITH_CHANGESETS=$(echo "$CHANGESET_STATUS" | jq -r '.releases[] | select(.changesets | length > 0) | .name' 2>/dev/null || echo "")
+            
+            # Check if all affected packages have changesets
+            ALL_COVERED=true
+            for pkg in $PUBLISHABLE_AFFECTED; do
+              if ! echo "$PACKAGES_WITH_CHANGESETS" | grep -q "$pkg"; then
+                ALL_COVERED=false
+                break
+              fi
+            done
+            
+            if [ "$ALL_COVERED" = "true" ]; then
+              echo "needs_changeset=false" >> $GITHUB_OUTPUT
+              echo "All affected packages have changesets"
+            else
+              echo "needs_changeset=true" >> $GITHUB_OUTPUT
+              echo "Some affected packages missing changesets"
+            fi
+          fi
+
+      - name: Comment on PR if no changeset
+        if: steps.changeset-check.outputs.needs_changeset == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo, number } = context.issue;
+            
+            // Check if we already commented
+            const comments = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: number,
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('⚠️ No Changeset Detected')
+            );
+            
+            // Get the list of affected packages from the previous step
+            const affectedPackages = `${{ steps.changeset-check.outputs.affected_packages }}`.trim();
+            const packageList = affectedPackages ? affectedPackages.split('\n').filter(p => p.trim()) : [];
+            
+            const commentBody = [
+              '## ⚠️ No Changeset Detected',
+              '',
+              'This pull request modifies code that affects the following packages (detected by Nx):',
+              '',
+              ...(packageList.length > 0 ? [
+                '**Affected Packages:**',
+                ...packageList.map(pkg => `- \`${pkg}\``),
+                ''
+              ] : ['*No specific packages detected*', '']),
+              '**If this PR should trigger a release:**',
+              '```bash',
+              'yarn changeset',
+              '```',
+              'Follow the prompts to select the affected packages and describe your changes.',
+              '',
+              '**If this PR should NOT trigger a release:**',
+              '- Documentation-only changes',
+              '- Internal refactoring with no API changes',
+              '- Test updates',  
+              '- Build/CI configuration changes',
+              '- Changes only to root files (package.json, workflows, etc.)',
+              '',
+              'In this case, no action is needed - this comment is just a reminder for reviewers.',
+              '',
+              '*This check uses Nx to accurately detect which packages are affected by your changes. If you\'re unsure whether a changeset is needed, please ask a maintainer!*',
+              '',
+              '<details>',
+              '<summary>🔧 Commands & Tips</summary>',
+              '',
+              '```bash',
+              '# Add a changeset for your changes',
+              'yarn changeset',
+              '',
+              '# Check which packages Nx thinks are affected',
+              'npx nx show projects --affected',
+              '',
+              '# Check current changeset status',
+              'yarn changeset:status',
+              '',
+              '# Add an empty changeset if no release needed',
+              'yarn changeset --empty',
+              '```',
+              '',
+              '**Pro tip:** When running `yarn changeset`, select only the packages listed above that you actually changed the public API of.',
+              '',
+              '</details>'
+            ].join('\n');
+
+            if (!botComment) {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: number,
+                body: commentBody
+              });
+            } else {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            }
+
+      - name: Remove changeset comment if changeset exists
+        if: steps.changeset-check.outputs.needs_changeset == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo, number } = context.issue;
+            
+            // Find and remove the bot comment if changeset now exists
+            const comments = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: number,
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('⚠️ No Changeset Detected')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.deleteComment({
+                owner,
+                repo,
+                comment_id: botComment.id
+              });
+              
+              // Add a brief success comment
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: number,
+                body: '✅ **Changeset detected** - Thanks for adding release notes!'
+              });
+            }

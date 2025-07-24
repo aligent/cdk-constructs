@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-cloudfront-security-headers",
-  "version": "2.0.0",
+  "version": "0.4.0",
   "description": "A Cloudfront Lambda@Edge function for adding security headers.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
