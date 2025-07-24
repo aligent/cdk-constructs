@@ -65,6 +65,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # Update lockfile after changeset version updates
+      - name: Update lockfile
+        if: steps.changesets.outputs.hasChangesets == 'true'
+        run: |
+          yarn install --mode update-lockfile
+          git add yarn.lock
+          git commit -m "chore: update lockfile after version bumps" || echo "No lockfile changes to commit"
+
       - name: Publish Release Info
         if: steps.changesets.outputs.published == 'true'
         run: |
