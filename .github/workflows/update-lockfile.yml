@@ -1,0 +1,57 @@
+name: Update Lockfile
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - '.changeset/**'
+      - 'packages/**/package.json'
+      - 'package.json'
+
+jobs:
+  update-lockfile:
+    name: 📦 Update yarn.lock
+    runs-on: ubuntu-latest
+    # Only run on changeset release PRs
+    if: |
+      contains(github.head_ref, 'changeset-release/') || 
+      contains(github.event.pull_request.title, 'chore: release packages')
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "yarn"
+
+      - name: Update Lockfile
+        run: |
+          # Update lockfile to match package.json changes
+          yarn install --mode update-lockfile
+          
+          # Check if lockfile was modified
+          if git diff --quiet yarn.lock; then
+            echo "No lockfile changes needed"
+            exit 0
+          fi
+
+      - name: Commit Lockfile Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add yarn.lock
+          git commit -m "chore: update lockfile after version bumps"
+          git push

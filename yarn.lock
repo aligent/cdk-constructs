@@ -9,7 +9,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-basic-auth@workspace:packages/basic-auth"
   dependencies:
-    "@aligent/cdk-esbuild": "npm:^2.0"
+    "@aligent/cdk-esbuild": "npm:^2.5.0"
     "@types/aws-lambda": "npm:^8.10.150"
     "@types/jest": "npm:^29.5.10"
     "@types/node": "npm:^20.6.3"
@@ -29,7 +29,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-cloudfront-security-headers@workspace:packages/cloudfront-security-headers"
   dependencies:
-    "@aligent/cdk-esbuild": "npm:^2.0"
+    "@aligent/cdk-esbuild": "npm:^2.5.0"
     "@types/aws-lambda": "npm:^8.10.150"
     "@types/jest": "npm:^29.5.10"
     "@types/node": "npm:^20.6.3"
@@ -74,7 +74,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aligent/cdk-esbuild@npm:^2.0, @aligent/cdk-esbuild@workspace:packages/esbuild":
+"@aligent/cdk-esbuild@npm:^2.5.0, @aligent/cdk-esbuild@workspace:packages/esbuild":
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-esbuild@workspace:packages/esbuild"
   dependencies:
@@ -105,7 +105,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-geoip-redirect@workspace:packages/geoip-redirect"
   dependencies:
-    "@aligent/cdk-esbuild": "npm:^2.0"
+    "@aligent/cdk-esbuild": "npm:^2.5.0"
     "@types/aws-lambda": "npm:^8.10.150"
     "@types/jest": "npm:^29.5.10"
     "@types/node": "npm:^20.6.3"
@@ -187,7 +187,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-prerender-proxy@workspace:packages/prerender-proxy"
   dependencies:
-    "@aligent/cdk-esbuild": "npm:^2.0"
+    "@aligent/cdk-esbuild": "npm:^2.5.0"
     "@types/aws-lambda": "npm:^8.10.150"
     "@types/jest": "npm:^29.5.10"
     "@types/node": "npm:^20.6.3"
@@ -244,7 +244,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-static-hosting@workspace:packages/static-hosting"
   dependencies:
-    "@aligent/cdk-esbuild": "npm:^2.0"
+    "@aligent/cdk-esbuild": "npm:^2.5.0"
     "@aws-sdk/client-s3": "npm:^3.832.0"
     "@types/aws-lambda": "npm:^8.10.150"
     "@types/jest": "npm:^29.5.10"
