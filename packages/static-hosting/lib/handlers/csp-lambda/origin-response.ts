@@ -55,10 +55,11 @@ export const handler = async (
     // If no fallback was provided, throw the error and 500 response
     if (!FALLBACK_CSP) throw error;
 
+    // Use fallback CSP
+    console.log("Using fallback CSP:", FALLBACK_CSP);
     response.headers["content-security-policy"] = [
       { key: "Content-Security-Policy", value: FALLBACK_CSP },
     ];
-    throw error;
   }
 
   return response;
