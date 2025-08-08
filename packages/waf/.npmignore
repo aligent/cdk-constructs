@@ -1,0 +1,30 @@
+# TypeScript source files
+*.ts
+!*.d.ts
+
+# TypeScript configuration
+tsconfig*.json
+
+# Jest configuration
+jest.config.ts
+
+# Nx project configuration  
+project.json
+
+# Test files
+test/
+**/*.test.ts
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+
+# Development dependencies
+node_modules/
+
+# Keep these files in published package:
+# *.js (compiled JavaScript)
+# *.d.ts (TypeScript declarations) 
+# README.md
+# CHANGELOG.md
+# package.json
+# docs/

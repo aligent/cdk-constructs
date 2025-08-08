@@ -7,6 +7,15 @@
 node_modules/
 dist/
 
+# Compiled JavaScript files in packages (built in-place)
+packages/**/*.js
+packages/**/*.d.ts
+packages/**/*.js.map
+
+# But keep specific files that should be tracked
+!packages/**/lib/handlers/**/*.js
+!packages/**/lib/prerender/**/*.js
+
 # Yarn (https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored)
 .yarn/*
 !.yarn/cache
@@ -76,7 +85,7 @@ cdk.out
 !jest.preset.js
 
 # Used during the publish stage
-.npmignore
+# .npmignore files need to be tracked in git for changeset publishing
 
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md

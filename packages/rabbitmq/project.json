@@ -5,14 +5,11 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "nx:run-commands",
       "options": {
-        "main": "packages/rabbitmq/index.ts",
-        "outputPath": "dist/rabbitmq",
-        "tsConfig": "packages/rabbitmq/tsconfig.app.json",
-        "assets": ["packages/rabbitmq/README.md", "packages/rabbitmq/docs/**"]
-      },
-      "dependsOn": ["merge-gitignore"]
+        "command": "tsc --project tsconfig.app.json",
+        "cwd": "packages/rabbitmq"
+      }
     },
     "lint": {
       "executor": "@nx/eslint:lint",
@@ -27,14 +24,12 @@
       }
     },
     "publish": {
-      "command": "node tools/scripts/publish.mjs rabbitmq {args.ver} {args.tag}",
-      "dependsOn": ["build"]
-    },
-    "merge-gitignore": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node tools/scripts/merge-gitignore.mjs rabbitmq"
-      }
+        "command": "npm publish --access public",
+        "cwd": "packages/rabbitmq"
+      },
+      "dependsOn": ["build"]
     }
   },
   "tags": []
