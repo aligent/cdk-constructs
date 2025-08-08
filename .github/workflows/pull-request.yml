@@ -24,9 +24,11 @@ jobs:
             exit 1
           fi
 
-  build:
-    name: 🏭 Build all packages
+  install:
+    name: 📦 Install dependencies
     runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.cache-node-modules.outputs.cache-hit }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -42,15 +44,93 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
-          cache: "yarn"
 
-      - name: Install
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            .yarn/cache
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: yarn install --frozen-lockfile
 
-      - name: Build all packages
-        run: yarn nx run-many -t build
+    env:
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
 
-      - run: yarn nx affected:lint --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3 
+  lint:
+    name: 🔍 Lint affected packages
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch target
+        run: git fetch origin ${{ env.PR_BASE_REF }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            .yarn/cache
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Lint affected packages
+        run: yarn nx affected:lint --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3 
+
+    env:
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+
+  build:
+    name: 🏭 Build affected packages
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch target
+        run: git fetch origin ${{ env.PR_BASE_REF }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            .yarn/cache
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Build affected packages
+        run: yarn nx affected:build --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3
 
     env:
       PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
@@ -58,6 +138,7 @@ jobs:
   test:
     name: 🧪 Run tests
     runs-on: ubuntu-latest
+    needs: install
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -73,13 +154,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
-          cache: "yarn"
 
-      - name: Install
-        run: yarn install --frozen-lockfile
+      - name: Restore node_modules cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            .yarn/cache
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
 
-      - name: Build all packages
-        run: yarn nx run-many -t build
+      - name: Build affected packages
+        run: yarn nx affected:build --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3
 
       - name: Test affected packages
         run: yarn nx affected:test --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3
