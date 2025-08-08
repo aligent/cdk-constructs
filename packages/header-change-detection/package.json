@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-header-change-detection",
-  "version": "1.7.1",
+  "version": "1.7.0",
   "main": "index.js",
   "license": "MIT",
   "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/header-change-detection#readme",
