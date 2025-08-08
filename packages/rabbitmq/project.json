@@ -9,6 +9,7 @@
       "options": {
         "command": "tsc --project tsconfig.app.json",
         "cwd": "packages/rabbitmq"
+      }
     },
     "lint": {
       "executor": "@nx/eslint:lint",
@@ -29,12 +30,6 @@
         "cwd": "packages/rabbitmq"
       },
       "dependsOn": ["build"]
-    },
-    "merge-gitignore": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "node tools/scripts/merge-gitignore.mjs rabbitmq"
-      }
     }
   },
   "tags": []

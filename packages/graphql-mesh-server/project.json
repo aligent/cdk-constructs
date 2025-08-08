@@ -9,8 +9,7 @@
       "options": {
         "command": "tsc --project tsconfig.app.json",
         "cwd": "packages/graphql-mesh-server"
-      },
-      "dependsOn": ["merge-gitignore"]
+      }
     },
     "lint": {
       "executor": "@nx/eslint:lint",
@@ -31,12 +30,6 @@
         "cwd": "packages/graphql-mesh-server"
       },
       "dependsOn": ["build"]
-    },
-    "merge-gitignore": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "node tools/scripts/merge-gitignore.mjs graphql-mesh-server"
-      }
     }
   },
   "tags": []
