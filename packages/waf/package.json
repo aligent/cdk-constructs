@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-waf",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "main": "index.js",
   "license": "MIT",
   "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/waf#readme",
