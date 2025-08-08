@@ -1,6 +1,6 @@
 {
   "root": true,
-  "ignorePatterns": ["**/node_modules/**", "**/dist/**", "**/build/**", "**/*.js.map", "**/*.d.ts"],
+  "ignorePatterns": ["**/node_modules/**", "**/dist/**", "**/build/**", "**/*.js.map", "**/*.d.ts", "packages/**/*.js"],
   "plugins": ["@nx"],
   "extends": ["eslint:recommended", "plugin:prettier/recommended"],
   "overrides": [
