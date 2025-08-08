@@ -2,6 +2,9 @@
 *.ts
 !*.d.ts
 
+# But keep prerender TypeScript files
+!lib/prerender/**/*.ts
+
 # TypeScript configuration
 tsconfig*.json
 
