@@ -85,7 +85,7 @@ cdk.out
 !jest.preset.js
 
 # Used during the publish stage
-.npmignore
+# .npmignore files need to be tracked in git for changeset publishing
 
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
