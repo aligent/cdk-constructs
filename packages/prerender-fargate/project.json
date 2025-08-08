@@ -5,16 +5,10 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "nx:run-commands",
       "options": {
-        "main": "packages/prerender-fargate/index.ts",
-        "outputPath": "dist/prerender-fargate",
-        "tsConfig": "packages/prerender-fargate/tsconfig.app.json",
-        "assets": [
-          "packages/prerender-fargate/lib/prerender/**",
-          "packages/prerender-fargate/README.md",
-          "packages/prerender-fargate/docs/**"
-        ]
+        "command": "tsc --project tsconfig.app.json",
+        "cwd": "packages/prerender-fargate"
       },
       "dependsOn": ["merge-gitignore"]
     },
@@ -31,7 +25,11 @@
       }
     },
     "publish": {
-      "command": "node tools/scripts/publish.mjs prerender-fargate {args.ver} {args.tag}",
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm publish --access public",
+        "cwd": "packages/prerender-fargate"
+      },
       "dependsOn": ["build"]
     },
     "merge-gitignore": {
