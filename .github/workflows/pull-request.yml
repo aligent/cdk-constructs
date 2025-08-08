@@ -24,9 +24,66 @@ jobs:
             exit 1
           fi
 
+  install:
+    name: 📦 Install dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch target
+        run: git fetch origin ${{ env.PR_BASE_REF }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "yarn"
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+    env:
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+
+  lint:
+    name: 🔍 Lint affected packages
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch target
+        run: git fetch origin ${{ env.PR_BASE_REF }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "yarn"
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Lint affected packages
+        run: yarn nx affected:lint --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3 
+
+    env:
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+
   build:
     name: 🏭 Build all packages
     runs-on: ubuntu-latest
+    needs: install
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -50,14 +107,13 @@ jobs:
       - name: Build all packages
         run: yarn nx run-many -t build
 
-      - run: yarn nx affected:lint --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3 
-
     env:
       PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
 
   test:
     name: 🧪 Run tests
     runs-on: ubuntu-latest
+    needs: install
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
