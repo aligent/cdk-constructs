@@ -100,7 +100,7 @@ jobs:
       PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
 
   build:
-    name: 🏭 Build all packages
+    name: 🏭 Build affected packages
     runs-on: ubuntu-latest
     needs: install
     steps:
@@ -129,8 +129,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-modules-
 
-      - name: Build all packages
-        run: yarn nx run-many -t build
+      - name: Build affected packages
+        run: yarn nx affected:build --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3
 
     env:
       PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
@@ -165,8 +165,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-modules-
 
-      - name: Build all packages
-        run: yarn nx run-many -t build
+      - name: Build affected packages
+        run: yarn nx affected:build --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3
 
       - name: Test affected packages
         run: yarn nx affected:test --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3
