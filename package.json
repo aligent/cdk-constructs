@@ -20,6 +20,7 @@
   "scripts": {
     "changeset": "changeset",
     "changeset:version": "changeset version",
+    "changeset:version-and-install": "changeset version && yarn install",
     "changeset:publish": "changeset publish",
     "release": "changeset publish",
     "changeset:status": "changeset status",

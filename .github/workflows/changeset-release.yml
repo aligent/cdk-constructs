@@ -57,7 +57,7 @@ jobs:
         with:
           # This expects you to have a script called release which does a build for your packages and calls changeset publish
           publish: yarn release
-          version: yarn changeset:version && yarn install # update the yarn lockfile after versioning
+          version: yarn changeset:version-and-install
           title: "chore: release packages"
           commit: "chore: release packages"
           createGithubReleases: true
