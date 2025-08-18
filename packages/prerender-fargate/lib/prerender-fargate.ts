@@ -215,7 +215,7 @@ export class PrerenderFargate extends Construct {
               ? ec2.SubnetType.PRIVATE_WITH_EGRESS
               : ec2.SubnetType.PUBLIC,
           },
-          sslPolicy: SslPolicy.TLS13_13,
+          sslPolicy: SslPolicy.TLS13_RES,
         }
       );
 
