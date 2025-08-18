@@ -13,6 +13,7 @@ import { PrerenderRecacheApi } from "./recaching/prerender-recache-api-construct
 import { PrerenderFargateOptions } from "./prerender-fargate-options";
 import { PerformanceMetrics } from "./monitoring";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
+import { SslPolicy } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 
 /**
  * `PrerenderFargate` construct sets up an AWS Fargate service to run a
@@ -214,6 +215,7 @@ export class PrerenderFargate extends Construct {
               ? ec2.SubnetType.PRIVATE_WITH_EGRESS
               : ec2.SubnetType.PUBLIC,
           },
+          sslPolicy: SslPolicy.TLS13_RES,
         }
       );
 
