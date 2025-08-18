@@ -13,7 +13,7 @@ import { PrerenderRecacheApi } from "./recaching/prerender-recache-api-construct
 import { PrerenderFargateOptions } from "./prerender-fargate-options";
 import { PerformanceMetrics } from "./monitoring";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
-import { SslPolicy } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import { SslPolicy } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 
 /**
  * `PrerenderFargate` construct sets up an AWS Fargate service to run a
