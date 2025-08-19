@@ -1,5 +1,11 @@
 # @aligent/cdk-prerender-fargate
 
+## 2.14.0
+
+### Minor Changes
+
+- [#1531](https://github.com/aligent/cdk-constructs/pull/1531) [`869b5a2`](https://github.com/aligent/cdk-constructs/commit/869b5a2ce3555addbcca6d78ea0f20cb6b04eeb8) Thanks [@porhkz](https://github.com/porhkz)! - Updated Prerender Fargate ALB from implicity TLS v1 to explicit 1.2 and 1.3
+
 ## 2.13.1
 
 ### Patch Changes
