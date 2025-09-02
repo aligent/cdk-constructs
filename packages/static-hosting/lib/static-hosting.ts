@@ -679,8 +679,12 @@ export class StaticHosting extends Construct {
     if (props.responseHeadersPolicies?.additionalBehaviorResponsePolicy) {
       for (const path in props.responseHeadersPolicies
         .additionalBehaviorResponsePolicy) {
-        additionalBehaviors[path].responseHeadersPolicy =
-          props.responseHeadersPolicies.additionalBehaviorResponsePolicy[path];
+        if (additionalBehaviors[path]) {
+          additionalBehaviors[path].responseHeadersPolicy =
+            props.responseHeadersPolicies.additionalBehaviorResponsePolicy[
+              path
+            ];
+        }
       }
     }
 
