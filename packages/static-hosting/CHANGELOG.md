@@ -1,5 +1,11 @@
 # @aligent/cdk-static-hosting
 
+## 2.9.3
+
+### Patch Changes
+
+- [#1536](https://github.com/aligent/cdk-constructs/pull/1536) [`ad08ac2`](https://github.com/aligent/cdk-constructs/commit/ad08ac23e76a2946d7103c8779b9bfad44a2982f) Thanks [@porhkz](https://github.com/porhkz)! - Fixed undefined error for Static Hosting additionalBehavior paths
+
 ## 2.9.2
 
 ### Patch Changes
