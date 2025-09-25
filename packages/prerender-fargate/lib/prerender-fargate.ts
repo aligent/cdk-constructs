@@ -227,7 +227,22 @@ export class PrerenderFargate extends Construct {
     // Grant S3 Bucket access to the task role
     this.bucket.grantReadWrite(fargateService.taskDefinition.taskRole);
 
-    // Configure load balancer to validate x-prerender-token header
+    // Override the default action to return 403 for unauthorized requests
+    const listenerCfn = fargateService.listener.node.defaultChild as any;
+    listenerCfn.defaultActions = [
+      {
+        type: "fixed-response",
+        fixedResponseConfig: {
+          statusCode: "403",
+          contentType: "application/json",
+          messageBody: JSON.stringify({
+            error: "Forbidden",
+            message: "Missing required header",
+          }),
+        },
+      },
+    ];
+
     // Allow health checks on /health path without token
     fargateService.listener.addAction("allow-health-check", {
       priority: 50,
@@ -242,19 +257,6 @@ export class PrerenderFargate extends Construct {
         ListenerCondition.httpHeader("x-prerender-token", ["*"]), // Any value present
       ],
       action: ListenerAction.forward([fargateService.targetGroup]),
-    });
-
-    // Return 403 for all other requests (those without token and not health checks)
-    fargateService.listener.addAction("deny-without-token", {
-      priority: 200,
-      conditions: [], // No conditions = catch all remaining requests
-      action: ListenerAction.fixedResponse(403, {
-        contentType: "application/json",
-        messageBody: JSON.stringify({
-          error: "Forbidden",
-          message: "Missing auth-token header",
-        }),
-      }),
     });
 
     // As the prerender service will return a 401 on all unauthorised requests
