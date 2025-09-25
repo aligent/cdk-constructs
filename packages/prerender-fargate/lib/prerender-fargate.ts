@@ -17,6 +17,7 @@ import {
   SslPolicy,
   ListenerCondition,
   ListenerAction,
+  CfnListener,
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 
 /**
@@ -228,7 +229,8 @@ export class PrerenderFargate extends Construct {
     this.bucket.grantReadWrite(fargateService.taskDefinition.taskRole);
 
     // Override the default action to return 403 for unauthorized requests
-    const listenerCfn = fargateService.listener.node.defaultChild as any;
+    const listenerCfn = fargateService.listener.node
+      .defaultChild as CfnListener;
     listenerCfn.defaultActions = [
       {
         type: "fixed-response",

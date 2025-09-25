@@ -441,13 +441,14 @@ export class MeshService extends Construct {
     this.service = fargateService.service;
     this.loadBalancer = fargateService.loadBalancer;
 
-    taskDefinition.taskRole.addManagedPolicy({
-      managedPolicyArn:
-        "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
-    });
-    taskDefinition.taskRole.addManagedPolicy({
-      managedPolicyArn: "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess",
-    });
+    taskDefinition.taskRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName(
+        "service-role/AmazonECSTaskExecutionRolePolicy"
+      )
+    );
+    taskDefinition.taskRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName("AWSXRayDaemonWriteAccess")
+    );
 
     if (props.authenticationTable) {
       const authTable = new dynamodb.Table(this, "authenticationTable", {
