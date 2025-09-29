@@ -1,5 +1,11 @@
 # @aligent/cdk-graphql-mesh-server
 
+## 3.3.0
+
+### Minor Changes
+
+- [#1550](https://github.com/aligent/cdk-constructs/pull/1550) [`8e63d31`](https://github.com/aligent/cdk-constructs/commit/8e63d312baf077fa21e0798a7d1a5115f8bf759b) Thanks [@TheOrangePuff](https://github.com/TheOrangePuff)! - Use policy interface rather than plain objects as required in upgraded cdk version
+
 ## 3.2.1
 
 ### Patch Changes

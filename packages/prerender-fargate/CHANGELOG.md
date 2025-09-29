@@ -1,5 +1,15 @@
 # @aligent/cdk-prerender-fargate
 
+## 2.15.0
+
+### Minor Changes
+
+- [#1550](https://github.com/aligent/cdk-constructs/pull/1550) [`65f1bbd`](https://github.com/aligent/cdk-constructs/commit/65f1bbd9b60303fa126a592b96f7a0562f999a26) Thanks [@TheOrangePuff](https://github.com/TheOrangePuff)! - Add check for prerender token before hitting the backend
+
+### Patch Changes
+
+- [#1542](https://github.com/aligent/cdk-constructs/pull/1542) [`7094ccf`](https://github.com/aligent/cdk-constructs/commit/7094ccfa460acde3ceec2f45bc8c704eb61a0b68) Thanks [@TheOrangePuff](https://github.com/TheOrangePuff)! - Force AMD64 platform for building image
+
 ## 2.14.0
 
 ### Minor Changes
