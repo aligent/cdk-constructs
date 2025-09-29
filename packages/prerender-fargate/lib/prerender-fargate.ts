@@ -13,7 +13,12 @@ import { PrerenderRecacheApi } from "./recaching/prerender-recache-api-construct
 import { PrerenderFargateOptions } from "./prerender-fargate-options";
 import { PerformanceMetrics } from "./monitoring";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
-import { SslPolicy } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import {
+  SslPolicy,
+  ListenerCondition,
+  ListenerAction,
+  CfnListener,
+} from "aws-cdk-lib/aws-elasticloadbalancingv2";
 
 /**
  * `PrerenderFargate` construct sets up an AWS Fargate service to run a
@@ -222,6 +227,39 @@ export class PrerenderFargate extends Construct {
 
     // Grant S3 Bucket access to the task role
     this.bucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+
+    // Override the default action to return 403 for unauthorized requests
+    const listenerCfn = fargateService.listener.node
+      .defaultChild as CfnListener;
+    listenerCfn.defaultActions = [
+      {
+        type: "fixed-response",
+        fixedResponseConfig: {
+          statusCode: "403",
+          contentType: "application/json",
+          messageBody: JSON.stringify({
+            error: "Forbidden",
+            message: "Missing required header",
+          }),
+        },
+      },
+    ];
+
+    // Allow health checks on /health path without token
+    fargateService.listener.addAction("allow-health-check", {
+      priority: 50,
+      conditions: [ListenerCondition.pathPatterns(["/health"])],
+      action: ListenerAction.forward([fargateService.targetGroup]),
+    });
+
+    // Allow requests WITH the x-prerender-token header (forward to target group)
+    fargateService.listener.addAction("allow-with-token", {
+      priority: 100,
+      conditions: [
+        ListenerCondition.httpHeader("x-prerender-token", ["*"]), // Any value present
+      ],
+      action: ListenerAction.forward([fargateService.targetGroup]),
+    });
 
     // As the prerender service will return a 401 on all unauthorised requests
     // It should be considered healthy when receiving a 401 response

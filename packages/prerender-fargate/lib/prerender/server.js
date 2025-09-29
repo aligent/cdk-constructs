@@ -22,7 +22,7 @@ const logger = require("./utils/logger");
  * @param  {...any} args
  * @returns
  */
-util.log = function (...args) {
+util.log = function(...args) {
   if (process.env.DISABLE_LOGGING) {
     return;
   }
@@ -120,7 +120,7 @@ server.use({
     return next();
   },
   // Append a custom header to indicate the response is from Prerender
-  beforeSend: function (req, res, next) {
+  beforeSend: function(req, res, next) {
     res.setHeader("x-prerender-requestid", crypto.randomUUID());
     return next();
   },
@@ -144,8 +144,8 @@ server.use({
   // The requestReceived and pageLoaded functions are a modified version of
   // httpHeader plugin - https://github.com/prerender/prerender/blob/478fa6d0a5196ea29c88c69e64e72eb5507b6d2c/lib/plugins/httpHeaders.js combined with
   // s3cache plugin - https://github.com/prerender/prerender-aws-s3-cache/blob/98707fa0f787de83aa41583682cd2c2d330a9cca/index.js
-  requestReceived: function (req, res, next) {
-    const fetchCachedObject = function (err, result) {
+  requestReceived: function(req, res, next) {
+    const fetchCachedObject = function(err, result) {
       if (!err && result) {
         logger.info(`Found cached object: ${key}`);
 
@@ -184,7 +184,7 @@ server.use({
 server.use(prerender.removeScriptTags());
 
 server.use({
-  pageLoaded: function (req, res, next) {
+  pageLoaded: function(req, res, next) {
     const statusCodesToCache = ["200"];
 
     if (process.env.ENABLE_REDIRECT_CACHE.toLowerCase() === "true") {
@@ -196,7 +196,7 @@ server.use({
     }
 
     var s3Metadata = {};
-    const cacheObject = function (err, result) {
+    const cacheObject = function(err, result) {
       if (!err && result) {
         logger.info(
           `Cached object ${key} already present. Skipping caching...`
@@ -213,7 +213,7 @@ server.use({
             Body: req.prerender.content,
             Metadata: s3Metadata,
           },
-          function (err, result) {
+          function(err, result) {
             logger.info(result);
             if (err) logger.error(err);
           }
