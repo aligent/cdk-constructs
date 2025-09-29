@@ -136,6 +136,7 @@ export class PrerenderFargate extends Construct {
       `${prerenderName}-image`,
       {
         directory,
+        platform: ecrAssets.Platform.LINUX_AMD64,
       }
     );
 
