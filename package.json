@@ -48,7 +48,7 @@
     "nx": "20.0.10",
     "prettier": "^3.3.3",
     "ts-jest": "^29.1.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.9.2"
   },
   "packageManager": "yarn@4.5.1",
   "dependencies": {
