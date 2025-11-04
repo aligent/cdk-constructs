@@ -11,7 +11,7 @@ It can be imported and used within CDK applications. By default this construct w
 It has the following features that can optionally be enabled:
 
 - Create a DNS record in an existing hosted zone
-- Store CloudFront logs in an S3 bucket
+- Store CloudFront logs in an S3 bucket with configurable retention
 - Add a custom backend origin
 - Remap static files to the the S3 or backend origin
 
@@ -83,6 +83,15 @@ Default: **true**
 - Enable CloudFront access logs
 
 Default: **false**
+
+### `cloudFrontLogRetentionDays` (number)
+
+- Number of days to retain CloudFront access logs before automatic deletion
+- Only applies when `enableCloudFrontAccessLogging` is enabled
+- Uses S3 lifecycle rules to automatically delete logs after the specified period
+- Set to a positive number to enable automatic deletion
+
+Default: **undefined** (logs retained indefinitely)
 
 ### `enableS3AccessLogging` (boolean)
 
