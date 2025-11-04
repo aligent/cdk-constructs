@@ -111,6 +111,15 @@ export interface StaticHostingProps {
   enableCloudFrontAccessLogging?: boolean;
 
   /**
+   * Number of days to retain CloudFront access logs before deletion.
+   * Only applies when enableCloudFrontAccessLogging is true.
+   * Set to a positive number to enable automatic deletion.
+   *
+   * @default undefined (logs retained indefinitely)
+   */
+  cloudFrontLogRetentionDays?: number;
+
+  /**
    * Enable S3 access logging
    *
    * @default false
@@ -475,6 +484,16 @@ export class StaticHosting extends Construct {
           blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
           removalPolicy: RemovalPolicy.RETAIN,
           enforceSSL: enforceSSL,
+          lifecycleRules:
+            props.cloudFrontLogRetentionDays &&
+            props.cloudFrontLogRetentionDays > 0
+              ? [
+                  {
+                    enabled: true,
+                    expiration: Duration.days(props.cloudFrontLogRetentionDays),
+                  },
+                ]
+              : undefined,
         })
       : undefined;
 
