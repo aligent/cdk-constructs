@@ -1,11 +1,5 @@
 # @aligent/cdk-static-hosting
 
-## 2.10.0
-
-### Minor Changes
-
-- [#1561](https://github.com/aligent/cdk-constructs/pull/1561) [`12d43ec`](https://github.com/aligent/cdk-constructs/commit/12d43ec05b299debaf4b13c56cc85966f4c53777) Thanks [@aaronmedina-dev](https://github.com/aaronmedina-dev)! - Adds cloudFrontLogRetentionDays prop to enable automatic deletion of CloudFront access logs after a specified number of days using S3 lifecycle rules. Logs are retained indefinitely by default for backward compatibility.
-
 ## 2.9.3
 
 ### Patch Changes
