@@ -102,6 +102,7 @@ export class PrerenderFargate extends Construct {
       usePrivateSubnets,
       queueName,
       restApiName,
+      chromeBrowserFlags,
     } = props;
 
     // Create bucket for prerender storage
@@ -152,6 +153,7 @@ export class PrerenderFargate extends Construct {
       ENABLE_REDIRECT_CACHE: enableRedirectCache?.toString() || "false",
       ENABLE_NOTFOUND_CACHE: enableNotFoundCache?.toString() || "false",
       ENABLE_PRERENDER_HEADER: enablePrerenderHeader?.toString() || "true",
+      CHROME_BROWSER_FLAGS: chromeBrowserFlags?.join(",") || "",
     };
 
     const secrets = {
