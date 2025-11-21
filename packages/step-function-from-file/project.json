@@ -1,5 +1,5 @@
 {
-  "name": "rabbitmq",
+  "name": "step-function-from-file",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/step-function-from-file/lib",
   "projectType": "application",
