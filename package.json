@@ -57,6 +57,7 @@
   "resolutions": {
     "esbuild": "0.25.0",
     "form-data": "4.0.4",
-    "brace-expansion": "1.1.12"
+    "brace-expansion": "1.1.12",
+    "glob": "10.5.0"
   }
 }
