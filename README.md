@@ -18,6 +18,7 @@ These are all written for CDK v2. See the offical AWS guide for how to migrate f
 | [rabbitmq](packages/rabbitmq)                                       | Create a RabbitMQ cluster within CDK                                                                                         |
 | [shared-vpc](packages/shared-vpc)                                   | Creates a single VPC with static IP for micro-services with DNS management                                                   |
 | [static-hosting](packages/static-hosting)                           | Construct to deploy infrastructure for static webpage hosting                                                                |
+| [step-function-from-file](packages/step-function-from-file)         | Create a Step Function state machine definition from a given JSON or YAML file                                               |
 | [waf](packages/waf)                                                 | Configurable WAF infrastructure                                                                                              |
 
 ## Contributing
