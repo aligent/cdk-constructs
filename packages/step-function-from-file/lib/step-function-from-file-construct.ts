@@ -93,7 +93,7 @@ export class StepFunctionFromFile extends StateMachine {
     };
 
     super(scope, id, {
-      definitionBody: DefinitionBody.fromFile(props.filepath),
+      definitionBody: DefinitionBody.fromFile(filepath),
       ...newProps,
     });
 
