@@ -85,7 +85,7 @@ export interface StaticHostingProps {
    *
    * Use this for staging/feature environments that should not appear in search results.
    *
-   * @default true - site is indexable
+   * @default false - site is indexable
    */
   indexable?: boolean;
 
