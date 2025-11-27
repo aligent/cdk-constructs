@@ -624,6 +624,186 @@ describe("StaticHosting", () => {
       expect(hosting.corsResponseHeadersPolicy).toBeDefined();
       expect(typeof hosting.corsResponseHeadersPolicy).toBe("object");
     });
+
+    it("should apply CORS policy to remapPaths behaviors", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsAllowOrigins: ["https://example.com"],
+        remapPaths: [{ from: "/test-path", to: "/remapped-path" }],
+      });
+
+      const template = Template.fromStack(stack);
+      const distribution = template.findResources(
+        "AWS::CloudFront::Distribution"
+      );
+      const distConfig =
+        Object.values(distribution)[0].Properties.DistributionConfig;
+
+      const remapBehavior = distConfig.CacheBehaviors.find(
+        (b: { PathPattern: string }) => b.PathPattern === "/test-path"
+      );
+      expect(remapBehavior).toBeDefined();
+      expect(remapBehavior.ResponseHeadersPolicyId).toBeDefined();
+    });
+
+    it("should apply CORS policy to remapBackendPaths behaviors", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsAllowOrigins: ["https://example.com"],
+        backendHost: "backend.example.com",
+        remapBackendPaths: [{ from: "/api/*", to: "/api/*" }],
+      });
+
+      const template = Template.fromStack(stack);
+      const distribution = template.findResources(
+        "AWS::CloudFront::Distribution"
+      );
+      const distConfig =
+        Object.values(distribution)[0].Properties.DistributionConfig;
+
+      const backendBehavior = distConfig.CacheBehaviors.find(
+        (b: { PathPattern: string }) => b.PathPattern === "/api/*"
+      );
+      expect(backendBehavior).toBeDefined();
+      expect(backendBehavior.ResponseHeadersPolicyId).toBeDefined();
+    });
+
+    it("should apply CORS to default behavior when indexable is true", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsAllowOrigins: ["https://example.com"],
+        indexable: true,
+      });
+
+      const template = Template.fromStack(stack);
+      const distribution = template.findResources(
+        "AWS::CloudFront::Distribution"
+      );
+      const distConfig =
+        Object.values(distribution)[0].Properties.DistributionConfig;
+
+      // Default behavior should have response headers policy (CORS)
+      expect(
+        distConfig.DefaultCacheBehavior.ResponseHeadersPolicyId
+      ).toBeDefined();
+    });
+  });
+
+  describe("Indexable Configuration", () => {
+    it("should not create NoIndexNoFollow policy when indexable is true (default)", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", defaultProps);
+
+      const template = Template.fromStack(stack);
+      const policies = template.findResources(
+        "AWS::CloudFront::ResponseHeadersPolicy"
+      );
+
+      // Should not have a NoIndexNoFollow policy
+      const hasNoIndexPolicy = Object.values(policies).some(
+        (policy: Record<string, unknown>) => {
+          const config = (
+            policy.Properties as {
+              ResponseHeadersPolicyConfig?: {
+                CustomHeadersConfig?: {
+                  Items?: Array<{ Header: string; Value: string }>;
+                };
+              };
+            }
+          )?.ResponseHeadersPolicyConfig?.CustomHeadersConfig?.Items;
+          return config?.some(
+            item =>
+              item.Header === "x-robots-tag" &&
+              item.Value === "noindex,nofollow"
+          );
+        }
+      );
+      expect(hasNoIndexPolicy).toBe(false);
+    });
+
+    it("should create NoIndexNoFollow policy when indexable is false", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        indexable: false,
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties("AWS::CloudFront::ResponseHeadersPolicy", {
+        ResponseHeadersPolicyConfig: {
+          CustomHeadersConfig: {
+            Items: [
+              {
+                Header: "x-robots-tag",
+                Value: "noindex,nofollow",
+                Override: true,
+              },
+            ],
+          },
+        },
+      });
+    });
+
+    it("should combine NoIndexNoFollow with CORS when both indexable is false and corsAllowOrigins is set", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        indexable: false,
+        corsAllowOrigins: ["https://example.com"],
+      });
+
+      const template = Template.fromStack(stack);
+      // Should have a policy with both noindex and CORS
+      template.hasResourceProperties("AWS::CloudFront::ResponseHeadersPolicy", {
+        ResponseHeadersPolicyConfig: {
+          CustomHeadersConfig: {
+            Items: [
+              {
+                Header: "x-robots-tag",
+                Value: "noindex,nofollow",
+                Override: true,
+              },
+            ],
+          },
+          CorsConfig: {
+            AccessControlAllowCredentials: false,
+            AccessControlAllowHeaders: {
+              Items: ["*"],
+            },
+            AccessControlAllowMethods: {
+              Items: ["GET", "HEAD", "OPTIONS"],
+            },
+            AccessControlAllowOrigins: {
+              Items: ["https://example.com"],
+            },
+            OriginOverride: true,
+          },
+        },
+      });
+    });
+
+    it("should apply NoIndexNoFollow policy to default behavior", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        indexable: false,
+      });
+
+      const template = Template.fromStack(stack);
+      const distribution = template.findResources(
+        "AWS::CloudFront::Distribution"
+      );
+      const distConfig =
+        Object.values(distribution)[0].Properties.DistributionConfig;
+
+      // Default behavior should have response headers policy
+      expect(
+        distConfig.DefaultCacheBehavior.ResponseHeadersPolicyId
+      ).toBeDefined();
+    });
   });
 
   // NOTE: This test creates EdgeFunctions which can cause cross-app reference issues
