@@ -521,7 +521,114 @@ describe("StaticHosting", () => {
         },
       });
     });
+  });
 
+  describe("CORS Configuration", () => {
+    it("should not create CORS policy when corsAllowOrigins is not provided", () => {
+      const { stack } = createTestStack();
+      const hosting = new StaticHosting(stack, "TestConstruct", defaultProps);
+
+      expect(hosting.corsResponseHeadersPolicy).toBeUndefined();
+    });
+
+    it("should create CORS policy when corsAllowOrigins is provided", () => {
+      const { stack } = createTestStack();
+      const hosting = new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsAllowOrigins: ["https://example.com", "https://app.example.com"],
+      });
+
+      expect(hosting.corsResponseHeadersPolicy).toBeDefined();
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties("AWS::CloudFront::ResponseHeadersPolicy", {
+        ResponseHeadersPolicyConfig: {
+          CorsConfig: {
+            AccessControlAllowCredentials: false,
+            AccessControlAllowHeaders: {
+              Items: ["*"],
+            },
+            AccessControlAllowMethods: {
+              Items: ["GET", "HEAD", "OPTIONS"],
+            },
+            AccessControlAllowOrigins: {
+              Items: ["https://example.com", "https://app.example.com"],
+            },
+            OriginOverride: true,
+          },
+        },
+      });
+    });
+
+    it("should apply CORS policy to static file behaviors", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsAllowOrigins: ["https://example.com"],
+      });
+
+      const template = Template.fromStack(stack);
+      const distribution = template.findResources(
+        "AWS::CloudFront::Distribution"
+      );
+      const distConfig =
+        Object.values(distribution)[0].Properties.DistributionConfig;
+
+      // Check that static file behaviors have a response headers policy
+      const jsBehavior = distConfig.CacheBehaviors.find(
+        (b: { PathPattern: string }) => b.PathPattern === "*.js"
+      );
+      expect(jsBehavior).toBeDefined();
+      expect(jsBehavior.ResponseHeadersPolicyId).toBeDefined();
+
+      const cssBehavior = distConfig.CacheBehaviors.find(
+        (b: { PathPattern: string }) => b.PathPattern === "*.css"
+      );
+      expect(cssBehavior).toBeDefined();
+      expect(cssBehavior.ResponseHeadersPolicyId).toBeDefined();
+    });
+
+    it("should not apply CORS policy to static files when corsAllowOrigins is empty array", () => {
+      const { stack } = createTestStack();
+      const hosting = new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsAllowOrigins: [],
+      });
+
+      expect(hosting.corsResponseHeadersPolicy).toBeUndefined();
+
+      const template = Template.fromStack(stack);
+      const distribution = template.findResources(
+        "AWS::CloudFront::Distribution"
+      );
+      const distConfig =
+        Object.values(distribution)[0].Properties.DistributionConfig;
+
+      // Check that static file behaviors do not have a response headers policy
+      const jsBehavior = distConfig.CacheBehaviors.find(
+        (b: { PathPattern: string }) => b.PathPattern === "*.js"
+      );
+      expect(jsBehavior).toBeDefined();
+      expect(jsBehavior.ResponseHeadersPolicyId).toBeUndefined();
+    });
+
+    it("should expose corsResponseHeadersPolicy for downstream use", () => {
+      const { stack } = createTestStack();
+      const hosting = new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsAllowOrigins: ["https://example.com"],
+      });
+
+      // The policy should be accessible for downstream projects to use
+      // in their own custom behaviors
+      expect(hosting.corsResponseHeadersPolicy).toBeDefined();
+      expect(typeof hosting.corsResponseHeadersPolicy).toBe("object");
+    });
+  });
+
+  // NOTE: This test creates EdgeFunctions which can cause cross-app reference issues
+  // in subsequent tests. Keep this test section last.
+  describe("CSP Path Behaviors", () => {
     it("should create CSP path behaviors", () => {
       const { stack } = createTestStack();
       new StaticHosting(stack, "TestConstruct", {

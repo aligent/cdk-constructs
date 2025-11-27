@@ -19,6 +19,7 @@ import {
   OriginRequestHeaderBehavior,
   OriginRequestPolicy,
   PriceClass,
+  ResponseHeadersCorsBehavior,
   ResponseHeadersPolicy,
   SecurityPolicyProtocol,
   SSLMethod,
@@ -59,6 +60,21 @@ export interface StaticHostingProps {
    * CloudFront distribution
    */
   subDomainName: string;
+
+  /**
+   * Domains to allow in CORS Access-Control-Allow-Origin header.
+   * If set, creates a ResponseHeadersPolicy with CORS configuration that is
+   * automatically applied to all static file behaviors (*.js, *.css, etc.).
+   *
+   * The CORS policy uses the following settings:
+   * - accessControlAllowCredentials: false
+   * - accessControlAllowHeaders: ['*']
+   * - accessControlAllowMethods: ['GET', 'HEAD', 'OPTIONS']
+   * - originOverride: true
+   *
+   * @default undefined - no CORS policy will be applied
+   */
+  corsAllowOrigins?: string[];
 
   /**
    * An array of additional Cloudfront alternative domain names.
@@ -368,6 +384,7 @@ export class StaticHosting extends Construct {
   public readonly distribution: IDistribution;
   public readonly bucket: IBucket;
   public readonly oai: IOriginAccessIdentity;
+  public readonly corsResponseHeadersPolicy?: ResponseHeadersPolicy;
 
   private staticFiles = [
     "js",
@@ -575,6 +592,25 @@ export class StaticHosting extends Construct {
       );
     }
 
+    // Create CORS policy if corsAllowOrigins is specified
+    if (props.corsAllowOrigins && props.corsAllowOrigins.length > 0) {
+      const corsBehavior: ResponseHeadersCorsBehavior = {
+        accessControlAllowCredentials: false,
+        accessControlAllowHeaders: ["*"],
+        accessControlAllowMethods: ["GET", "HEAD", "OPTIONS"],
+        accessControlAllowOrigins: props.corsAllowOrigins,
+        originOverride: true,
+      };
+
+      this.corsResponseHeadersPolicy = new ResponseHeadersPolicy(
+        this,
+        "CORSResponseHeadersPolicy",
+        {
+          corsBehavior: corsBehavior,
+        }
+      );
+    }
+
     const defaultBehavior: Writeable<BehaviorOptions> = {
       origin: s3Origin,
       viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -674,6 +710,11 @@ export class StaticHosting extends Construct {
           additionalBehaviors[`${prefix}*.${path}`] = {
             origin: s3Origin,
             viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            // Apply CORS policy to static file behaviors if configured
+            ...(this.corsResponseHeadersPolicy && {
+              responseHeadersPolicy: this.corsResponseHeadersPolicy,
+            }),
+            ...props.staticFileRemapOptions,
           };
         });
       });
