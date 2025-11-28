@@ -46,6 +46,42 @@ import { CSP } from "../types/csp";
 import { PathRemapFunction } from "./path-remap";
 import { RequestFunction, ResponseFunction } from "./csp";
 
+/**
+ * Configuration for CORS (Cross-Origin Resource Sharing) headers.
+ * Only `allowOrigins` is required; other fields have sensible defaults.
+ */
+export interface CorsConfig {
+  /**
+   * The origins to allow in the Access-Control-Allow-Origin header.
+   * @example ['https://example.com', 'https://app.example.com']
+   */
+  allowOrigins: string[];
+
+  /**
+   * Whether to include credentials in CORS requests.
+   * @default false
+   */
+  allowCredentials?: boolean;
+
+  /**
+   * The headers to allow in CORS requests.
+   * @default ['*']
+   */
+  allowHeaders?: string[];
+
+  /**
+   * The HTTP methods to allow in CORS requests.
+   * @default ['GET', 'HEAD', 'OPTIONS']
+   */
+  allowMethods?: string[];
+
+  /**
+   * Whether CloudFront should override the response from the origin.
+   * @default true
+   */
+  originOverride?: boolean;
+}
+
 export interface StaticHostingProps {
   /**
    * Domain name for the stack. Combined with the subDomainName it is used as
@@ -62,30 +98,46 @@ export interface StaticHostingProps {
   subDomainName: string;
 
   /**
-   * Domains to allow in CORS Access-Control-Allow-Origin header.
+   * CORS configuration for the CloudFront distribution.
    * If set, creates a ResponseHeadersPolicy with CORS configuration that is
    * automatically applied to all static file behaviors (*.js, *.css, etc.),
-   * remapPaths, and remapBackendPaths.
+   * remapPaths, remapBackendPaths, and the default behavior.
    *
-   * The CORS policy uses the following settings:
+   * Only `allowOrigins` is required. Other settings have sensible defaults:
    * - accessControlAllowCredentials: false
    * - accessControlAllowHeaders: ['*']
    * - accessControlAllowMethods: ['GET', 'HEAD', 'OPTIONS']
    * - originOverride: true
    *
+   * @example
+   * // Simple usage - just origins
+   * corsConfig: {
+   *   allowOrigins: ['https://example.com', 'https://app.example.com']
+   * }
+   *
+   * @example
+   * // Full customisation
+   * corsConfig: {
+   *   allowOrigins: ['https://example.com'],
+   *   allowCredentials: true,
+   *   allowHeaders: ['Content-Type', 'Authorization'],
+   *   allowMethods: ['GET', 'HEAD', 'OPTIONS', 'POST'],
+   *   originOverride: false
+   * }
+   *
    * @default undefined - no CORS policy will be applied
    */
-  corsAllowOrigins?: string[];
+  corsConfig?: CorsConfig;
 
   /**
    * Whether the site should be indexable by search engines.
    * When set to false, adds x-robots-tag: noindex,nofollow header to the default behavior.
-   * If corsAllowOrigins is also provided, the CORS configuration will be combined with
+   * If corsConfig is also provided, the CORS configuration will be combined with
    * the noindex/nofollow headers.
    *
    * Use this for staging/feature environments that should not appear in search results.
    *
-   * @default false - site is indexable
+   * @default true - site is indexable
    */
   indexable?: boolean;
 
@@ -605,15 +657,20 @@ export class StaticHosting extends Construct {
       );
     }
 
-    // Create CORS behavior config if corsAllowOrigins is specified
+    // Create CORS behavior config if corsConfig is specified
     const corsBehavior: ResponseHeadersCorsBehavior | undefined =
-      props.corsAllowOrigins && props.corsAllowOrigins.length > 0
+      props.corsConfig && props.corsConfig.allowOrigins.length > 0
         ? {
-            accessControlAllowCredentials: false,
-            accessControlAllowHeaders: ["*"],
-            accessControlAllowMethods: ["GET", "HEAD", "OPTIONS"],
-            accessControlAllowOrigins: props.corsAllowOrigins,
-            originOverride: true,
+            accessControlAllowCredentials:
+              props.corsConfig.allowCredentials ?? false,
+            accessControlAllowHeaders: props.corsConfig.allowHeaders ?? ["*"],
+            accessControlAllowMethods: props.corsConfig.allowMethods ?? [
+              "GET",
+              "HEAD",
+              "OPTIONS",
+            ],
+            accessControlAllowOrigins: props.corsConfig.allowOrigins,
+            originOverride: props.corsConfig.originOverride ?? true,
           }
         : undefined;
 
