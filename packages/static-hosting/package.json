@@ -18,7 +18,7 @@
     "@aligent/cdk-esbuild": "^2.5.1",
     "@types/aws-lambda": "^8.10.150",
     "@types/jest": "^29.5.10",
-    "@types/node": "^20.6.3",
+    "@types/node": "^20.19.25",
     "aws-cdk": "^2.1019.1",
     "aws-cdk-lib": "^2.168.0",
     "aws-sdk-client-mock": "^3.0.0",
