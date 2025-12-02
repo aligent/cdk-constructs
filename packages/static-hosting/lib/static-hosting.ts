@@ -46,7 +46,6 @@ import { CSP } from "../types/csp";
 import { PathRemapFunction } from "./path-remap";
 import { RequestFunction, ResponseFunction } from "./csp";
 
-
 export interface StaticHostingProps {
   /**
    * Domain name for the stack. Combined with the subDomainName it is used as
@@ -633,14 +632,10 @@ export class StaticHosting extends Construct {
         ? {
             accessControlAllowCredentials:
               props.corsConfig.accessControlAllowCredentials ?? false,
-            accessControlAllowHeaders:
-              props.corsConfig.accessControlAllowHeaders ?? ["*"],
-            accessControlAllowMethods:
-              props.corsConfig.accessControlAllowMethods ?? [
-                "GET",
-                "HEAD",
-                "OPTIONS",
-              ],
+            accessControlAllowHeaders: props.corsConfig
+              .accessControlAllowHeaders ?? ["*"],
+            accessControlAllowMethods: props.corsConfig
+              .accessControlAllowMethods ?? ["GET", "HEAD", "OPTIONS"],
             accessControlAllowOrigins:
               props.corsConfig.accessControlAllowOrigins,
             originOverride: props.corsConfig.originOverride ?? true,
