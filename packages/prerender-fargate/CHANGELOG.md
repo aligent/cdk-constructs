@@ -1,5 +1,11 @@
 # @aligent/cdk-prerender-fargate
 
+## 2.16.0
+
+### Minor Changes
+
+- [#1564](https://github.com/aligent/cdk-constructs/pull/1564) [`21b6668`](https://github.com/aligent/cdk-constructs/commit/21b66681d3204d77eaba8eb8642e23ecaf448041) Thanks [@porhkz](https://github.com/porhkz)! - Remove --disable-web-security from default Chrome flags; add chromeBrowserFlags option for custom flags
+
 ## 2.15.0
 
 ### Minor Changes
