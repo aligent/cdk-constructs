@@ -3,7 +3,6 @@ import {
   StaticHostingProps,
   remapPath,
   ResponseHeaderMappings,
-  CorsConfig,
 } from "./lib/static-hosting";
 import { CSP } from "./types/csp";
 
@@ -13,5 +12,4 @@ export {
   CSP,
   remapPath,
   ResponseHeaderMappings,
-  CorsConfig,
 };

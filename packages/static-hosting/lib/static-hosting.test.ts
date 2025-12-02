@@ -536,7 +536,10 @@ describe("StaticHosting", () => {
       const hosting = new StaticHosting(stack, "TestConstruct", {
         ...defaultProps,
         corsConfig: {
-          allowOrigins: ["https://example.com", "https://app.example.com"],
+          accessControlAllowOrigins: [
+            "https://example.com",
+            "https://app.example.com",
+          ],
         },
       });
 
@@ -567,10 +570,10 @@ describe("StaticHosting", () => {
       new StaticHosting(stack, "TestConstruct", {
         ...defaultProps,
         corsConfig: {
-          allowOrigins: ["https://example.com"],
-          allowCredentials: true,
-          allowHeaders: ["Content-Type", "Authorization"],
-          allowMethods: ["GET", "HEAD", "OPTIONS", "POST"],
+          accessControlAllowOrigins: ["https://example.com"],
+          accessControlAllowCredentials: true,
+          accessControlAllowHeaders: ["Content-Type", "Authorization"],
+          accessControlAllowMethods: ["GET", "HEAD", "OPTIONS", "POST"],
           originOverride: false,
         },
       });
@@ -599,7 +602,7 @@ describe("StaticHosting", () => {
       const { stack } = createTestStack();
       new StaticHosting(stack, "TestConstruct", {
         ...defaultProps,
-        corsConfig: { allowOrigins: ["https://example.com"] },
+        corsConfig: { accessControlAllowOrigins: ["https://example.com"] },
       });
 
       const template = Template.fromStack(stack);
@@ -623,11 +626,11 @@ describe("StaticHosting", () => {
       expect(cssBehavior.ResponseHeadersPolicyId).toBeDefined();
     });
 
-    it("should not apply CORS policy to static files when allowOrigins is empty array", () => {
+    it("should not apply CORS policy to static files when accessControlAllowOrigins is empty array", () => {
       const { stack } = createTestStack();
       const hosting = new StaticHosting(stack, "TestConstruct", {
         ...defaultProps,
-        corsConfig: { allowOrigins: [] },
+        corsConfig: { accessControlAllowOrigins: [] },
       });
 
       expect(hosting.corsResponseHeadersPolicy).toBeUndefined();
@@ -651,7 +654,7 @@ describe("StaticHosting", () => {
       const { stack } = createTestStack();
       const hosting = new StaticHosting(stack, "TestConstruct", {
         ...defaultProps,
-        corsConfig: { allowOrigins: ["https://example.com"] },
+        corsConfig: { accessControlAllowOrigins: ["https://example.com"] },
       });
 
       // The policy should be accessible for downstream projects to use
@@ -664,7 +667,7 @@ describe("StaticHosting", () => {
       const { stack } = createTestStack();
       new StaticHosting(stack, "TestConstruct", {
         ...defaultProps,
-        corsConfig: { allowOrigins: ["https://example.com"] },
+        corsConfig: { accessControlAllowOrigins: ["https://example.com"] },
         remapPaths: [{ from: "/test-path", to: "/remapped-path" }],
       });
 
@@ -686,7 +689,7 @@ describe("StaticHosting", () => {
       const { stack } = createTestStack();
       new StaticHosting(stack, "TestConstruct", {
         ...defaultProps,
-        corsConfig: { allowOrigins: ["https://example.com"] },
+        corsConfig: { accessControlAllowOrigins: ["https://example.com"] },
         backendHost: "backend.example.com",
         remapBackendPaths: [{ from: "/api/*", to: "/api/*" }],
       });
@@ -709,7 +712,7 @@ describe("StaticHosting", () => {
       const { stack } = createTestStack();
       new StaticHosting(stack, "TestConstruct", {
         ...defaultProps,
-        corsConfig: { allowOrigins: ["https://example.com"] },
+        corsConfig: { accessControlAllowOrigins: ["https://example.com"] },
         indexable: true,
       });
 
@@ -787,7 +790,7 @@ describe("StaticHosting", () => {
       new StaticHosting(stack, "TestConstruct", {
         ...defaultProps,
         indexable: false,
-        corsConfig: { allowOrigins: ["https://example.com"] },
+        corsConfig: { accessControlAllowOrigins: ["https://example.com"] },
       });
 
       const template = Template.fromStack(stack);

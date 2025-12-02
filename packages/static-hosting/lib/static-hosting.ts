@@ -46,41 +46,6 @@ import { CSP } from "../types/csp";
 import { PathRemapFunction } from "./path-remap";
 import { RequestFunction, ResponseFunction } from "./csp";
 
-/**
- * Configuration for CORS (Cross-Origin Resource Sharing) headers.
- * Only `allowOrigins` is required; other fields have sensible defaults.
- */
-export interface CorsConfig {
-  /**
-   * The origins to allow in the Access-Control-Allow-Origin header.
-   * @example ['https://example.com', 'https://app.example.com']
-   */
-  allowOrigins: string[];
-
-  /**
-   * Whether to include credentials in CORS requests.
-   * @default false
-   */
-  allowCredentials?: boolean;
-
-  /**
-   * The headers to allow in CORS requests.
-   * @default ['*']
-   */
-  allowHeaders?: string[];
-
-  /**
-   * The HTTP methods to allow in CORS requests.
-   * @default ['GET', 'HEAD', 'OPTIONS']
-   */
-  allowMethods?: string[];
-
-  /**
-   * Whether CloudFront should override the response from the origin.
-   * @default true
-   */
-  originOverride?: boolean;
-}
 
 export interface StaticHostingProps {
   /**
@@ -103,7 +68,8 @@ export interface StaticHostingProps {
    * automatically applied to all static file behaviors (*.js, *.css, etc.),
    * remapPaths, remapBackendPaths, and the default behavior.
    *
-   * Only `allowOrigins` is required. Other settings have sensible defaults:
+   * Uses the CDK ResponseHeadersCorsBehavior type. Only `accessControlAllowOrigins`
+   * is required. Other settings have sensible defaults:
    * - accessControlAllowCredentials: false
    * - accessControlAllowHeaders: ['*']
    * - accessControlAllowMethods: ['GET', 'HEAD', 'OPTIONS']
@@ -112,22 +78,24 @@ export interface StaticHostingProps {
    * @example
    * // Simple usage - just origins
    * corsConfig: {
-   *   allowOrigins: ['https://example.com', 'https://app.example.com']
+   *   accessControlAllowOrigins: ['https://example.com', 'https://app.example.com']
    * }
    *
    * @example
    * // Full customisation
    * corsConfig: {
-   *   allowOrigins: ['https://example.com'],
-   *   allowCredentials: true,
-   *   allowHeaders: ['Content-Type', 'Authorization'],
-   *   allowMethods: ['GET', 'HEAD', 'OPTIONS', 'POST'],
+   *   accessControlAllowOrigins: ['https://example.com'],
+   *   accessControlAllowCredentials: true,
+   *   accessControlAllowHeaders: ['Content-Type', 'Authorization'],
+   *   accessControlAllowMethods: ['GET', 'HEAD', 'OPTIONS', 'POST'],
+   *   accessControlExposeHeaders: ['X-Custom-Header'],
+   *   accessControlMaxAge: Duration.seconds(600),
    *   originOverride: false
    * }
    *
    * @default undefined - no CORS policy will be applied
    */
-  corsConfig?: CorsConfig;
+  corsConfig?: Partial<ResponseHeadersCorsBehavior>;
 
   /**
    * Whether the site should be indexable by search engines.
@@ -659,18 +627,31 @@ export class StaticHosting extends Construct {
 
     // Create CORS behavior config if corsConfig is specified
     const corsBehavior: ResponseHeadersCorsBehavior | undefined =
-      props.corsConfig && props.corsConfig.allowOrigins.length > 0
+      props.corsConfig &&
+      props.corsConfig.accessControlAllowOrigins &&
+      props.corsConfig.accessControlAllowOrigins.length > 0
         ? {
             accessControlAllowCredentials:
-              props.corsConfig.allowCredentials ?? false,
-            accessControlAllowHeaders: props.corsConfig.allowHeaders ?? ["*"],
-            accessControlAllowMethods: props.corsConfig.allowMethods ?? [
-              "GET",
-              "HEAD",
-              "OPTIONS",
-            ],
-            accessControlAllowOrigins: props.corsConfig.allowOrigins,
+              props.corsConfig.accessControlAllowCredentials ?? false,
+            accessControlAllowHeaders:
+              props.corsConfig.accessControlAllowHeaders ?? ["*"],
+            accessControlAllowMethods:
+              props.corsConfig.accessControlAllowMethods ?? [
+                "GET",
+                "HEAD",
+                "OPTIONS",
+              ],
+            accessControlAllowOrigins:
+              props.corsConfig.accessControlAllowOrigins,
             originOverride: props.corsConfig.originOverride ?? true,
+            // Pass through optional fields if provided
+            ...(props.corsConfig.accessControlExposeHeaders && {
+              accessControlExposeHeaders:
+                props.corsConfig.accessControlExposeHeaders,
+            }),
+            ...(props.corsConfig.accessControlMaxAge && {
+              accessControlMaxAge: props.corsConfig.accessControlMaxAge,
+            }),
           }
         : undefined;
 
