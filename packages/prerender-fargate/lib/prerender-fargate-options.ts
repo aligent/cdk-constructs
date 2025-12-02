@@ -157,6 +157,14 @@ export interface PrerenderFargateOptions {
    * An optional dashboard name to override the default randomly generated one
    */
   dashboardName?: string;
+
+  /**
+   * Additional Chrome browser flags to pass to the headless browser.
+   * These flags will be appended to the default flags.
+   * Example: ["--disable-web-security", "--ignore-certificate-errors"]
+   * @default - No additional flags
+   */
+  chromeBrowserFlags?: string[];
 }
 
 /**

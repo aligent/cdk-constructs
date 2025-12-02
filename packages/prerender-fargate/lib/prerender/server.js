@@ -30,16 +30,23 @@ util.log = function(...args) {
   logger.info(args.join(" "));
 };
 
+// Default Chrome flags
+const defaultChromeFlags = [
+  "--no-sandbox",
+  "--headless",
+  "--disable-gpu",
+  "--remote-debugging-port=9222",
+  "--hide-scrollbars",
+  "--disable-dev-shm-usage",
+];
+
+// Add any custom flags from environment variable
+const customFlags = process.env.CHROME_BROWSER_FLAGS
+  ? process.env.CHROME_BROWSER_FLAGS.split(",").filter((f) => f.trim())
+  : [];
+
 const server = prerender({
-  chromeFlags: [
-    "--no-sandbox",
-    "--headless",
-    "--disable-gpu",
-    "--disable-web-security",
-    "--remote-debugging-port=9222",
-    "--hide-scrollbars",
-    "--disable-dev-shm-usage",
-  ],
+  chromeFlags: [...defaultChromeFlags, ...customFlags],
   forwardHeaders: true,
   chromeLocation: "/usr/bin/chromium-browser",
 });
