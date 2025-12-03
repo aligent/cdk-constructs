@@ -94,7 +94,8 @@ export interface StaticHostingProps {
    *
    * @default undefined - no CORS policy will be applied
    */
-    corsConfig?: Partial<ResponseHeadersCorsBehavior> & Pick<ResponseHeadersCorsBehavior, "accessControlAllowOrigins">;
+  corsConfig?: Partial<ResponseHeadersCorsBehavior> &
+    Pick<ResponseHeadersCorsBehavior, "accessControlAllowOrigins">;
 
   /**
    * Whether the site should be indexable by search engines.
@@ -626,8 +627,7 @@ export class StaticHosting extends Construct {
 
     // Create CORS behavior config if corsConfig is specified
     const corsBehavior: ResponseHeadersCorsBehavior | undefined =
-      props.corsConfig &&
-      props.corsConfig?.accessControlAllowOrigins.length > 0
+      props.corsConfig && props.corsConfig?.accessControlAllowOrigins.length > 0
         ? {
             accessControlAllowCredentials: false,
             accessControlAllowHeaders: ["*"],
