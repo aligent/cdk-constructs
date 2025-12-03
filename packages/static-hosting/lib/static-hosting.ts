@@ -94,7 +94,7 @@ export interface StaticHostingProps {
    *
    * @default undefined - no CORS policy will be applied
    */
-  corsConfig?: Partial<ResponseHeadersCorsBehavior>;
+    corsConfig?: Partial<ResponseHeadersCorsBehavior> & Pick<ResponseHeadersCorsBehavior, "accessControlAllowOrigins">;
 
   /**
    * Whether the site should be indexable by search engines.
@@ -627,26 +627,13 @@ export class StaticHosting extends Construct {
     // Create CORS behavior config if corsConfig is specified
     const corsBehavior: ResponseHeadersCorsBehavior | undefined =
       props.corsConfig &&
-      props.corsConfig.accessControlAllowOrigins &&
-      props.corsConfig.accessControlAllowOrigins.length > 0
+      props.corsConfig?.accessControlAllowOrigins.length > 0
         ? {
-            accessControlAllowCredentials:
-              props.corsConfig.accessControlAllowCredentials ?? false,
-            accessControlAllowHeaders: props.corsConfig
-              .accessControlAllowHeaders ?? ["*"],
-            accessControlAllowMethods: props.corsConfig
-              .accessControlAllowMethods ?? ["GET", "HEAD", "OPTIONS"],
-            accessControlAllowOrigins:
-              props.corsConfig.accessControlAllowOrigins,
-            originOverride: props.corsConfig.originOverride ?? true,
-            // Pass through optional fields if provided
-            ...(props.corsConfig.accessControlExposeHeaders && {
-              accessControlExposeHeaders:
-                props.corsConfig.accessControlExposeHeaders,
-            }),
-            ...(props.corsConfig.accessControlMaxAge && {
-              accessControlMaxAge: props.corsConfig.accessControlMaxAge,
-            }),
+            accessControlAllowCredentials: false,
+            accessControlAllowHeaders: ["*"],
+            accessControlAllowMethods: ["GET", "HEAD", "OPTIONS"],
+            originOverride: true,
+            ...props.corsConfig,
           }
         : undefined;
 
