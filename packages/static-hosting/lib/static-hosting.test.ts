@@ -521,7 +521,332 @@ describe("StaticHosting", () => {
         },
       });
     });
+  });
 
+  describe("CORS Configuration", () => {
+    it("should not create CORS policy when corsConfig is not provided", () => {
+      const { stack } = createTestStack();
+      const hosting = new StaticHosting(stack, "TestConstruct", defaultProps);
+
+      expect(hosting.corsResponseHeadersPolicy).toBeUndefined();
+    });
+
+    it("should create CORS policy with defaults when corsConfig is provided", () => {
+      const { stack } = createTestStack();
+      const hosting = new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsConfig: {
+          accessControlAllowOrigins: [
+            "https://example.com",
+            "https://app.example.com",
+          ],
+        },
+      });
+
+      expect(hosting.corsResponseHeadersPolicy).toBeDefined();
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties("AWS::CloudFront::ResponseHeadersPolicy", {
+        ResponseHeadersPolicyConfig: {
+          CorsConfig: {
+            AccessControlAllowCredentials: false,
+            AccessControlAllowHeaders: {
+              Items: ["*"],
+            },
+            AccessControlAllowMethods: {
+              Items: ["GET", "HEAD", "OPTIONS"],
+            },
+            AccessControlAllowOrigins: {
+              Items: ["https://example.com", "https://app.example.com"],
+            },
+            OriginOverride: true,
+          },
+        },
+      });
+    });
+
+    it("should create CORS policy with custom settings when provided", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsConfig: {
+          accessControlAllowOrigins: ["https://example.com"],
+          accessControlAllowCredentials: true,
+          accessControlAllowHeaders: ["Content-Type", "Authorization"],
+          accessControlAllowMethods: ["GET", "HEAD", "OPTIONS", "POST"],
+          originOverride: false,
+        },
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties("AWS::CloudFront::ResponseHeadersPolicy", {
+        ResponseHeadersPolicyConfig: {
+          CorsConfig: {
+            AccessControlAllowCredentials: true,
+            AccessControlAllowHeaders: {
+              Items: ["Content-Type", "Authorization"],
+            },
+            AccessControlAllowMethods: {
+              Items: ["GET", "HEAD", "OPTIONS", "POST"],
+            },
+            AccessControlAllowOrigins: {
+              Items: ["https://example.com"],
+            },
+            OriginOverride: false,
+          },
+        },
+      });
+    });
+
+    it("should apply CORS policy to static file behaviors", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsConfig: { accessControlAllowOrigins: ["https://example.com"] },
+      });
+
+      const template = Template.fromStack(stack);
+      const distribution = template.findResources(
+        "AWS::CloudFront::Distribution"
+      );
+      const distConfig =
+        Object.values(distribution)[0].Properties.DistributionConfig;
+
+      // Check that static file behaviors have a response headers policy
+      const jsBehavior = distConfig.CacheBehaviors.find(
+        (b: { PathPattern: string }) => b.PathPattern === "*.js"
+      );
+      expect(jsBehavior).toBeDefined();
+      expect(jsBehavior.ResponseHeadersPolicyId).toBeDefined();
+
+      const cssBehavior = distConfig.CacheBehaviors.find(
+        (b: { PathPattern: string }) => b.PathPattern === "*.css"
+      );
+      expect(cssBehavior).toBeDefined();
+      expect(cssBehavior.ResponseHeadersPolicyId).toBeDefined();
+    });
+
+    it("should not apply CORS policy to static files when accessControlAllowOrigins is empty array", () => {
+      const { stack } = createTestStack();
+      const hosting = new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsConfig: { accessControlAllowOrigins: [] },
+      });
+
+      expect(hosting.corsResponseHeadersPolicy).toBeUndefined();
+
+      const template = Template.fromStack(stack);
+      const distribution = template.findResources(
+        "AWS::CloudFront::Distribution"
+      );
+      const distConfig =
+        Object.values(distribution)[0].Properties.DistributionConfig;
+
+      // Check that static file behaviors do not have a response headers policy
+      const jsBehavior = distConfig.CacheBehaviors.find(
+        (b: { PathPattern: string }) => b.PathPattern === "*.js"
+      );
+      expect(jsBehavior).toBeDefined();
+      expect(jsBehavior.ResponseHeadersPolicyId).toBeUndefined();
+    });
+
+    it("should expose corsResponseHeadersPolicy for downstream use", () => {
+      const { stack } = createTestStack();
+      const hosting = new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsConfig: { accessControlAllowOrigins: ["https://example.com"] },
+      });
+
+      // The policy should be accessible for downstream projects to use
+      // in their own custom behaviors
+      expect(hosting.corsResponseHeadersPolicy).toBeDefined();
+      expect(typeof hosting.corsResponseHeadersPolicy).toBe("object");
+    });
+
+    it("should apply CORS policy to remapPaths behaviors", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsConfig: { accessControlAllowOrigins: ["https://example.com"] },
+        remapPaths: [{ from: "/test-path", to: "/remapped-path" }],
+      });
+
+      const template = Template.fromStack(stack);
+      const distribution = template.findResources(
+        "AWS::CloudFront::Distribution"
+      );
+      const distConfig =
+        Object.values(distribution)[0].Properties.DistributionConfig;
+
+      const remapBehavior = distConfig.CacheBehaviors.find(
+        (b: { PathPattern: string }) => b.PathPattern === "/test-path"
+      );
+      expect(remapBehavior).toBeDefined();
+      expect(remapBehavior.ResponseHeadersPolicyId).toBeDefined();
+    });
+
+    it("should apply CORS policy to remapBackendPaths behaviors", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsConfig: { accessControlAllowOrigins: ["https://example.com"] },
+        backendHost: "backend.example.com",
+        remapBackendPaths: [{ from: "/api/*", to: "/api/*" }],
+      });
+
+      const template = Template.fromStack(stack);
+      const distribution = template.findResources(
+        "AWS::CloudFront::Distribution"
+      );
+      const distConfig =
+        Object.values(distribution)[0].Properties.DistributionConfig;
+
+      const backendBehavior = distConfig.CacheBehaviors.find(
+        (b: { PathPattern: string }) => b.PathPattern === "/api/*"
+      );
+      expect(backendBehavior).toBeDefined();
+      expect(backendBehavior.ResponseHeadersPolicyId).toBeDefined();
+    });
+
+    it("should apply CORS to default behavior when indexable is true", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        corsConfig: { accessControlAllowOrigins: ["https://example.com"] },
+        indexable: true,
+      });
+
+      const template = Template.fromStack(stack);
+      const distribution = template.findResources(
+        "AWS::CloudFront::Distribution"
+      );
+      const distConfig =
+        Object.values(distribution)[0].Properties.DistributionConfig;
+
+      // Default behavior should have response headers policy (CORS)
+      expect(
+        distConfig.DefaultCacheBehavior.ResponseHeadersPolicyId
+      ).toBeDefined();
+    });
+  });
+
+  describe("Indexable Configuration", () => {
+    it("should not create NoIndexNoFollow policy when indexable is true (default)", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", defaultProps);
+
+      const template = Template.fromStack(stack);
+      const policies = template.findResources(
+        "AWS::CloudFront::ResponseHeadersPolicy"
+      );
+
+      // Should not have a NoIndexNoFollow policy
+      const hasNoIndexPolicy = Object.values(policies).some(
+        (policy: Record<string, unknown>) => {
+          const config = (
+            policy.Properties as {
+              ResponseHeadersPolicyConfig?: {
+                CustomHeadersConfig?: {
+                  Items?: Array<{ Header: string; Value: string }>;
+                };
+              };
+            }
+          )?.ResponseHeadersPolicyConfig?.CustomHeadersConfig?.Items;
+          return config?.some(
+            item =>
+              item.Header === "x-robots-tag" &&
+              item.Value === "noindex,nofollow"
+          );
+        }
+      );
+      expect(hasNoIndexPolicy).toBe(false);
+    });
+
+    it("should create NoIndexNoFollow policy when indexable is false", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        indexable: false,
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties("AWS::CloudFront::ResponseHeadersPolicy", {
+        ResponseHeadersPolicyConfig: {
+          CustomHeadersConfig: {
+            Items: [
+              {
+                Header: "x-robots-tag",
+                Value: "noindex,nofollow",
+                Override: true,
+              },
+            ],
+          },
+        },
+      });
+    });
+
+    it("should combine NoIndexNoFollow with CORS when both indexable is false and corsConfig is set", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        indexable: false,
+        corsConfig: { accessControlAllowOrigins: ["https://example.com"] },
+      });
+
+      const template = Template.fromStack(stack);
+      // Should have a policy with both noindex and CORS
+      template.hasResourceProperties("AWS::CloudFront::ResponseHeadersPolicy", {
+        ResponseHeadersPolicyConfig: {
+          CustomHeadersConfig: {
+            Items: [
+              {
+                Header: "x-robots-tag",
+                Value: "noindex,nofollow",
+                Override: true,
+              },
+            ],
+          },
+          CorsConfig: {
+            AccessControlAllowCredentials: false,
+            AccessControlAllowHeaders: {
+              Items: ["*"],
+            },
+            AccessControlAllowMethods: {
+              Items: ["GET", "HEAD", "OPTIONS"],
+            },
+            AccessControlAllowOrigins: {
+              Items: ["https://example.com"],
+            },
+            OriginOverride: true,
+          },
+        },
+      });
+    });
+
+    it("should apply NoIndexNoFollow policy to default behavior", () => {
+      const { stack } = createTestStack();
+      new StaticHosting(stack, "TestConstruct", {
+        ...defaultProps,
+        indexable: false,
+      });
+
+      const template = Template.fromStack(stack);
+      const distribution = template.findResources(
+        "AWS::CloudFront::Distribution"
+      );
+      const distConfig =
+        Object.values(distribution)[0].Properties.DistributionConfig;
+
+      // Default behavior should have response headers policy
+      expect(
+        distConfig.DefaultCacheBehavior.ResponseHeadersPolicyId
+      ).toBeDefined();
+    });
+  });
+
+  // NOTE: This test creates EdgeFunctions which can cause cross-app reference issues
+  // in subsequent tests. Keep this test section last.
+  describe("CSP Path Behaviors", () => {
     it("should create CSP path behaviors", () => {
       const { stack } = createTestStack();
       new StaticHosting(stack, "TestConstruct", {

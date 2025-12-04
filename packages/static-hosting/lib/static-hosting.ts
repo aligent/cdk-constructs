@@ -19,6 +19,7 @@ import {
   OriginRequestHeaderBehavior,
   OriginRequestPolicy,
   PriceClass,
+  ResponseHeadersCorsBehavior,
   ResponseHeadersPolicy,
   SecurityPolicyProtocol,
   SSLMethod,
@@ -59,6 +60,54 @@ export interface StaticHostingProps {
    * CloudFront distribution
    */
   subDomainName: string;
+
+  /**
+   * CORS configuration for the CloudFront distribution.
+   * If set, creates a ResponseHeadersPolicy with CORS configuration that is
+   * automatically applied to all static file behaviors (*.js, *.css, etc.),
+   * remapPaths, remapBackendPaths, and the default behavior.
+   *
+   * Uses the CDK ResponseHeadersCorsBehavior type. Only `accessControlAllowOrigins`
+   * is required. Other settings have sensible defaults:
+   * - accessControlAllowCredentials: false
+   * - accessControlAllowHeaders: ['*']
+   * - accessControlAllowMethods: ['GET', 'HEAD', 'OPTIONS']
+   * - originOverride: true
+   *
+   * @example
+   * // Simple usage - just origins
+   * corsConfig: {
+   *   accessControlAllowOrigins: ['https://example.com', 'https://app.example.com']
+   * }
+   *
+   * @example
+   * // Full customisation
+   * corsConfig: {
+   *   accessControlAllowOrigins: ['https://example.com'],
+   *   accessControlAllowCredentials: true,
+   *   accessControlAllowHeaders: ['Content-Type', 'Authorization'],
+   *   accessControlAllowMethods: ['GET', 'HEAD', 'OPTIONS', 'POST'],
+   *   accessControlExposeHeaders: ['X-Custom-Header'],
+   *   accessControlMaxAge: Duration.seconds(600),
+   *   originOverride: false
+   * }
+   *
+   * @default undefined - no CORS policy will be applied
+   */
+  corsConfig?: Partial<ResponseHeadersCorsBehavior> &
+    Pick<ResponseHeadersCorsBehavior, "accessControlAllowOrigins">;
+
+  /**
+   * Whether the site should be indexable by search engines.
+   * When set to false, adds x-robots-tag: noindex,nofollow header to the default behavior.
+   * If corsConfig is also provided, the CORS configuration will be combined with
+   * the noindex/nofollow headers.
+   *
+   * Use this for staging/feature environments that should not appear in search results.
+   *
+   * @default true - site is indexable
+   */
+  indexable?: boolean;
 
   /**
    * An array of additional Cloudfront alternative domain names.
@@ -368,6 +417,7 @@ export class StaticHosting extends Construct {
   public readonly distribution: IDistribution;
   public readonly bucket: IBucket;
   public readonly oai: IOriginAccessIdentity;
+  public readonly corsResponseHeadersPolicy?: ResponseHeadersPolicy;
 
   private staticFiles = [
     "js",
@@ -575,13 +625,65 @@ export class StaticHosting extends Construct {
       );
     }
 
+    // Create CORS behavior config if corsConfig is specified
+    const corsBehavior: ResponseHeadersCorsBehavior | undefined =
+      props.corsConfig && props.corsConfig?.accessControlAllowOrigins.length > 0
+        ? {
+            accessControlAllowCredentials: false,
+            accessControlAllowHeaders: ["*"],
+            accessControlAllowMethods: ["GET", "HEAD", "OPTIONS"],
+            originOverride: true,
+            ...props.corsConfig,
+          }
+        : undefined;
+
+    // Create standalone CORS policy for use with static files, remapPaths, etc.
+    if (corsBehavior) {
+      this.corsResponseHeadersPolicy = new ResponseHeadersPolicy(
+        this,
+        "CORSResponseHeadersPolicy",
+        {
+          corsBehavior: corsBehavior,
+        }
+      );
+    }
+
+    // Determine the default behavior response headers policy based on indexable and CORS settings
+    const indexable = props.indexable !== false; // default to true
+    let defaultBehaviorResponsePolicy: IResponseHeadersPolicy | undefined =
+      responseHeadersPolicy;
+
+    if (!indexable) {
+      // Non-indexable environments get noindex/nofollow header, optionally with CORS
+      defaultBehaviorResponsePolicy = new ResponseHeadersPolicy(
+        this,
+        "NoIndexNoFollowPolicy",
+        {
+          customHeadersBehavior: {
+            customHeaders: [
+              {
+                header: "x-robots-tag",
+                value: "noindex,nofollow",
+                override: true,
+              },
+            ],
+          },
+          // Include CORS if configured
+          corsBehavior: corsBehavior,
+        }
+      );
+    } else if (this.corsResponseHeadersPolicy) {
+      // Indexable with CORS - use CORS policy for default behavior
+      defaultBehaviorResponsePolicy = this.corsResponseHeadersPolicy;
+    }
+
     const defaultBehavior: Writeable<BehaviorOptions> = {
       origin: s3Origin,
       viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       edgeLambdas: defaultBehaviorEdgeLambdas,
       originRequestPolicy,
       cachePolicy: originCachePolicy,
-      responseHeadersPolicy: responseHeadersPolicy,
+      responseHeadersPolicy: defaultBehaviorResponsePolicy,
     };
 
     const additionalBehaviors: Record<string, Writeable<BehaviorOptions>> = {};
@@ -600,6 +702,10 @@ export class StaticHosting extends Construct {
             origin: backendOrigin,
             viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             edgeLambdas: this.createRemapBehavior(path.from, path.to),
+            // Apply CORS policy if configured and not overridden by path.behaviour
+            ...(this.corsResponseHeadersPolicy && {
+              responseHeadersPolicy: this.corsResponseHeadersPolicy,
+            }),
             ...path.behaviour,
           };
         }
@@ -660,6 +766,10 @@ export class StaticHosting extends Construct {
           origin: s3Origin,
           viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           edgeLambdas: this.createRemapBehavior(path.from, path.to),
+          // Apply CORS policy if configured and not overridden by path.behaviour
+          ...(this.corsResponseHeadersPolicy && {
+            responseHeadersPolicy: this.corsResponseHeadersPolicy,
+          }),
           ...path.behaviour,
         };
       }
@@ -674,6 +784,11 @@ export class StaticHosting extends Construct {
           additionalBehaviors[`${prefix}*.${path}`] = {
             origin: s3Origin,
             viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            // Apply CORS policy to static file behaviors if configured
+            ...(this.corsResponseHeadersPolicy && {
+              responseHeadersPolicy: this.corsResponseHeadersPolicy,
+            }),
+            ...props.staticFileRemapOptions,
           };
         });
       });
