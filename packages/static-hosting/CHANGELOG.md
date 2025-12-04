@@ -1,5 +1,11 @@
 # @aligent/cdk-static-hosting
 
+## 2.11.0
+
+### Minor Changes
+
+- [#1568](https://github.com/aligent/cdk-constructs/pull/1568) [`e996387`](https://github.com/aligent/cdk-constructs/commit/e99638765813f1c62fc89e9f67f32e379177e302) Thanks [@porhkz](https://github.com/porhkz)! - Added optional CORS Response Header Policy and added NoIndexNoFollow Response Header Policy
+
 ## 2.10.0
 
 ### Minor Changes
