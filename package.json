@@ -52,6 +52,7 @@
   },
   "packageManager": "yarn@4.5.1",
   "dependencies": {
+    "cdk-nag": "^2.37.55",
     "eslint-config-prettier": "^9.1.0"
   },
   "resolutions": {
