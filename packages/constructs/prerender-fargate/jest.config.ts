@@ -1,11 +1,11 @@
 /* eslint-disable */
 export default {
   displayName: "prerender-fargate",
-  preset: "../../jest.preset.js",
+  preset: "../../../jest.preset.js",
   testEnvironment: "node",
   transform: {
     "^.+\\.[tj]s$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.spec.json" }],
   },
   moduleFileExtensions: ["ts", "js", "html"],
-  coverageDirectory: "../../coverage/packages/prerender-fargate",
+  coverageDirectory: "../../../coverage/packages/prerender-fargate",
 };
