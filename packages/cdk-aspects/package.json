@@ -1,5 +1,5 @@
 {
-  "name": "@aligent/cdk-esbuild",
+  "name": "@aligent/cdk-aspects",
   "version": "2.5.1",
   "description": "Esbuild implementation for CDK",
   "main": "index.js",
