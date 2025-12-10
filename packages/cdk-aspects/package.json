@@ -1,14 +1,14 @@
 {
   "name": "@aligent/cdk-aspects",
-  "version": "2.5.1",
-  "description": "Esbuild implementation for CDK",
+  "version": "0.1.0",
+  "description": "Collection of CDK Asppects",
   "main": "index.js",
   "types": "index.d.ts",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "test": "npx nx test esbuild",
-    "lint": "npx nx lint esbuild"
+    "test": "npx nx test cdk-aspects",
+    "lint": "npx nx lint cdk-aspects"
   },
   "devDependencies": {
     "@types/jest": "^29.5.10",
