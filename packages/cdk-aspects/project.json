@@ -19,7 +19,7 @@
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "packages/esbuild/jest.config.ts",
+        "jestConfig": "packages/cdk-aspects/jest.config.ts",
         "passWithNoTests": true
       }
     },
