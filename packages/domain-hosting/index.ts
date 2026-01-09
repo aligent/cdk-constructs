@@ -1,9 +1,3 @@
-import {
-  DomainHosting,
-  DomainHostingProps,
-} from "./lib/domain-hosting";
+import { DomainHosting, DomainHostingProps } from "./lib/domain-hosting";
 
-export {
-  DomainHosting,
-  DomainHostingProps,
-};
+export { DomainHosting, DomainHostingProps };

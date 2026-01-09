@@ -74,6 +74,34 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aligent/cdk-domain-hosting@workspace:packages/domain-hosting":
+  version: 0.0.0-use.local
+  resolution: "@aligent/cdk-domain-hosting@workspace:packages/domain-hosting"
+  dependencies:
+    "@aligent/cdk-esbuild": "npm:^2.5.1"
+    "@types/aws-lambda": "npm:^8.10.150"
+    "@types/jest": "npm:^29.5.10"
+    "@types/node": "npm:^20.6.3"
+    aws-cdk: "npm:^2.1019.1"
+    aws-cdk-lib: "npm:^2.168.0"
+    aws-sdk-client-mock: "npm:^3.0.0"
+    constructs: "npm:^10.4.2"
+    jest: "npm:^29.7.0"
+    source-map-support: "npm:^0.5.21"
+    ts-jest: "npm:^29.1.1"
+    ts-node: "npm:^10.9.1"
+    typescript: "npm:^5.3.2"
+  peerDependencies:
+    aws-cdk-lib: ^2.120.0
+    constructs: ^10.0.0
+  peerDependenciesMeta:
+    aws-cdk-lib:
+      optional: false
+    constructs:
+      optional: false
+  languageName: unknown
+  linkType: soft
+
 "@aligent/cdk-esbuild@npm:^2.5.1, @aligent/cdk-esbuild@workspace:packages/esbuild":
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-esbuild@workspace:packages/esbuild"

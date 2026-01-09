@@ -1,19 +1,40 @@
 import { Construct } from "constructs";
-import { Certificate, DnsValidatedCertificate } from "aws-cdk-lib/aws-certificatemanager";
-import { AaaaRecord, ARecord, CnameRecord, HostedZone, MxRecord, PublicHostedZone, SrvRecord, TxtRecord } from "aws-cdk-lib/aws-route53";
-import { DNSRecord } from './handlers/helper'
+import {
+  Certificate,
+  DnsValidatedCertificate,
+} from "aws-cdk-lib/aws-certificatemanager";
+import {
+  AaaaRecord,
+  ARecord,
+  CnameRecord,
+  HostedZone,
+  MxRecord,
+  MxRecordValue,
+  PublicHostedZone,
+  RecordTarget,
+  SrvRecord,
+  SrvRecordValue,
+  TxtRecord,
+} from "aws-cdk-lib/aws-route53";
+
+type DNSRecord =
+  | { type: "A"; name: string; value: RecordTarget }
+  | { type: "AAAA"; name: string; value: RecordTarget }
+  | { type: "CNAME"; name: string; value: string }
+  | { type: "TXT"; name: string; value: string[] }
+  | { type: "MX"; name: string; value: MxRecordValue[] }
+  | { type: "SRV"; name: string; value: SrvRecordValue[] };
 
 export interface DomainHostingProps {
-  domainName: string
-  hostedZoneId?: string
-  createCertificate?: boolean
-  certificateArn?: string
-  subDomains?: string[]
-  records?: DNSRecord[]
+  domainName: string;
+  hostedZoneId?: string;
+  createCertificate?: boolean;
+  certificateArn?: string;
+  subDomains?: string[];
+  records?: DNSRecord[];
 }
 
 export class DomainHosting extends Construct {
-
   constructor(scope: Construct, id: string, props: DomainHostingProps) {
     super(scope, id);
 
@@ -23,51 +44,38 @@ export class DomainHosting extends Construct {
       createCertificate = false,
       certificateArn,
       subDomains = [],
-      records = []
+      records = [],
     } = props;
 
     let hostedZone;
-    const createCert = createCertificate || subDomains.length > 0
+    const createCert = createCertificate || subDomains.length > 0;
     if (!hostedZoneId) {
-      hostedZone = new PublicHostedZone(this, 'HostedZone', {
+      hostedZone = new PublicHostedZone(this, "HostedZone", {
         zoneName: domainName,
       });
     } else {
-      hostedZone = HostedZone.fromHostedZoneAttributes(
-        this,
-        'HostedZone',
-        {
-          hostedZoneId,
-          zoneName: domainName,
-        }
-      );
+      hostedZone = HostedZone.fromHostedZoneAttributes(this, "HostedZone", {
+        hostedZoneId,
+        zoneName: domainName,
+      });
     }
     if (certificateArn) {
-      const certificate = Certificate.fromCertificateArn(
-        this,
-        'DomainCertificate',
-        certificateArn
-      );
+      Certificate.fromCertificateArn(this, "DomainCertificate", certificateArn);
     } else if (createCert) {
       // If you are creating a certificate and your domain is hosted outside AWS don't forget to update the NS record in your provider
       // @deprecated but no replacement for generating cert and creating CNAMEs in zone
-      new DnsValidatedCertificate(this, 'Certificate', {
+      new DnsValidatedCertificate(this, "Certificate", {
         domainName: domainName,
-        subjectAlternativeNames: [
-          ...subDomains.map((s) => `${s}.${domainName}`),
-        ],
+        subjectAlternativeNames: [...subDomains.map(s => `${s}.${domainName}`)],
         hostedZone: hostedZone,
-        region: 'us-east-1'
+        region: "us-east-1",
       });
-
-
     }
     if (records) {
-      records.map((r, i) => {
-        const recordId = `${r.name}-${r.type}`
+      records.map(r => {
+        const recordId = `${r.name}-${r.type}`;
         switch (r.type) {
           case "A":
-            console.log('#### HERE ####')
             new ARecord(this, recordId, {
               zone: hostedZone,
               target: r.value,
@@ -110,9 +118,7 @@ export class DomainHosting extends Construct {
           default:
             break;
         }
-      })
+      });
     }
-
-
   }
 }

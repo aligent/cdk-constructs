@@ -1,4 +1,3 @@
-
 # Aligent AWS Domain Hosting
 
 ## Overview
@@ -6,6 +5,7 @@
 ![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/static-hosting/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/static-hosting/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-static-hosting?color=green)
 
 A simple package used for creating and/or managing a hosted zone in AWS. Handy for setting up a cloudfront site from scratch when there's no existing domain management in place or integrating into an already existing setup.
+You are able to use a domain that was requested through AWS Route53 or an external provider. 
 
 It can be imported and used within CDK applications. By default this construct will create a hosted zone and a certificate to validate a domain against. Records are not created unless explicitly stated.
 
@@ -13,6 +13,9 @@ It has the following features that can optionally be enabled:
 
 - Create custom records of `CNAME`, `A`, `AAAA`, `MX`, and `SRV` types
 - Create a certificate for the specified domain (and any subdomains) 
+
+## If using an external provider 
+You will need to set the NS record in your provider's management page to the values in the hosted zone after you run `cdk deploy` as the certificate will not validate otherwise
 
 ## Installation
 
