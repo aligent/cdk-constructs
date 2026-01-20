@@ -27,17 +27,17 @@ type DNSRecord =
 
 export interface DomainHostingProps {
   /**
-   * Domain name for the hosted zone. This is also the base for the certificate if created. 
+   * Domain name for the hosted zone. This is also the base for the certificate if created
    */
   domainName: string;
   /**
-   * If you are using a zone that already exists just put its id instead. 
+   * If you are using a zone that already exists just put its id instead
    * This will make the CDK update the existing zone in place (it will not remove records that aren't in the code yet)
    */
   hostedZoneId?: string;
   /**
-   * Explicitly state if you want a certificate created for the default domain `domainName` value. 
-   * Hosted Zones do not require a cert on creation. 
+   * Explicitly state if you want a certificate created for the default domain `domainName` value.
+   * Hosted Zones do not require a cert on creation
    * This is set to true if you pass in `certificateSubDomains`
    * Created in `us-east-1`
    * @default false
@@ -94,7 +94,9 @@ export class DomainHosting extends Construct {
       // @deprecated but no replacement for generating cert and creating CNAMEs in zone
       new DnsValidatedCertificate(this, "Certificate", {
         domainName: domainName,
-        subjectAlternativeNames: [...certificateSubDomains.map(s => `${s}.${domainName}`)],
+        subjectAlternativeNames: [
+          ...certificateSubDomains.map(s => `${s}.${domainName}`),
+        ],
         hostedZone: hostedZone,
         region: "us-east-1",
       });
