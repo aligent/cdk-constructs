@@ -38,40 +38,6 @@ This package has peer dependencies on:
 Make sure to install compatible versions of these packages in your CDK application.
 
 ## Usage
-### `domainName`(string)
-- Domain name for the hosted zone. This is also the base for the certificate that is created. Combined with the subDomainName it is used as the name for the S3 origin and an alternative domain name for the CloudFront distribution
-
-### `hostedZoneId?`(string)
-- If you are using a zone that already exists just put its id instead. This will make the CDK update the existing zone in place (it will not remove records that aren't in the code yet)
-
-Default: **undefined**
-
-### `createCertificate?` (boolean)
-
-- Explicitly state if you want a certificate created for the default domain `domainName` value. Hosted Zones do not require a cert on creation. This is set to true if you pass in `subDomains`
-- The Cert is created in `us-east-1`
-
-Default: **false**
-
-### `certificateArn?` (string)
-
-- The arn of the certificate to validate against if one already exists.
-
-Default: **undefined**
-
-### `subDomains?` (string)
-
-- Extra subdomains to add to the certificate for validation.
-
-Default: **[]**
-
-### `records?` (string)
-
-- Any records to create in the zone, can be of types  `CNAME`, `A`, `AAAA`, `MX`, and `SRV`
-- See usage block below for an example
-
-
-## Example
 
 The following CDK snippet can be used to provision a zone with records and a certificate using this construct.
 
@@ -89,7 +55,7 @@ export class DomainHostingStack extends Stack {
 
     new DomainHosting(this, "DomainHostingStack", {
       domainName: props.domainName,
-      subDomains: ['www'],
+      certificateSubDomains: ['www'],
       records: [
         {
           type: 'CNAME',

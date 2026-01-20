@@ -26,11 +26,36 @@ type DNSRecord =
   | { type: "SRV"; name: string; value: SrvRecordValue[] };
 
 export interface DomainHostingProps {
+  /**
+   * Domain name for the hosted zone. This is also the base for the certificate if created. 
+   */
   domainName: string;
+  /**
+   * If you are using a zone that already exists just put its id instead. 
+   * This will make the CDK update the existing zone in place (it will not remove records that aren't in the code yet)
+   */
   hostedZoneId?: string;
+  /**
+   * Explicitly state if you want a certificate created for the default domain `domainName` value. 
+   * Hosted Zones do not require a cert on creation. 
+   * This is set to true if you pass in `certificateSubDomains`
+   * Created in `us-east-1`
+   * @default false
+   */
   createCertificate?: boolean;
+
+  /**
+   * The arn of the certificate to validate against if one already exists
+   */
   certificateArn?: string;
-  subDomains?: string[];
+  /**
+   * Extra subdomains to add to the certificate for validation.
+   */
+  certificateSubDomains?: string[];
+  /**
+   * Any records to create in the zone, can be of types  `CNAME`, `A`, `AAAA`, `MX`, and `SRV`
+   * See docs or type for an example
+   */
   records?: DNSRecord[];
 }
 
@@ -43,12 +68,12 @@ export class DomainHosting extends Construct {
       hostedZoneId,
       createCertificate = false,
       certificateArn,
-      subDomains = [],
+      certificateSubDomains = [],
       records = [],
     } = props;
 
     let hostedZone;
-    const createCert = createCertificate || subDomains.length > 0;
+    // If your domain provider isn't AWS don't forget to update the NS record in your provider with the values from Route53
     if (!hostedZoneId) {
       hostedZone = new PublicHostedZone(this, "HostedZone", {
         zoneName: domainName,
@@ -59,6 +84,9 @@ export class DomainHosting extends Construct {
         zoneName: domainName,
       });
     }
+
+    // We also create a cert if subdomains are passed in as the user wants to validate extra values on their domain.
+    const createCert = createCertificate || certificateSubDomains.length > 0;
     if (certificateArn) {
       Certificate.fromCertificateArn(this, "DomainCertificate", certificateArn);
     } else if (createCert) {
@@ -66,7 +94,7 @@ export class DomainHosting extends Construct {
       // @deprecated but no replacement for generating cert and creating CNAMEs in zone
       new DnsValidatedCertificate(this, "Certificate", {
         domainName: domainName,
-        subjectAlternativeNames: [...subDomains.map(s => `${s}.${domainName}`)],
+        subjectAlternativeNames: [...certificateSubDomains.map(s => `${s}.${domainName}`)],
         hostedZone: hostedZone,
         region: "us-east-1",
       });
@@ -116,7 +144,7 @@ export class DomainHosting extends Construct {
             });
             break;
           default:
-            break;
+            throw new TypeError(`Type is not implemented.`);
         }
       });
     }
