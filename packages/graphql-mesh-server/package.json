@@ -20,7 +20,7 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.150",
     "@types/jest": "^29.5.10",
-    "@types/node": "^20.6.3",
+    "@types/node": "^20.19.30",
     "@types/yaml": "^1.9.7",
     "aws-cdk": "^2.1019.1",
     "jest": "^29.7.0",
