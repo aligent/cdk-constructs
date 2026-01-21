@@ -1,6 +1,9 @@
 # Aligent AWS RabbitMQ
 
 ## Overview
+
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/rabbitmq/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/rabbitmq/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-rabbitmq?color=green)
+
 This repository defines a CDK construct for hosting a RabbitMQ cluster within AWS.
 It can be imported and used within CDK applications.
 

@@ -2,6 +2,8 @@
 
 ## Overview
 
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/waf/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/waf/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-waf?color=green)
+
 This repository defines a CDK construct for provisioning an AWS Web Application Firewall (WAF) stack. It can be imported and used within CDK application.
 ##Example
 The following CDK snippet can be used to provision the an AWS WAF stack.

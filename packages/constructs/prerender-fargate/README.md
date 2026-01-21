@@ -1,5 +1,7 @@
 # PrerenderFargate Construct
 
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/prerender-fargate/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/prerender-fargate/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-prerender-fargate?color=green)
+
 The PrerenderFargate construct sets up an AWS Fargate service to run a [Prerender] service in an ECS Fargate cluster.
 
 The Prerender server listens for an HTTP request, takes the URL, and loads it in Headless Chrome, waits for the page to finish loading, and then returns your content to the requesting client.
