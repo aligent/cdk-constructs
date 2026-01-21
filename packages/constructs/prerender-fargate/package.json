@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-prerender-fargate",
-  "version": "2.16.0",
+  "version": "2.16.1",
   "description": "A construct to host Prerender in Fargate",
   "main": "index.js",
   "scripts": {
