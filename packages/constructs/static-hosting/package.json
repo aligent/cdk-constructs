@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-static-hosting",
-  "version": "2.11.0",
+  "version": "2.11.1",
   "main": "index.js",
   "license": "MIT",
   "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/static-hosting#readme",
@@ -15,7 +15,7 @@
     "lint": "npx nx lint static-hosting"
   },
   "devDependencies": {
-    "@aligent/cdk-esbuild": "^2.5.1",
+    "@aligent/cdk-esbuild": "^2.5.2",
     "@types/aws-lambda": "^8.10.150",
     "@types/jest": "^29.5.10",
     "@types/node": "^20.6.3",
