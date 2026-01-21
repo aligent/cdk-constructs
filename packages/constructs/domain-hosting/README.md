@@ -2,7 +2,7 @@
 
 ## Overview
 
-![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/static-hosting/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/static-hosting/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-static-hosting?color=green)
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/domain-hosting/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/domain-hosting/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-domain-hosting?color=green)
 
 A simple package used for creating and/or managing a hosted zone in AWS. Handy for setting up a cloudfront site from scratch when there's no existing domain management in place or integrating into an already existing setup.
 You are able to use a domain that was requested through AWS Route53 or an external provider. 

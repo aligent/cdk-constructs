@@ -1,6 +1,6 @@
 # Geo-IP Redirect
 
-![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/geoip-redirect/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/geoip-redirect/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-geoip-redirect?color=green)
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/geoip-redirect/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/geoip-redirect/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-geoip-redirect?color=green)
 
 ## Overview
 

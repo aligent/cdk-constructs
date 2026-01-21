@@ -4,7 +4,7 @@ Esbuild is a module bundler and minifier for JavaScript/Typescript.
 ## Overview
 This repository provides a construct which runs the esbuild bundler for AWS through the ILocalBundling interface and allows AWS CDK's bundling process to use the esbuild tool to generate a bundled output
 
-![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/esbuild/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/esbuild/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-esbuild?color=green)
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/esbuild/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/esbuild/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-esbuild?color=green)
 
 Default options are set in [esbuild.ts](https://github.com/aligent/cdk-constructs/blob/main/packages/esbuild/esbuild.ts). Other options can be set when calling esbuild in your construct. The options listed below are some of the most common, and default options for esbuild. Remaining options can be found at [API - Esbuild](https://esbuild.github.io/api/)
 
