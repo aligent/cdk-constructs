@@ -1,11 +1,11 @@
-import { type IAspect } from 'aws-cdk-lib';
-import { CfnFunction, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
-import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
-import { IConstruct } from 'constructs';
+import { type IAspect } from "aws-cdk-lib";
+import { CfnFunction, Runtime, Tracing } from "aws-cdk-lib/aws-lambda";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import { IConstruct } from "constructs";
 
 interface Config {
-    runtime: Runtime;
-    sourceMap?: boolean;
+  runtime: Runtime;
+  sourceMap?: boolean;
 }
 
 /**
@@ -33,40 +33,40 @@ interface Config {
  * @see https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_lambda_nodejs.NodejsFunction.html
  */
 export class NodeJsFunctionDefaultsAspect implements IAspect {
-    private readonly config: Required<Config>;
+  private readonly config: Required<Config>;
 
-    /**
-     * Creates a new NodeJsFunctionDefaultsAspect
-     *
-     * @param config - Configuration identifier used to select appropriate defaults.
-     */
-    constructor(config: Config) {
-        this.config = { ...config, sourceMap: config.sourceMap ?? true };
+  /**
+   * Creates a new NodeJsFunctionDefaultsAspect
+   *
+   * @param config - Configuration identifier used to select appropriate defaults.
+   */
+  constructor(config: Config) {
+    this.config = { ...config, sourceMap: config.sourceMap ?? true };
+  }
+
+  /**
+   * Visits a construct and applies runtime and tracing settings if it's a NodejsFunction
+   *
+   * Applies configuration-specific runtime, tracing, and environment settings to Node.js
+   * Lambda functions that don't already have these properties explicitly set.
+   *
+   * @param node - The construct to potentially modify
+   */
+  visit(node: IConstruct): void {
+    if (node instanceof NodejsFunction) {
+      const cfnFunction = node.node.defaultChild as CfnFunction;
+
+      if (cfnFunction) {
+        cfnFunction.runtime = this.config.runtime.name;
+      }
+
+      if (cfnFunction && cfnFunction.tracingConfig === undefined) {
+        cfnFunction.tracingConfig = { mode: Tracing.ACTIVE };
+      }
+
+      if (this.config.sourceMap) {
+        node.addEnvironment("NODE_OPTIONS", "--enable-source-maps");
+      }
     }
-
-    /**
-     * Visits a construct and applies runtime and tracing settings if it's a NodejsFunction
-     *
-     * Applies configuration-specific runtime, tracing, and environment settings to Node.js
-     * Lambda functions that don't already have these properties explicitly set.
-     *
-     * @param node - The construct to potentially modify
-     */
-    visit(node: IConstruct): void {
-        if (node instanceof NodejsFunction) {
-            const cfnFunction = node.node.defaultChild as CfnFunction;
-
-            if (cfnFunction) {
-                cfnFunction.runtime = this.config.runtime.name;
-            }
-
-            if (cfnFunction && cfnFunction.tracingConfig === undefined) {
-                cfnFunction.tracingConfig = { mode: Tracing.ACTIVE };
-            }
-
-            if (this.config.sourceMap) {
-                node.addEnvironment('NODE_OPTIONS', '--enable-source-maps');
-            }
-        }
-    }
+  }
 }
