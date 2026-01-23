@@ -1,5 +1,7 @@
 # Feature Environment Lambda@Edge Handlers
 
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/feature-env-handlers/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/feature-env-handlers/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-feature-env-handlers?color=green)
+
 A collection of Lambda@Edge functions to handle routing in feature environments. 
 
 Feature environments are temporary environments that are created on a pull request. They function almost the same as regular statically hosted environments, however, there are multiple frontends hosted in the same bucket. Therefore, we require a method to route to the correct sub-path depending on which subdomain the user has visited. 

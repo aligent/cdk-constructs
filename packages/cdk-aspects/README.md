@@ -1,5 +1,7 @@
 # Aligent CDK Aspects
 
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/cdk-aspects/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/cdk-aspects/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-aspects?color=green)
+
 This package provides a collection of CDK aspects that can be applied to your AWS CDK stacks to enforce best practices and automate common configurations.
 
 ## Defaults

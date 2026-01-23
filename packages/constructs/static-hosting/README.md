@@ -2,7 +2,7 @@
 
 ## Overview
 
-![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/static-hosting/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/static-hosting/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-static-hosting?color=green)
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/static-hosting/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/static-hosting/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-static-hosting?color=green)
 
 This repository defines a CDK construct for hosting a static website on AWS using S3 and CloudFront.
 

@@ -2,6 +2,8 @@
 
 ## Overview
 
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/header-change-detection/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/header-change-detection/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-header-change-detection?color=green)
+
 Creates a Lambda function that periodically scans security headers and sends the results to SNS.
 
 ### Diagram

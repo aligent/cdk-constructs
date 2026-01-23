@@ -1,6 +1,8 @@
-# AligentShared VPC
+# Aligent Shared VPC
 
 ## Overview
+
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/shared-vpc/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/shared-vpc/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-shared-vpc?color=green)
 
 This repository creates a stack that provides a stable elastic IP for micro-services. Micro-services are then deployed into this VPC rather than creating their own. A hosted zone is also created to allow for private DNS configuration.
 

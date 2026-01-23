@@ -1,4 +1,7 @@
 # GraphQL Mesh in Fargate
+
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/graphql-mesh-server/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/graphql-mesh-server/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-graphql-mesh-server?color=green)
+
 A construct to host a [GraphQL Mesh](https://the-guild.dev/graphql/mesh) server in Fargate. 
 
 ![graphql mesh server hosting diagram](docs/graphql_mesh_server_hosting.png)

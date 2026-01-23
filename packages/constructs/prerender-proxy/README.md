@@ -1,5 +1,7 @@
 # Prerender Proxy
 
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/prerender-proxy/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/prerender-proxy/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-prerender-proxy?color=green)
+
 This library provides two function constructs and a construct that creates two Lambda@Edge functions to use prerender.io as a Cloudfront Origin for site indexers (Google, Bing, etc).  
 
 The `prerender-check` is a `viewer-request` function that will check if a requester is from a indexer and if it is adds a header so that the second function `prerender` (`origin-request`) will alter the origin to prerender.
