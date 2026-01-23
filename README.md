@@ -2,7 +2,7 @@
 
 This repo contains different CDK constructs to assist in setting up static webpages with common features such as: prerender for SEO, regional redirection, data transformation, firewalls, and hosting. All constructs are configurable with the intent to be usable for all use cases.
 
-These are all written for CDK v2. See the offical AWS guide for how to migrate from CDK v1: https://docs.aws.amazon.com/cdk/v2/guide/migrating-v2.html.
+These are all written for CDK v2. See the official AWS guide for how to migrate from CDK v1: https://docs.aws.amazon.com/cdk/v2/guide/migrating-v2.html.
 
 | Construct                                                           | Description                                                                                                                  |
 | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
