@@ -1,4 +1,5 @@
-import { MicroserviceChecks } from "./lib/defaults/microservice-checks/microservice-checks";
-import { VersionFunctionsAspect } from "./lib/defaults/version-functions/version-functions";
-
-export { MicroserviceChecks, VersionFunctionsAspect };
+export * from "./lib/defaults/log-group";
+export * from "./lib/defaults/nodejs-function";
+export * from "./lib/defaults/step-functions";
+export * from "./lib/lambda-sfn-versioning";
+export * from "./lib/microservice-checks";
