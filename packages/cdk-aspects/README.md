@@ -53,7 +53,7 @@ import { NodeJsFunctionDefaultsAspect } from "@aligent/cdk-aspects";
 const app = new App();
 Aspects.of(app).add(
   new NodeJsFunctionDefaultsAspect({
-    runtime: Runtime.NODEJS_22_X,
+    runtime: Runtime.NODEJS_24_X,
     sourceMap: true, // default: true
     memorySize: 256, // default: 256
     timeout: 3, // default: 3
