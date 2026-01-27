@@ -39,7 +39,9 @@ Automatically applies configuration-aware defaults to Node.js Lambda functions f
 
 - Configures Node.js runtime version
 - Enables X-Ray tracing by default
-- Optionally enables source maps for better error stack traces
+- Optionally enables source maps for better error stack traces (default: enabled)
+- Configures default memory size (default: 256 MB)
+- Configures default timeout (default: 3 seconds)
 
 #### Usage
 
@@ -51,8 +53,10 @@ import { NodeJsFunctionDefaultsAspect } from "@aligent/cdk-aspects";
 const app = new App();
 Aspects.of(app).add(
   new NodeJsFunctionDefaultsAspect({
-    runtime: Runtime.NODEJS_24_X,
-    sourceMap: true,
+    runtime: Runtime.NODEJS_22_X,
+    sourceMap: true, // default: true
+    memorySize: 256, // default: 256
+    timeout: 3, // default: 3
   })
 );
 ```

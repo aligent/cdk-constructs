@@ -6,6 +6,8 @@ import { IConstruct } from "constructs";
 interface Config {
   runtime: Runtime;
   sourceMap?: boolean;
+  memorySize?: number;
+  timeout?: number;
 }
 
 /**
@@ -41,7 +43,12 @@ export class NodeJsFunctionDefaultsAspect implements IAspect {
    * @param config - Configuration identifier used to select appropriate defaults.
    */
   constructor(config: Config) {
-    this.config = { ...config, sourceMap: config.sourceMap ?? true };
+    this.config = {
+      ...config,
+      sourceMap: config.sourceMap ?? true,
+      memorySize: config.memorySize ?? 256,
+      timeout: config.timeout ?? 3,
+    };
   }
 
   /**
@@ -62,6 +69,14 @@ export class NodeJsFunctionDefaultsAspect implements IAspect {
 
       if (cfnFunction && cfnFunction.tracingConfig === undefined) {
         cfnFunction.tracingConfig = { mode: Tracing.ACTIVE };
+      }
+
+      if (cfnFunction && cfnFunction.memorySize === undefined) {
+        cfnFunction.memorySize = this.config.memorySize;
+      }
+
+      if (cfnFunction && cfnFunction.timeout === undefined) {
+        cfnFunction.timeout = this.config.timeout;
       }
 
       if (this.config.sourceMap) {
