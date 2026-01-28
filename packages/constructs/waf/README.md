@@ -120,46 +120,6 @@ const waf = new WebApplicationFirewall(this, 'WAF', {
 });
 ```
 
-## Props Reference
-
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `wafName` | string | **required** | Name of the WAF |
-| `scope` | `REGIONAL` \| `CLOUDFRONT` | `REGIONAL` | WAF scope |
-| `activate` | boolean | `false` | Enable blocking mode (false = count only) |
-| `blockByDefault` | boolean | `false` | Default action for unmatched requests |
-| `blockedIPs` | string[] | - | IPv4 addresses to block |
-| `blockedIPv6s` | string[] | - | IPv6 addresses to block |
-| `allowedIPs` | string[] | - | IPv4 addresses to allow |
-| `allowedIPv6s` | string[] | - | IPv6 addresses to allow |
-| `allowedPaths` | string[] | - | Regex patterns for allowed paths |
-| `allowedUserAgents` | string[] | - | Regex patterns for allowed User-Agents |
-| `rateLimit` | number | - | Requests per 5 minutes before rate limiting |
-| `rateLimitAggregation` | `FORWARDED_IP` \| `IP` | `FORWARDED_IP` | How to aggregate rate limit counts |
-| `enablePhpRules` | boolean | `true` | Enable PHP-specific protection |
-| `enableIpReputationList` | boolean | `false` | Enable IP reputation blocking |
-| `enableAnonymousIpList` | boolean | `false` | Enable anonymous IP blocking |
-| `enableSqlInjection` | boolean | `false` | Enable SQL injection protection |
-| `enableBotControl` | boolean | `false` | Enable bot control (additional costs) |
-| `excludedAwsRules` | string[] | - | AWS managed rules to exclude |
-| `associations` | string[] | - | Resource ARNs to associate with WAF |
-| `preProcessCustomRules` | RuleProperty[] | - | Custom rules (priority < 10) |
-| `postProcessCustomRules` | RuleProperty[] | - | Custom rules (priority >= 30) |
-| `enableLogging` | boolean | `true` | Enable CloudWatch logging |
-| `logRetentionDays` | RetentionDays | `ONE_YEAR` | Log retention period |
-| `logRemovalPolicy` | RemovalPolicy | `RETAIN` | Log removal policy |
-
-## Exposed Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `web_acl` | CfnWebACL | The underlying CloudFormation WebACL resource |
-| `webAclArn` | string | The ARN of the WebACL |
-| `ipv4AllowlistArn` | string \| undefined | The ARN of the IPv4 allowlist IP Set |
-| `ipv6AllowlistArn` | string \| undefined | The ARN of the IPv6 allowlist IP Set |
-| `ipv4BlocklistArn` | string \| undefined | The ARN of the IPv4 blocklist IP Set |
-| `ipv6BlocklistArn` | string \| undefined | The ARN of the IPv6 blocklist IP Set |
-
 ## Rule Priority Structure
 
 | Priority | Rule | Description |
