@@ -1,5 +1,27 @@
 # @aligent/cdk-waf
 
+## 2.5.0
+
+### Minor Changes
+
+- [#1589](https://github.com/aligent/cdk-constructs/pull/1589) [`aa03dc3`](https://github.com/aligent/cdk-constructs/commit/aa03dc3ba7c3cbb1f32a523114cdb5d6b9b67ab7) Thanks [@AdamJHall](https://github.com/AdamJHall)! - - Added IP blocklist support (`blockedIPs` and `blockedIPv6s` props) with rules at priority 1-4
+  - Added optional AWS Managed Rules:
+    - `enableIpReputationList`: AWSManagedRulesAmazonIpReputationList (priority 23)
+    - `enableAnonymousIpList`: AWSManagedRulesAnonymousIpList (priority 24)
+    - `enableSqlInjection`: AWSManagedRulesSQLiRuleSet (priority 25)
+    - `enableBotControl`: AWSManagedRulesBotControlRuleSet (priority 26)
+  - Made PHP rules optional with `enablePhpRules` prop (defaults to `true` for backwards compatibility)
+  - Added `rateLimitAggregation` prop to switch between `FORWARDED_IP` and `IP` aggregation
+  - Exposed new class properties:
+    - `webAclArn`: The ARN of the WebACL
+    - `ipv4AllowlistArn`: The ARN of the IPv4 allowlist IP Set
+    - `ipv6AllowlistArn`: The ARN of the IPv6 allowlist IP Set
+    - `ipv4BlocklistArn`: The ARN of the IPv4 blocklist IP Set
+    - `ipv6BlocklistArn`: The ARN of the IPv6 blocklist IP Set
+  - Exported `REGIONAL` and `CLOUDFRONT` scope constants from package index
+  - Added comprehensive test coverage
+  - Fixed jest.config.ts displayName and coverageDirectory (was incorrectly set to "basic-auth")
+
 ## 2.4.2
 
 ### Patch Changes
