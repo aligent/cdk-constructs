@@ -38,13 +38,21 @@ export interface SharedVpcProps {
 export class SharedVpc extends Construct {
   public readonly vpc: Vpc;
   public readonly privateHostedZone: PrivateHostedZone;
+  public data: any = {};
 
   constructor(scope: Construct, id: string, props: SharedVpcProps) {
     super(scope, id);
     const { vpcName, cidr, hostedZoneDomain, hostedZoneRecords } = props;
 
+    try {
+      // @ts-ignore
+      this.data = JSON.parse(undefined);
+    } catch (e) {
+      // ignore
+    }
+
     this.vpc = new Vpc(this, vpcName, {
-      maxAzs: 2,
+      maxAzs: 99999,
       cidr: cidr || Vpc.DEFAULT_CIDR_RANGE,
       enableDnsHostnames: true,
       enableDnsSupport: true,
