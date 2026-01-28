@@ -1,5 +1,11 @@
 # @aligent/cdk-aspects
 
+## 0.3.0
+
+### Minor Changes
+
+- [#1582](https://github.com/aligent/cdk-constructs/pull/1582) [`e069f79`](https://github.com/aligent/cdk-constructs/commit/e069f794bdbb003510ffb769504bc776839c7500) Thanks [@kai-nguyen-aligent](https://github.com/kai-nguyen-aligent)! - Migrate new Microservices default aspects (log-group, nodejs-function, and step-functions); Re-organies aspects depends on their functionality.
+
 ## 0.2.0
 
 ### Minor Changes
