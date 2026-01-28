@@ -32,6 +32,16 @@ export interface WebApplicationFirewallProps {
   allowedIPv6s?: string[];
 
   /**
+   * List of IPv4 addresses to block. Requests from these IPs will be blocked.
+   */
+  blockedIPs?: string[];
+
+  /**
+   * List of IPv6 addresses to block. Requests from these IPs will be blocked.
+   */
+  blockedIPv6s?: string[];
+
+  /**
    * Explicit paths to allow through the waf
    */
   allowedPaths?: string[];
@@ -92,10 +102,54 @@ export interface WebApplicationFirewallProps {
    * Define CloudWatch log removal policy. Default: RETAIN
    */
   logRemovalPolicy?: RemovalPolicy;
+
+  /**
+   * Enable AWS Managed Rules IP Reputation List. Default: false
+   * This rule group contains rules based on Amazon internal threat intelligence.
+   */
+  enableIpReputationList?: boolean;
+
+  /**
+   * Enable AWS Managed Rules Anonymous IP List. Default: false
+   * This rule group contains rules to block requests from services that permit
+   * the obfuscation of viewer identity (VPNs, proxies, Tor nodes, hosting providers).
+   */
+  enableAnonymousIpList?: boolean;
+
+  /**
+   * Enable AWS Managed Rules SQL Injection Rule Set. Default: false
+   * This rule group contains rules to block SQL injection attacks.
+   */
+  enableSqlInjection?: boolean;
+
+  /**
+   * Enable AWS Managed Rules Bot Control Rule Set. Default: false
+   * WARNING: This rule group has additional costs. See AWS WAF pricing for details.
+   * This rule group provides protection against automated bots.
+   */
+  enableBotControl?: boolean;
+
+  /**
+   * Enable PHP-specific protection rules. Default: true (for backwards compatibility)
+   * Set to false for non-PHP workloads to avoid false positives.
+   */
+  enablePhpRules?: boolean;
+
+  /**
+   * How to aggregate requests for rate limiting. Default: 'FORWARDED_IP'
+   * - 'FORWARDED_IP': Use the X-Forwarded-For header (for requests behind load balancers/proxies)
+   * - 'IP': Use the source IP address directly
+   */
+  rateLimitAggregation?: "FORWARDED_IP" | "IP";
 }
 
 export class WebApplicationFirewall extends Construct {
   readonly web_acl: aws_wafv2.CfnWebACL;
+  readonly webAclArn: string;
+  readonly ipv4AllowlistArn?: string;
+  readonly ipv6AllowlistArn?: string;
+  readonly ipv4BlocklistArn?: string;
+  readonly ipv6BlocklistArn?: string;
 
   constructor(
     scope: Construct,
@@ -110,6 +164,102 @@ export class WebApplicationFirewall extends Construct {
     // preprocess custom rules
     if (props.preProcessCustomRules) {
       finalRules.push(...props.preProcessCustomRules);
+    }
+
+    // IPv4 Blocklist
+    if (props.blockedIPs && props.blockedIPs.length > 0) {
+      const blocked_ips_v4 = new aws_wafv2.CfnIPSet(this, "BlockedIPSet-IPv4", {
+        addresses: props.blockedIPs,
+        ipAddressVersion: "IPV4",
+        scope: wafScope,
+        description: `${props.wafName} - Blocked IPv4 addresses`,
+      });
+      this.ipv4BlocklistArn = blocked_ips_v4.attrArn;
+
+      finalRules.push({
+        name: "block_xff_ip_rule_v4",
+        priority: 1,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: blocked_ips_v4.attrArn,
+            ipSetForwardedIpConfig: {
+              fallbackBehavior: "NO_MATCH",
+              headerName: "X-Forwarded-For",
+              position: "ANY",
+            },
+          },
+        },
+        action: { block: {} },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "BlockXFFIPRuleV4",
+          sampledRequestsEnabled: true,
+        },
+      });
+
+      finalRules.push({
+        name: "block_src_ip_rule_v4",
+        priority: 2,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: blocked_ips_v4.attrArn,
+          },
+        },
+        action: { block: {} },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "BlockSrcIPRuleV4",
+          sampledRequestsEnabled: true,
+        },
+      });
+    }
+
+    // IPv6 Blocklist
+    if (props.blockedIPv6s && props.blockedIPv6s.length > 0) {
+      const blocked_ips_v6 = new aws_wafv2.CfnIPSet(this, "BlockedIPSet-IPv6", {
+        addresses: props.blockedIPv6s,
+        ipAddressVersion: "IPV6",
+        scope: wafScope,
+        description: `${props.wafName} - Blocked IPv6 addresses`,
+      });
+      this.ipv6BlocklistArn = blocked_ips_v6.attrArn;
+
+      finalRules.push({
+        name: "block_xff_ip_rule_v6",
+        priority: 3,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: blocked_ips_v6.attrArn,
+            ipSetForwardedIpConfig: {
+              fallbackBehavior: "NO_MATCH",
+              headerName: "X-Forwarded-For",
+              position: "ANY",
+            },
+          },
+        },
+        action: { block: {} },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "BlockXFFIPRuleV6",
+          sampledRequestsEnabled: true,
+        },
+      });
+
+      finalRules.push({
+        name: "block_src_ip_rule_v6",
+        priority: 4,
+        statement: {
+          ipSetReferenceStatement: {
+            arn: blocked_ips_v6.attrArn,
+          },
+        },
+        action: { block: {} },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "BlockSrcIPRuleV6",
+          sampledRequestsEnabled: true,
+        },
+      });
     }
 
     if (props.allowedPaths) {
@@ -153,6 +303,7 @@ export class WebApplicationFirewall extends Construct {
         scope: wafScope,
         description: props.wafName,
       });
+      this.ipv4AllowlistArn = allowed_ips.attrArn;
 
       finalRules.push({
         name: "allow_xff_ip_rule",
@@ -200,6 +351,7 @@ export class WebApplicationFirewall extends Construct {
         scope: wafScope,
         description: props.wafName,
       });
+      this.ipv6AllowlistArn = allowed_ips.attrArn;
 
       finalRules.push({
         name: "allow_xff_ip_rule_ipv6",
@@ -334,38 +486,126 @@ export class WebApplicationFirewall extends Construct {
       },
     });
 
-    // Implement AWSManagedRulesPHPRuleSet
-    finalRules.push({
-      name: "php_rule_set",
-      priority: 22,
-      statement: {
-        managedRuleGroupStatement: {
-          name: "AWSManagedRulesPHPRuleSet",
-          vendorName: "AWS",
+    // Implement AWSManagedRulesPHPRuleSet (optional, default: true for backwards compatibility)
+    if (props.enablePhpRules ?? true) {
+      finalRules.push({
+        name: "php_rule_set",
+        priority: 22,
+        statement: {
+          managedRuleGroupStatement: {
+            name: "AWSManagedRulesPHPRuleSet",
+            vendorName: "AWS",
+          },
         },
-      },
-      overrideAction: overrideAction,
-      visibilityConfig: {
-        cloudWatchMetricsEnabled: true,
-        metricName: "php_rule_set",
-        sampledRequestsEnabled: true,
-      },
-    });
+        overrideAction: overrideAction,
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "php_rule_set",
+          sampledRequestsEnabled: true,
+        },
+      });
+    }
+
+    // Optional AWS Managed Rules
+    if (props.enableIpReputationList) {
+      finalRules.push({
+        name: "ip_reputation_list",
+        priority: 23,
+        statement: {
+          managedRuleGroupStatement: {
+            name: "AWSManagedRulesAmazonIpReputationList",
+            vendorName: "AWS",
+          },
+        },
+        overrideAction: overrideAction,
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "ip_reputation_list",
+          sampledRequestsEnabled: true,
+        },
+      });
+    }
+
+    if (props.enableAnonymousIpList) {
+      finalRules.push({
+        name: "anonymous_ip_list",
+        priority: 24,
+        statement: {
+          managedRuleGroupStatement: {
+            name: "AWSManagedRulesAnonymousIpList",
+            vendorName: "AWS",
+          },
+        },
+        overrideAction: overrideAction,
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "anonymous_ip_list",
+          sampledRequestsEnabled: true,
+        },
+      });
+    }
+
+    if (props.enableSqlInjection) {
+      finalRules.push({
+        name: "sql_injection_rule_set",
+        priority: 25,
+        statement: {
+          managedRuleGroupStatement: {
+            name: "AWSManagedRulesSQLiRuleSet",
+            vendorName: "AWS",
+          },
+        },
+        overrideAction: overrideAction,
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "sql_injection_rule_set",
+          sampledRequestsEnabled: true,
+        },
+      });
+    }
+
+    if (props.enableBotControl) {
+      finalRules.push({
+        name: "bot_control_rule_set",
+        priority: 26,
+        statement: {
+          managedRuleGroupStatement: {
+            name: "AWSManagedRulesBotControlRuleSet",
+            vendorName: "AWS",
+          },
+        },
+        overrideAction: overrideAction,
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: "bot_control_rule_set",
+          sampledRequestsEnabled: true,
+        },
+      });
+    }
 
     // Implement rate-based limit
     if (props.rateLimit) {
+      const aggregationType = props.rateLimitAggregation ?? "FORWARDED_IP";
+      const rateBasedStatement: aws_wafv2.CfnWebACL.RateBasedStatementProperty =
+        aggregationType === "FORWARDED_IP"
+          ? {
+              aggregateKeyType: "FORWARDED_IP",
+              forwardedIpConfig: {
+                fallbackBehavior: "MATCH",
+                headerName: "X-Forwarded-For",
+              },
+              limit: props.rateLimit,
+            }
+          : {
+              aggregateKeyType: "IP",
+              limit: props.rateLimit,
+            };
+
       finalRules.push({
         name: "rate_limit_rule",
         priority: 30,
         statement: {
-          rateBasedStatement: {
-            aggregateKeyType: "FORWARDED_IP",
-            forwardedIpConfig: {
-              fallbackBehavior: "MATCH",
-              headerName: "X-Forwarded-For",
-            },
-            limit: props.rateLimit,
-          },
+          rateBasedStatement: rateBasedStatement,
         },
         action: action,
         visibilityConfig: {
@@ -395,6 +635,7 @@ export class WebApplicationFirewall extends Construct {
       },
       rules: finalRules,
     });
+    this.webAclArn = this.web_acl.attrArn;
 
     // If any resources associations have been passed loop through them and add an association with WebACL
     if (props.associations) {
