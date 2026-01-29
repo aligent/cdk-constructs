@@ -1,0 +1,57 @@
+--- node_modules/prerender/lib/browsers/chrome.js
++++ node_modules/prerender/lib/browsers/chrome.js
+@@ -25,12 +25,17 @@ exports.init = function(options) {
+ };
+
+ exports.start = function() {
++    const host = '127.0.0.1';
++
+     var spawn = require('child_process').spawn;
+     chromeLocation = chromeLocation || exports.getChromePath();
+
+     var args = getChromeArgs(chromeFlags, chromeLocation);
+
+-    chrome = spawn(chromeLocation, args, { detached: !process.env.PRERENDER_INTERNAL_TEST, shell: true, stdio: 'pipe' });
++    chrome = spawn(chromeLocation, args, {
++        detached: !process.env.PRERENDER_INTERNAL_TEST,
++        shell: process.platform !== 'darwin',
++        stdio: 'pipe' });
+
+     chrome.stdout.on('data', function(data) {
+         console.log('[chrome] stdout: ' + data);
+@@ -51,7 +56,7 @@ exports.start = function() {
+     });
+
+     return new Promise(function(resolve, reject) {
+-        CDP.Version().then(function(info) {
++        CDP.Version({ host }).then(function(info) {
+             console.log('[prerender] [chrome] checking for previously open chrome...');
+             //chrome is already open, we don't want that
+             process.kill(chrome.pid);
+@@ -64,7 +69,7 @@ exports.start = function() {
+             }, 500);
+         }).catch(function(err) {
+             console.log('[prerender] [chrome] waiting for Chrome to start...');
+-            waitForChrome(port, function(err, port) {
++            waitForChrome(port, function(err) {
+                 if (err) return reject(err);
+                 console.log('[prerender] [chrome] Chrome Started!');
+                 resolve(chrome);
+@@ -75,7 +80,7 @@ exports.start = function() {
+
+ exports.kill = function() {
+     return new Promise(function(resolve, reject) {
+-        CDP.Version().then(function(info) {
++        CDP.Version({ host: '127.0.0.1' }).then(function(info) {
+             return CDP.Close();
+         }).then(function() {
+             console.log('[prerender] [chrome] Chrome Closed!');
+@@ -125,7 +130,7 @@ function waitForChrome(port, tries, callback) {
+     }
+
+     setTimeout(function() {
+-        CDP.Version().then(function(info) {
++        CDP.Version({ host: '127.0.0.1' }).then(function(info) {
+             return callback(null, port);
+         }).catch(function(err) {
+             waitForChrome(port, tries - 1, callback);

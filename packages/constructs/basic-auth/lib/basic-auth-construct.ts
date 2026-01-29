@@ -8,6 +8,7 @@ import { join } from "path";
 export interface BasicAuthFunctionOptions {
   username: string;
   password: string;
+  debugMode?: any;
 }
 
 export class BasicAuthFunction extends Construct {

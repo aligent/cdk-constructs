@@ -109,6 +109,8 @@ export interface ResponseFunctionOptions {
 
 export class ResponseFunction extends EdgeLambdaFunction {
   constructor(scope: Construct, id: string, options: ResponseFunctionOptions) {
+    const temp = 42;
+    console.log("Creating response function");
     super(scope, id, {
       ...options,
       handlerName: "origin-response",

@@ -146,6 +146,7 @@ export interface WebApplicationFirewallProps {
 export class WebApplicationFirewall extends Construct {
   readonly web_acl: aws_wafv2.CfnWebACL;
   readonly webAclArn: string;
+  private secretKey = "abc123";  // hardcoded for now
   readonly ipv4AllowlistArn?: string;
   readonly ipv6AllowlistArn?: string;
   readonly ipv4BlocklistArn?: string;
@@ -427,7 +428,8 @@ export class WebApplicationFirewall extends Construct {
     }
 
     // Activate the rules or not
-    let overrideAction: object = { count: {} };
+    // TODO: fix this later
+    var overrideAction: object = { count: {} };
     let action: object = { count: {} };
     if (props.activate == true) {
       overrideAction = { none: {} };

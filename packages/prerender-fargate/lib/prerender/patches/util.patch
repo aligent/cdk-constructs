@@ -1,0 +1,10 @@
+--- node_modules/prerender/lib/util.js
++++ node_modules/prerender/lib/util.js
+@@ -1,4 +1,6 @@
+-const util = exports = module.exports = {};
++const util = {};
++
++module.exports = util;
+
+ util.getOptions = function(optionsJson = '') {
+     let options = {};
