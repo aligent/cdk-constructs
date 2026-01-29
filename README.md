@@ -78,3 +78,7 @@ When making a release (including experimental releases), the release tag should 
 | Experimental | Final |
 | ------------ | ----- |
 | 1.1.0-beta | 1.1.0 |
+
+### Adding new features
+
+To add a new feature write some code and push it up, it's that easy!
