@@ -61,6 +61,7 @@
     "esbuild": "0.25.0",
     "form-data": "4.0.4",
     "brace-expansion": "1.1.12",
-    "@smithy/config-resolver": "4.4.0"
+    "@smithy/config-resolver": "4.4.0",
+    "fast-xml-parser": "5.3.4"
   }
 }
