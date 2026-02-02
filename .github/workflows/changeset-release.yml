@@ -51,7 +51,7 @@ jobs:
 
       - name: Test OIDC Authentication (dry-run)
         run: |
-          cd dist/packages/static-hosting
+          cd packages/static-hosting
           npm publish --dry-run --access public
 
       - name: Configure Git
