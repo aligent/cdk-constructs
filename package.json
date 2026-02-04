@@ -31,7 +31,7 @@
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.29.5",
-    "@nx/esbuild": "20.0.11",
+    "@nx/esbuild": "20.8.4",
     "@nx/eslint": "20.0.11",
     "@nx/eslint-plugin": "20.0.11",
     "@nx/jest": "20.0.11",
