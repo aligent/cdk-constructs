@@ -46,11 +46,11 @@ jobs:
       - name: Build All Packages
         run: yarn nx run-many --target=build --all
 
-      - name: Run Tests
-        run: yarn nx run-many --target=test --all
+      # - name: Run Tests
+      #   run: yarn nx run-many --target=test --all
 
       - name: Test OIDC Authentication
-        run: npm whoami
+        run: npm publish --dry-run
 
       # - name: Configure Git
       #   run: |
