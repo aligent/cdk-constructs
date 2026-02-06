@@ -49,15 +49,13 @@ jobs:
       - name: Run Tests
         run: yarn nx run-many --target=test --all
 
-      - name: Test OIDC Authentication (dry-run)
-        run: |
-          cd packages/static-hosting
-          npm publish --dry-run --access public
+      - name: Test OIDC Authentication
+        run: npm whoami
 
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      # - name: Configure Git
+      #   run: |
+      #     git config --global user.name "github-actions[bot]"
+      #     git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       # - name: Create Release Pull Request or Publish to NPM
       #   id: changesets
