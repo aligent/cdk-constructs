@@ -46,33 +46,30 @@ jobs:
       - name: Build All Packages
         run: yarn nx run-many --target=build --all
 
-      # - name: Run Tests
-      #   run: yarn nx run-many --target=test --all
+      - name: Run Tests
+        run: yarn nx run-many --target=test --all
 
-      - name: Test OIDC Authentication
-        run: npm publish --dry-run
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      # - name: Configure Git
-      #   run: |
-      #     git config --global user.name "github-actions[bot]"
-      #     git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Create Release Pull Request or Publish to NPM
+        id: changesets
+        uses: changesets/action@e0145edc7d9d8679003495b11f87bd8ef63c0cba # v1.5.3
+        with:
+          # This expects you to have a script called release which does a build for your packages and calls changeset publish
+          publish: yarn release
+          version: yarn changeset:version-and-install
+          title: "chore: release packages"
+          commit: "chore: release packages"
+          createGithubReleases: true
+          setupGitUser: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Create Release Pull Request or Publish to NPM
-      #   id: changesets
-      #   uses: changesets/action@e0145edc7d9d8679003495b11f87bd8ef63c0cba # v1.5.3
-      #   with:
-      #     # This expects you to have a script called release which does a build for your packages and calls changeset publish
-      #     publish: yarn release
-      #     version: yarn changeset:version-and-install
-      #     title: "chore: release packages"
-      #     commit: "chore: release packages"
-      #     createGithubReleases: true
-      #     setupGitUser: false
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # - name: Publish Release Info
-      #   if: steps.changesets.outputs.published == 'true'
-      #   run: |
-      #     echo "🎉 Published packages:"
-      #     echo '${{ steps.changesets.outputs.publishedPackages }}' | jq -r '.[] | "- \(.name)@\(.version)"'
+      - name: Publish Release Info
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          echo "🎉 Published packages:"
+          echo '${{ steps.changesets.outputs.publishedPackages }}' | jq -r '.[] | "- \(.name)@\(.version)"'
