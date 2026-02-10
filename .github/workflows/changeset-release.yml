@@ -37,6 +37,9 @@ jobs:
           cache: "yarn"
           registry-url: https://registry.npmjs.org/
 
+      - name: Upgrade npm for OIDC support
+        run: npm install -g npm@latest
+
       - name: Install Dependencies
         run: yarn install --frozen-lockfile
 
@@ -64,7 +67,6 @@ jobs:
           setupGitUser: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish Release Info
         if: steps.changesets.outputs.published == 'true'
