@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-step-function-from-file",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "main": "index.js",
   "license": "MIT",
   "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/step-function-from-file#readme",
