@@ -16,7 +16,7 @@
   "bugs": {
     "url": "https://github.com/aligent/cdk-constructs/issues"
   },
-  "homepage": "https://github.com/aligent/cdk-constructs#readme",
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/graphql-mesh-server#readme",
   "devDependencies": {
     "@types/aws-lambda": "^8.10.150",
     "@types/jest": "^29.5.10",

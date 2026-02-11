@@ -3,13 +3,13 @@
   "version": "0.3.1",
   "main": "index.js",
   "license": "MIT",
-  "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/rabbitmq#readme",
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/rabbitmq#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
   },
   "bugs": {
-    "url": "https://github.com/aligent/aws-cdk-constructs/issues"
+    "url": "https://github.com/aligent/cdk-constructs/issues"
   },
   "types": "index.d.ts",
   "scripts": {

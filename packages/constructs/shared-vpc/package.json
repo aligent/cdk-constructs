@@ -2,6 +2,14 @@
   "name": "@aligent/cdk-shared-vpc",
   "version": "0.3.1",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aligent/cdk-constructs/issues"
+  },
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/shared-vpc#readme",
   "scripts": {
     "build": "tsc",
     "test": "npx nx test shared-vpc",

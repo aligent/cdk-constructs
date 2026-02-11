@@ -10,13 +10,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/aligent/aws-cdk-constructs/issues"
+    "url": "https://github.com/aligent/cdk-constructs/issues"
   },
-  "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/prerender-proxy#readme",
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/prerender-proxy#readme",
   "devDependencies": {
     "@aligent/cdk-esbuild": "^2.5.1",
     "@types/aws-lambda": "^8.10.150",

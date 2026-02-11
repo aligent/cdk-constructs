@@ -5,6 +5,14 @@
   "main": "index.js",
   "types": "index.d.ts",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aligent/cdk-constructs/issues"
+  },
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/esbuild#readme",
   "scripts": {
     "build": "tsc",
     "test": "npx nx test esbuild",
