@@ -4,6 +4,14 @@
   "description": "A Cloudfront Lambda@Edge function for adding security headers.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aligent/cdk-constructs/issues"
+  },
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/cloudfront-security-headers#readme",
   "scripts": {
     "build": "tsc && cd ./lib/handlers && npm ci",
     "test": "npx nx test cloudfront-security-headers",

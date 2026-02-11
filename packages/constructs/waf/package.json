@@ -3,10 +3,10 @@
   "version": "2.5.1",
   "main": "index.js",
   "license": "MIT",
-  "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/waf#readme",
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/waf#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aligent/aws-cdk-constructs.git"
+    "url": "git+https://github.com/aligent/cdk-constructs.git"
   },
   "types": "index.d.ts",
   "scripts": {
