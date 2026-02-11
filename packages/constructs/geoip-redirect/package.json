@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-geoip-redirect",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "A Cloudfront Lambda@Edge stack for performing redirection based on CloudFront-Viewer-Country",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/geoip-redirect#readme",
   "devDependencies": {
-    "@aligent/cdk-esbuild": "^2.5.3",
+    "@aligent/cdk-esbuild": "^2.5.4",
     "@types/aws-lambda": "^8.10.150",
     "@types/jest": "^29.5.10",
     "@types/node": "^20.19.33",

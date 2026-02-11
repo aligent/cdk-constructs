@@ -1,5 +1,11 @@
 # @aligent/cdk-basic-auth
 
+## 0.3.4
+
+### Patch Changes
+
+- [#1606](https://github.com/aligent/cdk-constructs/pull/1606) [`0e35d91`](https://github.com/aligent/cdk-constructs/commit/0e35d91ab5244d90625ebe19d943694af875a422) Thanks [@porhkz](https://github.com/porhkz)! - Update repository URLs in package.json to match npm provenance expectations
+
 ## 0.3.3
 
 ### Patch Changes
