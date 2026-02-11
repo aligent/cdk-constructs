@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-domain-hosting",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "index.js",
   "license": "MIT",
   "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/domain-hosting#readme",
@@ -15,7 +15,7 @@
     "lint": "npx nx lint domain-hosting"
   },
   "devDependencies": {
-    "@aligent/cdk-esbuild": "^2.5.3",
+    "@aligent/cdk-esbuild": "^2.5.4",
     "@types/aws-lambda": "^8.10.150",
     "@types/jest": "^29.5.10",
     "@types/node": "^20.19.33",

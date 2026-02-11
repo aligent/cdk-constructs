@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-cloudfront-security-headers",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "A Cloudfront Lambda@Edge function for adding security headers.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -18,7 +18,7 @@
     "lint": "npx nx lint cloudfront-security-headers"
   },
   "devDependencies": {
-    "@aligent/cdk-esbuild": "^2.5.3",
+    "@aligent/cdk-esbuild": "^2.5.4",
     "@types/aws-lambda": "^8.10.150",
     "@types/jest": "^29.5.10",
     "@types/node": "^20.19.33",
