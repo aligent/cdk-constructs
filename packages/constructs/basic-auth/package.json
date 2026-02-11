@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-basic-auth",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "A Cloudfront Lambda@Edge stack for performing basic auth protection",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/aligent/aws-cdk-constructs/tree/main/packages/basic-auth#readme",
   "devDependencies": {
-    "@aligent/cdk-esbuild": "^2.5.2",
+    "@aligent/cdk-esbuild": "^2.5.3",
     "@types/aws-lambda": "^8.10.150",
     "@types/jest": "^29.5.10",
     "@types/node": "^20.19.33",

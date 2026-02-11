@@ -1,5 +1,11 @@
 # @aligent/cdk-header-change-detection
 
+## 1.7.3
+
+### Patch Changes
+
+- [#1601](https://github.com/aligent/cdk-constructs/pull/1601) [`1488e90`](https://github.com/aligent/cdk-constructs/commit/1488e90d7f468f7646142a9968a3d4e06389b358) Thanks [@porhkz](https://github.com/porhkz)! - Fix badges on readmes
+
 ## 1.7.2
 
 ### Patch Changes
