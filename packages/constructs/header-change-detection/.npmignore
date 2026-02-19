@@ -2,6 +2,9 @@
 *.ts
 !*.d.ts
 
+# Lambda Functions
+!lib/lambda/*
+
 # TypeScript configuration
 tsconfig*.json
 
