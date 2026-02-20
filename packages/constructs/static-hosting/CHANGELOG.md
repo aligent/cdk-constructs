@@ -1,5 +1,11 @@
 # @aligent/cdk-static-hosting
 
+## 2.11.4
+
+### Patch Changes
+
+- [#1614](https://github.com/aligent/cdk-constructs/pull/1614) [`62104ed`](https://github.com/aligent/cdk-constructs/commit/62104edacf52ab8440992848a66d478bcacf7f07) Thanks [@crispy101](https://github.com/crispy101)! - include x-request-prerender in the cache key by default
+
 ## 2.11.3
 
 ### Patch Changes
