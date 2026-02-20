@@ -1,5 +1,11 @@
 # @aligent/cdk-header-change-detection
 
+## 1.7.5
+
+### Patch Changes
+
+- [#1612](https://github.com/aligent/cdk-constructs/pull/1612) [`a6a99fe`](https://github.com/aligent/cdk-constructs/commit/a6a99fe2be8650b76c2147dcb166fc6891702f03) Thanks [@crispy101](https://github.com/crispy101)! - include lambda function source TS file
+
 ## 1.7.4
 
 ### Patch Changes
