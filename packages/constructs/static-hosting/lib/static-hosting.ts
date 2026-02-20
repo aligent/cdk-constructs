@@ -584,6 +584,7 @@ export class StaticHosting extends Construct {
       props.additionalDefaultCacheKeyHeaders || [];
     const cacheHeaderBehaviorAllowList = [
       "x-forwarded-host", // Origin response may vary depending on the domain/path based on Feature Environment
+      "x-request-prerender", // Origin response may vary depending on whether the request is from an end user or a bot that should be sent prerendered page to.
       "x-prerender", // Origin response may vary depending on whether the request is from end user or prerender service.
       ...additionalDefaultCacheKeyHeaders,
     ];
