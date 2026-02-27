@@ -145,14 +145,6 @@ export interface StaticHostingProps {
   createPublisherGroup?: boolean;
 
   /**
-   * Whether to create a user with permissions to publish to the S3 bucket.
-   * The user will not have permissions unless the publisher group is also created
-   *
-   * @default true
-   */
-  createPublisherUser?: boolean;
-
-  /**
    * Enable CloudFront access logs
    *
    * @default false
@@ -742,7 +734,7 @@ export class StaticHosting extends Construct {
               functionVersion: requestFunction.edgeFunction.currentVersion,
             },
             {
-              eventType: LambdaEdgeEventType.ORIGIN_RESPONSE,
+              eventType: LambdaEdgeEventType.ORIGIN_RESPONSEE,
               functionVersion: responseFunction.edgeFunction.currentVersion,
             },
           ],
