@@ -493,12 +493,7 @@ export class StaticHosting extends Construct {
       exportName: `${exportPrefix}BucketName`,
     });
 
-    const publisherUser =
-      props.createPublisherUser !== false
-        ? new User(this, "PublisherUser", {
-            userName: `publisher-${siteName}`,
-          })
-        : undefined;
+    const publisherUser = props.createPublisherUser !== false ? new User(this, "PublisherUser", { userName: `publisher-${siteName}` }) : undefined;
 
     if (publisherUser) {
       new CfnOutput(this, "PublisherUserName", {
