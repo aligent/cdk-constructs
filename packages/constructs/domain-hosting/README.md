@@ -26,7 +26,7 @@ npm install @aligent/cdk-domain-hosting aws-cdk-lib constructs
 Or with yarn:
 
 ```bash
-yarn add @aligent/cdk-static-hosting aws-cdk-lib constructs
+yarn add @aligent/cdk-domain-hosting aws-cdk-lib constructs
 ```
 
 ### Peer Dependencies
