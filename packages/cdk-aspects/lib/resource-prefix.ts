@@ -3,7 +3,7 @@ import { IConstruct } from "constructs";
 
 interface ResourceNameConfig {
   /** The CloudFormation property that holds the resource's physical name */
-  property: string;
+  cfnName: string;
   /** Maximum allowed character length for this resource type */
   maxLength: number;
 }
@@ -36,55 +36,55 @@ type CfnResourceWithProps = CfnResource & {
  */
 const RESOURCE_CONFIG: Record<string, ResourceNameConfig> = {
   // Compute
-  "AWS::Lambda::Function": { property: "FunctionName", maxLength: 64 },
+  "AWS::Lambda::Function": { cfnName: "FunctionName", maxLength: 64 },
 
   // Storage
-  "AWS::S3::Bucket": { property: "BucketName", maxLength: 63 },
-  "AWS::DynamoDB::Table": { property: "TableName", maxLength: 255 },
-  "AWS::DynamoDB::GlobalTable": { property: "TableName", maxLength: 255 },
+  "AWS::S3::Bucket": { cfnName: "BucketName", maxLength: 63 },
+  "AWS::DynamoDB::Table": { cfnName: "TableName", maxLength: 255 },
+  "AWS::DynamoDB::GlobalTable": { cfnName: "TableName", maxLength: 255 },
 
   // Messaging
-  "AWS::SQS::Queue": { property: "QueueName", maxLength: 80 },
-  "AWS::SNS::Topic": { property: "TopicName", maxLength: 256 },
+  "AWS::SQS::Queue": { cfnName: "QueueName", maxLength: 80 },
+  "AWS::SNS::Topic": { cfnName: "TopicName", maxLength: 256 },
 
   // Eventing & Orchestration
-  "AWS::Events::EventBus": { property: "Name", maxLength: 256 },
-  "AWS::Events::Rule": { property: "Name", maxLength: 64 },
-  "AWS::Events::Connection": { property: "Name", maxLength: 64 },
-  "AWS::Pipes::Pipe": { property: "Name", maxLength: 64 },
+  "AWS::Events::EventBus": { cfnName: "Name", maxLength: 256 },
+  "AWS::Events::Rule": { cfnName: "Name", maxLength: 64 },
+  "AWS::Events::Connection": { cfnName: "Name", maxLength: 64 },
+  "AWS::Pipes::Pipe": { cfnName: "Name", maxLength: 64 },
   "AWS::StepFunctions::StateMachine": {
-    property: "StateMachineName",
+    cfnName: "StateMachineName",
     maxLength: 80,
   },
-  "AWS::StepFunctions::Activity": { property: "Name", maxLength: 80 },
-  "AWS::Scheduler::Schedule": { property: "Name", maxLength: 64 },
-  "AWS::Scheduler::ScheduleGroup": { property: "Name", maxLength: 64 },
+  "AWS::StepFunctions::Activity": { cfnName: "Name", maxLength: 80 },
+  "AWS::Scheduler::Schedule": { cfnName: "Name", maxLength: 64 },
+  "AWS::Scheduler::ScheduleGroup": { cfnName: "Name", maxLength: 64 },
 
   // API
-  "AWS::ApiGateway::RestApi": { property: "Name", maxLength: 128 },
-  "AWS::ApiGateway::UsagePlan": { property: "UsagePlanName", maxLength: 128 },
-  "AWS::ApiGateway::ApiKey": { property: "Name", maxLength: 128 },
-  "AWS::ApiGatewayV2::Api": { property: "Name", maxLength: 128 },
-  "AWS::ApiGatewayV2::Authorizer": { property: "Name", maxLength: 128 },
+  "AWS::ApiGateway::RestApi": { cfnName: "Name", maxLength: 128 },
+  "AWS::ApiGateway::UsagePlan": { cfnName: "UsagePlanName", maxLength: 128 },
+  "AWS::ApiGateway::ApiKey": { cfnName: "Name", maxLength: 128 },
+  "AWS::ApiGatewayV2::Api": { cfnName: "Name", maxLength: 128 },
+  "AWS::ApiGatewayV2::Authorizer": { cfnName: "Name", maxLength: 128 },
 
   // Secrets & Config
-  "AWS::SecretsManager::Secret": { property: "Name", maxLength: 512 },
-  "AWS::SSM::Parameter": { property: "Name", maxLength: 2048 },
-  "AWS::AppConfig::Application": { property: "Name", maxLength: 64 },
-  "AWS::AppConfig::Environment": { property: "Name", maxLength: 64 },
+  "AWS::SecretsManager::Secret": { cfnName: "Name", maxLength: 512 },
+  "AWS::SSM::Parameter": { cfnName: "Name", maxLength: 2048 },
+  "AWS::AppConfig::Application": { cfnName: "Name", maxLength: 64 },
+  "AWS::AppConfig::Environment": { cfnName: "Name", maxLength: 64 },
 
   // Notifications
   "AWS::Notifications::NotificationConfiguration": {
-    property: "Name",
+    cfnName: "Name",
     maxLength: 64,
   },
 
   // Observability
-  "AWS::Logs::LogGroup": { property: "LogGroupName", maxLength: 512 },
-  "AWS::CloudWatch::Alarm": { property: "AlarmName", maxLength: 255 },
+  "AWS::Logs::LogGroup": { cfnName: "LogGroupName", maxLength: 512 },
+  "AWS::CloudWatch::Alarm": { cfnName: "AlarmName", maxLength: 255 },
 
   // IAM
-  "AWS::IAM::Role": { property: "RoleName", maxLength: 64 },
+  "AWS::IAM::Role": { cfnName: "RoleName", maxLength: 64 },
 };
 
 export interface ResourcePrefixAspectProps {
@@ -138,10 +138,11 @@ export class ResourcePrefixAspect implements IAspect {
   private readonly exclude: Set<string>;
 
   constructor(props: ResourcePrefixAspectProps) {
-    if (!props.prefix)
+    if (!props.prefix || !/^[a-z0-9-]+$/.test(props.prefix))
       throw new Error(
-        "ResourcePrefixAspect: prefix must be a non-empty string"
+        `ResourcePrefixAspect: prefix must contain only lowercase alphanumeric characters and hyphens, got "${props.prefix}"`
       );
+
     this.prefix = props.prefix;
     this.exclude = new Set(props.exclude ?? []);
   }
@@ -152,44 +153,143 @@ export class ResourcePrefixAspect implements IAspect {
     const resourceType = node.cfnResourceType;
     const config = RESOURCE_CONFIG[resourceType];
 
-    if (!config || this.exclude.has(resourceType)) return;
-
-    const { property, maxLength } = config;
-
-    const baseName =
-      this.getRawName(node as CfnResourceWithProps, property) ||
-      this.deriveNameFromLogicalId(node);
-
-    // Skip if already prefixed (idempotency guard)
-    if (baseName.startsWith(`${this.prefix}-`)) return;
-
-    const finalName = `${this.prefix}-${baseName}`;
-
-    if (finalName.length > maxLength) {
-      // Throw a hard error at synth time — fail fast before any deployment
-      Annotations.of(node).addError(
-        `[ResourcePrefixAspect] "${finalName}" (${finalName.length} chars) exceeds the ` +
-          `maximum allowed length of ${maxLength} for ${resourceType}. ` +
-          `Shorten the resource base name or your prefix ("${this.prefix}").`
-      );
+    if (!config || this.exclude.has(resourceType)) {
       return;
     }
 
-    node.addPropertyOverride(property, finalName);
+    const { cfnName, maxLength } = config;
+    const cfnProperties: Record<string, unknown> =
+      (node as CfnResourceWithProps)._cfnProperties ??
+      (node as CfnResourceWithProps).cfnProperties ??
+      {};
+
+    // Get any explicitly set name, or derive one from the logical ID
+    const existingName =
+      typeof cfnProperties[cfnName] === "string"
+        ? cfnProperties[cfnName]
+        : undefined;
+    const baseName = existingName ?? this.deriveNameFromLogicalId(node);
+
+    if (this.isAlreadyPrefixed(baseName)) {
+      return;
+    }
+
+    const finalName = this.buildPrefixedName(
+      baseName,
+      resourceType,
+      cfnProperties
+    );
+
+    const hasError = this.validateResourceName(
+      finalName,
+      resourceType,
+      maxLength,
+      node
+    );
+
+    if (hasError) return;
+
+    node.addPropertyOverride(cfnName, finalName);
   }
 
-  private getRawName(node: CfnResourceWithProps, property: string) {
-    const props = node._cfnProperties ?? node.cfnProperties ?? {};
-    const val = props[property];
-    return typeof val === "string" ? val : undefined;
+  private isAlreadyPrefixed(name: string): boolean {
+    return (
+      name.startsWith(`${this.prefix}-`) || name.startsWith(`/${this.prefix}/`)
+    );
   }
 
   private deriveNameFromLogicalId(node: CfnResource) {
     const logicalId = Stack.of(node).getLogicalId(node);
     return logicalId
-      .replace(/([a-z])([A-Z])/g, "$1-$2") // camelCase → kebab-case
       .replace(/[^a-zA-Z0-9]+/g, "-") // non-alphanumeric → dash
-      .replace(/^-+|-+$/g, "") // trim leading/trailing dashes
-      .toLowerCase();
+      .replace(/^-+|-+$/g, ""); // trim leading/trailing dashes
+  }
+
+  /**
+   * Builds the prefixed name, handling special cases for specific resource types.
+   *
+   * @param baseName - The base resource name (without prefix)
+   * @param cfnResourceType - The CloudFormation resource type
+   * @param cfnProperties - The CloudFormation resource properties
+   * @returns The final prefixed name with any special case handling applied
+   */
+  private buildPrefixedName(
+    baseName: string,
+    cfnResourceType: string,
+    cfnProperties: Record<string, unknown>
+  ): string {
+    // Special case: FIFO queues must end with .fifo suffix
+    if (
+      cfnResourceType === "AWS::SQS::Queue" &&
+      cfnProperties.fifoQueue === true &&
+      !baseName.endsWith(".fifo")
+    ) {
+      return `${this.prefix}-${baseName}.fifo`;
+    }
+
+    // Special case: FIFO topics must end with .fifo suffix
+    if (
+      cfnResourceType === "AWS::SNS::Topic" &&
+      cfnProperties.fifoTopic === true &&
+      !baseName.endsWith(".fifo")
+    ) {
+      return `${this.prefix}-${baseName}.fifo`;
+    }
+
+    // Special case: SSM parameter names use path-style prefix
+    if (cfnResourceType === "AWS::SSM::Parameter") {
+      return `/${this.prefix}/${baseName}`;
+    }
+
+    // Special case: S3 bucket name be lowercase only
+    if (cfnResourceType === "AWS::S3::Bucket") {
+      return `${this.prefix}-${baseName}`.toLowerCase();
+    }
+
+    // Default: simple prefix
+    return `${this.prefix}-${baseName}`;
+  }
+
+  /**
+   * Validates resource-specific naming requirements that AWS enforces.
+   * Throws synthesis errors for violations.
+   */
+  private validateResourceName(
+    name: string,
+    cfnResourceType: string,
+    maxLength: number,
+    node: IConstruct
+  ): boolean {
+    let hasError = false;
+
+    // S3 bucket names cannot contain underscores
+    if (cfnResourceType === "AWS::S3::Bucket") {
+      if (name !== name.toLowerCase()) {
+        Annotations.of(node).addError(
+          `[ResourcePrefixAspect] S3 bucket name "${name}" contains uppercase letters. ` +
+            `Bucket names must be lowercase only.`
+        );
+        hasError = true;
+      }
+
+      if (name.includes("_")) {
+        Annotations.of(node).addError(
+          `[ResourcePrefixAspect] S3 bucket name "${name}" contains underscores. ` +
+            `Bucket names cannot contain underscores. Use hyphens instead.`
+        );
+        hasError = true;
+      }
+    }
+
+    if (name.length > maxLength) {
+      Annotations.of(node).addError(
+        `[ResourcePrefixAspect] "${name}" (${name.length} chars) exceeds the ` +
+          `maximum allowed length of ${maxLength} for ${cfnResourceType}. ` +
+          `Shorten the resource base name or your prefix ("${this.prefix}").`
+      );
+      hasError = true;
+    }
+
+    return hasError;
   }
 }
