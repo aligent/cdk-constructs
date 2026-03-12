@@ -14,8 +14,8 @@ jobs:
       
       - name: Compare package list against readme
         run: |
-          PACKAGES="$(ls -1 packages | wc -l)"
-          README_PACKAGES="$(grep -Ff <(ls packages) README.md | wc -l)"
+          PACKAGES="$(ls -1 packages/constructs | wc -l)"
+          README_PACKAGES="$(grep -Ff <(ls packages/constructs) README.md | wc -l)"
           if [ "$PACKAGES" -eq "$README_PACKAGES" ]; then
             echo "README correctly lists all packages."
             exit 0
