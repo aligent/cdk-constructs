@@ -28,12 +28,18 @@ jobs:
         with:
           node-version-file: ".nvmrc"
 
+      - name: Fetch base ref
+        run: git fetch origin ${{ github.base_ref }}
+
       - name: Create changeset
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           .github/scripts/create-bot-changeset.sh \
-            "origin/${{ github.base_ref }}" \
+            "origin/$BASE_REF" \
             "${{ github.event.pull_request.number }}" \
-            "${{ github.event.pull_request.title }}"
+            "$PR_TITLE"
 
       - name: Commit and push changeset
         run: |
