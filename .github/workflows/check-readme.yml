@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'packages/constructs/**'
+      - 'README.md'
 
 jobs:
   check-readme:
