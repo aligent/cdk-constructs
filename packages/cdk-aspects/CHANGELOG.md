@@ -1,5 +1,11 @@
 # @aligent/cdk-aspects
 
+## 0.4.0
+
+### Minor Changes
+
+- [#1627](https://github.com/aligent/cdk-constructs/pull/1627) [`a53bad0`](https://github.com/aligent/cdk-constructs/commit/a53bad0c3b8156ec3b57476b4007cdb854785ba6) Thanks [@kai-nguyen-aligent](https://github.com/kai-nguyen-aligent)! - Add new ResourcePrefixAspect
+
 ## 0.3.2
 
 ### Patch Changes
