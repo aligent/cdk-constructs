@@ -1,5 +1,11 @@
 # @aligent/cdk-aspects
 
+## 0.5.0
+
+### Minor Changes
+
+- [#1630](https://github.com/aligent/cdk-constructs/pull/1630) [`91347d6`](https://github.com/aligent/cdk-constructs/commit/91347d62e048c23ae85f657e97c1dd357c1b2a70) Thanks [@kai-nguyen-aligent](https://github.com/kai-nguyen-aligent)! - Add default aspects for S3 and DynamoDB resources to enforce secure configuration defaults
+
 ## 0.4.0
 
 ### Minor Changes

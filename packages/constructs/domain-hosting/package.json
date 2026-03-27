@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-domain-hosting",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "index.js",
   "license": "MIT",
   "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/domain-hosting#readme",

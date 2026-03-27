@@ -1,5 +1,11 @@
 # @aligent/cdk-domain-hosting
 
+## 1.0.3
+
+### Patch Changes
+
+- [#1625](https://github.com/aligent/cdk-constructs/pull/1625) [`164792e`](https://github.com/aligent/cdk-constructs/commit/164792e52a258b8ac6e5d3e627a11e4dcc687a11) Thanks [@finnholland](https://github.com/finnholland)! - Updated readme install step
+
 ## 1.0.2
 
 ### Patch Changes
