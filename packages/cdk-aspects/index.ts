@@ -1,4 +1,5 @@
 export * from "./lib/defaults/dynamodb";
+export * from "./lib/defaults/function-injector";
 export * from "./lib/defaults/log-group";
 export * from "./lib/defaults/nodejs-function";
 export * from "./lib/defaults/s3-bucket";
