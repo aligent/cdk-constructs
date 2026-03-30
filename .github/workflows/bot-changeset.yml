@@ -1,0 +1,54 @@
+name: 🤖 Bot Changeset
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  create-changeset:
+    name: Create Changeset
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.pull_request.user.type == 'Bot' &&
+      (github.event.pull_request.user.login == 'dependabot[bot]' ||
+       github.event.pull_request.user.login == 'aikido-autofix[bot]')
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Fetch base ref
+        run: git fetch origin ${{ github.base_ref }}
+
+      - name: Create changeset
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          .github/scripts/create-bot-changeset.sh \
+            "origin/$BASE_REF" \
+            "${{ github.event.pull_request.number }}" \
+            "$PR_TITLE"
+
+      - name: Commit and push changeset
+        run: |
+          git add .changeset/
+          if git diff --cached --quiet; then
+            echo "No changeset to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "Add changeset for bot PR"
+          git push
