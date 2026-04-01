@@ -29,8 +29,8 @@
     "affected:packages": "ALL_PACKAGES=$(find packages -maxdepth 1 -type d -not -path packages | xargs -n1 basename | sed 's/^/@aligent\\/cdk-/'); AFFECTED=$(nx show projects --affected --json | jq -r '.[]'); for pkg in $AFFECTED; do echo \"$ALL_PACKAGES\" | grep -q \"@aligent/cdk-$pkg\" && echo \"@aligent/cdk-$pkg\"; done || echo 'No affected packages'"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.5.1",
-    "@changesets/cli": "^2.29.5",
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.30.0",
     "@nx/esbuild": "20.8.4",
     "@nx/eslint": "20.8.4",
     "@nx/eslint-plugin": "20.8.4",
@@ -39,7 +39,7 @@
     "@nx/node": "20.8.4",
     "@nx/workspace": "20.8.4",
     "@swc-node/register": "^1.10.9",
-    "@swc/core": "^1.9.2",
+    "@swc/core": "^1.15.21",
     "@types/jest": "^30.0.0",
     "@types/node": "20.19.33",
     "@typescript-eslint/eslint-plugin": "^8.55.0",
