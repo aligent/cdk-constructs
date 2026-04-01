@@ -13,7 +13,7 @@ __metadata:
     "@types/node": "npm:^20.19.33"
     aws-cdk: "npm:^2.1019.1"
     aws-cdk-lib: "npm:^2.201.0"
-    constructs: "npm:^10.3.0"
+    constructs: "npm:^10.5.0"
     esbuild: "npm:^0.18.0"
     jest: "npm:^29.7.0"
     source-map-support: "npm:^0.5.21"
@@ -39,7 +39,7 @@ __metadata:
     typescript: "npm:^5.3.2"
   peerDependencies:
     aws-cdk-lib: ^2.168.0
-    constructs: ^10.4.2
+    constructs: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -59,7 +59,7 @@ __metadata:
     typescript: "npm:^5.3.2"
   peerDependencies:
     aws-cdk-lib: ^2.168.0
-    constructs: ^10.4.2
+    constructs: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -105,7 +105,7 @@ __metadata:
     aws-cdk: "npm:^2.1019.1"
     aws-cdk-lib: "npm:^2.168.0"
     aws-sdk-client-mock: "npm:^3.0.0"
-    constructs: "npm:^10.4.2"
+    constructs: "npm:^10.5.0"
     jest: "npm:^29.7.0"
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
@@ -130,7 +130,7 @@ __metadata:
     "@types/node": "npm:^20.19.33"
     aws-cdk: "npm:^2.1019.1"
     aws-cdk-lib: "npm:^2.201.0"
-    constructs: "npm:^10.3.0"
+    constructs: "npm:^10.5.0"
     esbuild: "npm:^0.18.0"
     jest: "npm:^29.7.0"
     source-map-support: "npm:^0.5.21"
@@ -165,7 +165,7 @@ __metadata:
     typescript: "npm:^5.3.2"
   peerDependencies:
     aws-cdk-lib: ^2.168.0
-    constructs: ^10.4.2
+    constructs: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -188,7 +188,7 @@ __metadata:
     yaml: "npm:^2.3.1"
   peerDependencies:
     aws-cdk-lib: ^2.168.0
-    constructs: ^10.4.2
+    constructs: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -209,7 +209,7 @@ __metadata:
     typescript: "npm:^5.3.2"
   peerDependencies:
     aws-cdk-lib: ^2.168.0
-    constructs: ^10.4.2
+    constructs: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -227,7 +227,7 @@ __metadata:
     "@aws-solutions-constructs/aws-lambda-sqs-lambda": "npm:^2.85.2"
   peerDependencies:
     aws-cdk-lib: ^2.113.0
-    constructs: ^10.4.2
+    constructs: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -248,7 +248,7 @@ __metadata:
     typescript: "npm:^5.3.2"
   peerDependencies:
     aws-cdk-lib: ^2.168.0
-    constructs: ^10.4.2
+    constructs: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -266,7 +266,7 @@ __metadata:
     typescript: "npm:^5.3.2"
   peerDependencies:
     aws-cdk-lib: ^2.113.0
-    constructs: ^10.4.2
+    constructs: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -284,7 +284,7 @@ __metadata:
     typescript: "npm:^5.3.2"
   peerDependencies:
     aws-cdk-lib: ^2.113.0
-    constructs: ^10.4.2
+    constructs: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -300,7 +300,7 @@ __metadata:
     aws-cdk: "npm:^2.1019.1"
     aws-cdk-lib: "npm:^2.168.0"
     aws-sdk-client-mock: "npm:^3.0.0"
-    constructs: "npm:^10.4.2"
+    constructs: "npm:^10.5.0"
     jest: "npm:^29.7.0"
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.1.1"
@@ -331,7 +331,7 @@ __metadata:
     typescript: "npm:^5.3.2"
   peerDependencies:
     aws-cdk-lib: ^2.113.0
-    constructs: ^10.4.2
+    constructs: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -349,7 +349,7 @@ __metadata:
     typescript: "npm:^5.3.2"
   peerDependencies:
     aws-cdk-lib: ^2.113.0
-    constructs: ^10.4.2
+    constructs: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -6891,10 +6891,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"constructs@npm:^10.0.0, constructs@npm:^10.3.0, constructs@npm:^10.4.2":
-  version: 10.4.5
-  resolution: "constructs@npm:10.4.5"
-  checksum: 10c0/49a8a4137340a731a83db89a854252513188f1b4ff7a7ae85fb20b836a3ca7ea0fae48c1f7adcea205b13d1e0a0a45be75e28052bad5bb52c7a61258af3d2435
+"constructs@npm:^10.5.0":
+  version: 10.6.0
+  resolution: "constructs@npm:10.6.0"
+  checksum: 10c0/67fbd1719698509b527d2d7c1f8a6ac26d91eaf15edc69fedebc71100abf4d8ebc306184883fbb677299d6fd9c2dcbbea80db0e4201564f88f9ff88f15d6668f
   languageName: node
   linkType: hard
 
