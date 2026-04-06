@@ -41,7 +41,7 @@
     "@swc-node/register": "^1.10.9",
     "@swc/core": "^1.15.21",
     "@types/jest": "^30.0.0",
-    "@types/node": "20.19.37",
+    "@types/node": "20.19.39",
     "@typescript-eslint/eslint-plugin": "^8.58.0",
     "@typescript-eslint/parser": "^8.58.0",
     "cdk-nag": "^2.37.55",
