@@ -100,8 +100,15 @@ export class NodejsFunctionFromEntry<
       `${distPrefix}$1`
     );
 
+    const target = path.resolve(baseDir, bundledPath);
+    const relative = path.relative(baseDir, target);
+
+    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+      throw new Error("Invalid file path");
+    }
+
     return {
-      code: Code.fromAsset(path.resolve(baseDir, bundledPath)),
+      code: Code.fromAsset(target),
       handler: "index.handler",
     };
   }

@@ -132,6 +132,13 @@ export class StepFunctionFromFile<
    * Resolves a path to assets relative to a given base directory.
    */
   private static resolveAssetPath(assetPath: string, baseDir: string): string {
-    return path.resolve(baseDir, assetPath);
+    const target = path.resolve(baseDir, assetPath);
+    const relative = path.relative(baseDir, target);
+
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {  
+      throw new Error('Invalid file path');  
+    }
+
+    return target;
   }
 }
