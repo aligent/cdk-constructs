@@ -2,7 +2,7 @@ import { Stack } from "aws-cdk-lib";
 import { Match, Template } from "aws-cdk-lib/assertions";
 import { Code, Runtime } from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
-import { join as pathJoin } from "path";
+
 import { StepFunctionFromFile } from "./step-function-from-file-construct";
 
 const snapshotMessage =
@@ -13,8 +13,9 @@ describe("StepFunctionFromFile", () => {
 
   beforeEach(() => {
     stack = new Stack();
-    new StepFunctionFromFile(stack, "MyStateMachine", {
-      filepath: pathJoin(__dirname, "__data__", "test-machine.asl.yaml"),
+    new StepFunctionFromFile<"__data__/">(stack, "MyStateMachine", {
+      filepath: "__data__/test-machine.asl.yaml",
+      baseDir: __dirname,
     });
   });
 
@@ -45,8 +46,9 @@ describe("StepFunctionFromFile", () => {
       ),
     });
 
-    new StepFunctionFromFile(stack, "LambdaStateMachine", {
-      filepath: pathJoin(__dirname, "__data__", "test-machine.asl.yaml"),
+    new StepFunctionFromFile<"__data__/">(stack, "LambdaStateMachine", {
+      filepath: "__data__/test-machine.asl.yaml",
+      baseDir: __dirname,
       lambdaFunctions: [lambda, otherLambda],
       definitionSubstitutions: {
         ExtraParam: "ExtraValue",

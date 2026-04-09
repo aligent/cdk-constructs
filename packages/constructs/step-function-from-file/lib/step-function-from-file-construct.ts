@@ -14,12 +14,10 @@ export interface StepFunctionFromFileProps<
   readonly lambdaFunctions?: Function[];
   /**
    * Base directory to resolve `filepath` from.
-   * Defaults to the construct's package directory (`import.meta.dirname`).
-   * Only override this if your definition files live outside the package.
-   *
-   * @default import.meta.dirname
+   * Typically set to `import.meta.dirname` (or `__dirname`) of the calling module
+   * so that `filepath` is resolved relative to the caller's location.
    */
-  readonly baseDir?: string;
+  readonly baseDir: string;
 }
 
 /**
@@ -41,22 +39,19 @@ export interface StepFunctionFromFileProps<
  * // Basic usage (filepath must start with 'infra/' by default)
  * new StepFunctionFromFile(this, 'MyWorkflow', {
  *   filepath: 'infra/state-machines/workflow.asl.yaml',
- * });
- *
- * // With custom base directory (when definition files live outside the package)
- * new StepFunctionFromFile(this, 'MyWorkflow', {
- *   filepath: 'infra/state-machines/workflow.asl.yaml',
  *   baseDir: import.meta.dirname,
  * });
  *
  * // With custom prefix
  * new StepFunctionFromFile<'src/'>(this, 'MyWorkflow', {
  *   filepath: 'src/step-functions/workflow.asl.yaml',
+ *   baseDir: import.meta.dirname,
  * });
  *
  * // With Lambda function integration
  * new StepFunctionFromFile(this, 'WorkflowWithLambdas', {
  *   filepath: 'infra/state-machines/workflow.asl.yaml',
+ *   baseDir: import.meta.dirname,
  *   lambdaFunctions: [processFunction, validateFunction],
  *   definitionSubstitutions: {
  *     BucketName: myBucket.bucketName,
@@ -86,7 +81,7 @@ export class StepFunctionFromFile<
 
     const {
       filepath,
-      baseDir = __dirname,
+      baseDir,
       ...newProps
     } = {
       ...props,
