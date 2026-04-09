@@ -5,7 +5,9 @@ import {
 import { Construct } from "constructs";
 import path from "path";
 
-export interface NodejsFunctionFromEntryProps extends Omit<
+export interface NodejsFunctionFromEntryProps<
+  TPrefix extends string = "runtime/",
+> extends Omit<
   NodejsFunctionProps,
   "entry"
 > {
@@ -13,7 +15,7 @@ export interface NodejsFunctionFromEntryProps extends Omit<
    * Path to the TypeScript handler source file
    * (e.g. `'runtime/handlers/fetch-data.ts'`).
    */
-  readonly entry: string;
+  readonly entry: `${TPrefix}${string}`;
   /**
    * Base directory to resolve `entry` from.
    * Typically set to `import.meta.dirname` of the calling module.
@@ -34,14 +36,23 @@ export interface NodejsFunctionFromEntryProps extends Omit<
  *
  * @example
  * ```ts
+ * // Basic usage (entry must start with 'runtime/' by default)
  * new NodejsFunctionFromEntry(stack, 'FetchData', {
  *   entry: 'runtime/handlers/fetch-data.ts',
  *   baseDir: import.meta.dirname,
  * });
+ *
+ * // With custom prefix
+ * new NodejsFunctionFromEntry<'src/'>(stack, 'FetchData', {
+ *   entry: 'src/handlers/fetch-data.ts',
+ *   baseDir: import.meta.dirname,
+ * });
  * ```
  */
-export class NodejsFunctionFromEntry extends NodejsFunction {
-  constructor(scope: Construct, id: string, props: NodejsFunctionFromEntryProps) {
+export class NodejsFunctionFromEntry<
+  TPrefix extends string = "runtime/",
+> extends NodejsFunction {
+  constructor(scope: Construct, id: string, props: NodejsFunctionFromEntryProps<TPrefix>) {
     const { entry, baseDir, ...rest } = props;
 
     super(scope, id, { entry: path.resolve(baseDir, entry), ...rest });
