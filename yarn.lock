@@ -353,9 +353,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aligent/nodejs-function-from-entry@workspace:packages/constructs/nodejs-function-from-entry-construct":
+"@aligent/nodejs-function-from-entry@workspace:packages/constructs/nodejs-function-from-entry":
   version: 0.0.0-use.local
-  resolution: "@aligent/nodejs-function-from-entry@workspace:packages/constructs/nodejs-function-from-entry-construct"
+  resolution: "@aligent/nodejs-function-from-entry@workspace:packages/constructs/nodejs-function-from-entry"
   dependencies:
     "@types/jest": "npm:^29.5.10"
     "@types/node": "npm:^20.19.37"
