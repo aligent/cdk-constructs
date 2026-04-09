@@ -79,11 +79,7 @@ export class StepFunctionFromFile<
     const definitionSubstitutionsObject =
       StepFunctionFromFile.prepareDefinitionSubstitutions(props);
 
-    const {
-      filepath,
-      baseDir,
-      ...newProps
-    } = {
+    const { filepath, baseDir, ...newProps } = {
       ...props,
       ...definitionSubstitutionsObject,
     };
@@ -135,8 +131,8 @@ export class StepFunctionFromFile<
     const target = path.resolve(baseDir, assetPath);
     const relative = path.relative(baseDir, target);
 
-    if (relative.startsWith('..') || path.isAbsolute(relative)) {  
-      throw new Error('Invalid file path');  
+    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+      throw new Error("Invalid file path");
     }
 
     return target;
