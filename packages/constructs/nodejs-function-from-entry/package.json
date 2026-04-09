@@ -1,5 +1,5 @@
 {
-  "name": "@aligent/nodejs-function-from-entry",
+  "name": "@aligent/cdk-nodejs-function-from-entry",
   "version": "0.0.1",
   "main": "index.js",
   "license": "MIT",
