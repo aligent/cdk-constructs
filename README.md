@@ -4,8 +4,8 @@ This repo contains different CDK constructs to assist in setting up static webpa
 
 These are all written for CDK v2. See the official AWS guide for how to migrate from CDK v1: https://docs.aws.amazon.com/cdk/v2/guide/migrating-v2.html.
 
-| Construct                                                           | Description                                                                                                                  |
-| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Construct                                                                      | Description                                                                                                                  |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
 | [basic-auth](packages/constructs/basic-auth)                                   | Restricts CloudFront access behind authentication                                                                            |
 | [cloudfront-security-headers](packages/constructs/cloudfront-security-headers) | Adds HTTP security headers to origin responses                                                                               |
 | [domain-hosting](packages/constructs/domain-hosting)                           | Provides a construct to manage a Route53 or external domain along with (optionally) the certificate and records              |
@@ -13,7 +13,7 @@ These are all written for CDK v2. See the official AWS guide for how to migrate 
 | [feature-env-handlers](packages/constructs/feature-env-handlers)               | Lambda@Edge handlers to support feature environments                                                                         |
 | [geoip-redirect](packages/constructs/geoip-redirect)                           | Lambda@Edge handlers to redirect users based on region                                                                       |
 | [graphql-server](packages/constructs/graphql-mesh-server)                      | Creates a [GraphQL Mesh](https://the-guild.dev/graphql/mesh) server to assist with data transformation from multiple sources |
-| [nodejs-function-from-entry](packages/constructs/nodejs-function-from-entry-construct) | Resolves a source entry path to a pre-bundled Lambda code asset                                                              |
+| [nodejs-function-from-entry](packages/constructs/nodejs-function-from-entry)   | Resolves a source entry path to a pre-bundled Lambda code asset                                                              |
 | [header-change-detection](packages/constructs/header-change-detection)         | Creates a Lambda function that periodically scans security headers and sends the results to SNS                              |
 | [prerender-fargate](packages/constructs/prerender-fargate)                     | Self-hosted prerender to handle prerender bot requests                                                                       |
 | [prerender-proxy](packages/constructs/prerender-proxy)                         | Provides functions to adjust self-hosted prerender behaviour                                                                 |

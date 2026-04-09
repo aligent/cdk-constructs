@@ -1,6 +1,6 @@
 # Aligent AWS NodejsFunction From Entry
 
-![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/nodejs-function-from-entry-construct/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/nodejs-function-from-entry-construct/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fnodejs-function-from-entry-construct?color=green)
+![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/nodejs-function-from-entry/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/nodejs-function-from-entry/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fnodejs-function-from-entry?color=green)
 
 A `Function` wrapper that resolves a source `entry` path to a pre-bundled code asset.
 
@@ -11,7 +11,7 @@ The `entry` prop is type-checked with a configurable prefix (defaults to `runtim
 ## Usage
 
 ```typescript
-import { NodejsFunctionFromEntry } from "@aligent/nodejs-function-from-entry-construct";
+import { NodejsFunctionFromEntry } from "@aligent/nodejs-function-from-entry";
 
 // Basic usage (entry must start with 'runtime/handlers/' by default)
 // Resolves to: Code.fromAsset(path.resolve(baseDir, '../dist/fetch-data'))

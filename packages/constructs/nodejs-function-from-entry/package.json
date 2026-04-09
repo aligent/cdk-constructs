@@ -1,9 +1,9 @@
 {
-  "name": "@aligent/nodejs-function-from-entry-construct",
+  "name": "@aligent/nodejs-function-from-entry",
   "version": "0.0.1",
   "main": "index.js",
   "license": "MIT",
-  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/nodejs-function-from-entry-construct#readme",
+  "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/nodejs-function-from-entry#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/aligent/cdk-constructs.git"
@@ -14,8 +14,8 @@
   "types": "index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "npx nx test nodejs-function-from-entry-construct",
-    "lint": "npx nx lint nodejs-function-from-entry-construct"
+    "test": "npx nx test nodejs-function-from-entry",
+    "lint": "npx nx lint nodejs-function-from-entry"
   },
   "devDependencies": {
     "@types/jest": "^29.5.10",

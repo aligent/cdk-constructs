@@ -1,6 +1,6 @@
 /* eslint-disable */
 export default {
-  displayName: "nodejs-function-from-entry-construct",
+  displayName: "nodejs-function-from-entry",
   preset: "../../../jest.preset.js",
   testEnvironment: "node",
   transform: {
@@ -8,5 +8,5 @@ export default {
   },
   moduleFileExtensions: ["ts", "js", "html"],
   coverageDirectory:
-    "../../../coverage/packages/nodejs-function-from-entry-construct",
+    "../../../coverage/packages/nodejs-function-from-entry",
 };
