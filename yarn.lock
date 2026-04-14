@@ -218,7 +218,7 @@ __metadata:
   resolution: "@aligent/cdk-nodejs-function-from-entry@workspace:packages/constructs/nodejs-function-from-entry"
   dependencies:
     "@types/jest": "npm:^29.5.10"
-    "@types/node": "npm:^20.19.37"
+    "@types/node": "npm:^20.19.39"
     aws-cdk: "npm:^2.1019.1"
     jest: "npm:^29.7.0"
     ts-jest: "npm:^29.1.1"
