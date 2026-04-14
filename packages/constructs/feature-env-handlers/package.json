@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/feature-env-handlers#readme",
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.150"
+    "@types/aws-lambda": "^8.10.161"
   },
   "dependencies": {
     "source-map-support": "^0.5.21"
