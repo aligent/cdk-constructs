@@ -5,40 +5,19 @@ import {
   type StateMachineProps,
 } from "aws-cdk-lib/aws-stepfunctions";
 import { Construct } from "constructs";
+import path from "path";
 
-export interface StepFunctionFromFileProps extends StateMachineProps {
-  readonly filepath: string;
+export interface StepFunctionFromFileProps<
+  TPrefix extends string = "infra/",
+> extends StateMachineProps {
+  readonly filepath: `${TPrefix}${string}`;
   readonly lambdaFunctions?: Function[];
-}
-
-/**
- * Merges Lambda function ARNs into definition substitutions
- *
- * Creates definition substitutions that map Lambda function IDs to their ARNs,
- * enabling the use of `${functionId}` placeholders in Step Function definitions.
- *
- * @param props - The Step Function properties containing lambda functions and substitutions
- * @returns Object with merged definition substitutions, or empty object if no lambda functions
- */
-function prepareDefinitionSubstitutionsObject(
-  props: StepFunctionFromFileProps
-) {
-  const { definitionSubstitutions, lambdaFunctions } = props;
-
-  if (!lambdaFunctions?.length) {
-    return {};
-  }
-
-  const lambdaDefinitions = Object.fromEntries(
-    lambdaFunctions.map(fn => [fn.node.id, fn.functionArn])
-  );
-
-  return {
-    definitionSubstitutions: {
-      ...definitionSubstitutions,
-      ...lambdaDefinitions,
-    },
-  };
+  /**
+   * Base directory to resolve `filepath` from.
+   * Typically set to `import.meta.dirname` (or `__dirname`) of the calling module
+   * so that `filepath` is resolved relative to the caller's location.
+   */
+  readonly baseDir: string;
 }
 
 /**
@@ -57,14 +36,22 @@ function prepareDefinitionSubstitutionsObject(
  *
  * @example
  * ```typescript
- * // Basic usage
+ * // Basic usage (filepath must start with 'infra/' by default)
  * new StepFunctionFromFile(this, 'MyWorkflow', {
+ *   filepath: 'infra/state-machines/workflow.asl.yaml',
+ *   baseDir: import.meta.dirname,
+ * });
+ *
+ * // With custom prefix
+ * new StepFunctionFromFile<'src/'>(this, 'MyWorkflow', {
  *   filepath: 'src/step-functions/workflow.asl.yaml',
+ *   baseDir: import.meta.dirname,
  * });
  *
  * // With Lambda function integration
  * new StepFunctionFromFile(this, 'WorkflowWithLambdas', {
- *   filepath: 'src/step-functions/workflow.asl.yaml',
+ *   filepath: 'infra/state-machines/workflow.asl.yaml',
+ *   baseDir: import.meta.dirname,
  *   lambdaFunctions: [processFunction, validateFunction],
  *   definitionSubstitutions: {
  *     BucketName: myBucket.bucketName,
@@ -74,7 +61,9 @@ function prepareDefinitionSubstitutionsObject(
  *
  * @see https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_stepfunctions.StateMachine.html
  */
-export class StepFunctionFromFile extends StateMachine {
+export class StepFunctionFromFile<
+  TPrefix extends string = "infra/",
+> extends StateMachine {
   /**
    * Creates a new StepFunctionFromFile construct
    *
@@ -82,28 +71,70 @@ export class StepFunctionFromFile extends StateMachine {
    * @param id - The construct ID
    * @param props - Properties including file path and optional Lambda functions
    */
-  constructor(scope: Construct, id: string, props: StepFunctionFromFileProps) {
-    // Add lambda functions to definition substitutions if they have been provided
+  constructor(
+    scope: Construct,
+    id: string,
+    props: StepFunctionFromFileProps<TPrefix>
+  ) {
     const definitionSubstitutionsObject =
-      prepareDefinitionSubstitutionsObject(props);
+      StepFunctionFromFile.prepareDefinitionSubstitutions(props);
 
-    const { filepath, ...newProps } = {
+    const { filepath, baseDir, ...newProps } = {
       ...props,
       ...definitionSubstitutionsObject,
     };
 
+    const resolvedPath = StepFunctionFromFile.resolveAssetPath(
+      filepath,
+      baseDir
+    );
+
     super(scope, id, {
-      definitionBody: DefinitionBody.fromFile(filepath),
+      definitionBody: DefinitionBody.fromFile(resolvedPath),
       ...newProps,
     });
 
-    // If lambda functions are provided, give the state machine
-    // permission to invoke them
-    // TODO Is there a more efficient way to do this?
     if (props.lambdaFunctions) {
-      props.lambdaFunctions.forEach(fn => {
-        fn.grantInvoke(this);
-      });
+      props.lambdaFunctions.forEach(fn => fn.grantInvoke(this));
     }
+  }
+
+  /**
+   * Merges Lambda function ARNs into definition substitutions,
+   * enabling `${functionId}` placeholders in Step Function definitions.
+   */
+  private static prepareDefinitionSubstitutions<TPrefix extends string>(
+    props: StepFunctionFromFileProps<TPrefix>
+  ) {
+    const { definitionSubstitutions, lambdaFunctions } = props;
+
+    if (!lambdaFunctions?.length) {
+      return {};
+    }
+
+    const lambdaDefinitions = Object.fromEntries(
+      lambdaFunctions.map(fn => [fn.node.id, fn.functionArn])
+    );
+
+    return {
+      definitionSubstitutions: {
+        ...definitionSubstitutions,
+        ...lambdaDefinitions,
+      },
+    };
+  }
+
+  /**
+   * Resolves a path to assets relative to a given base directory.
+   */
+  private static resolveAssetPath(assetPath: string, baseDir: string): string {
+    const target = path.resolve(baseDir, assetPath);
+    const relative = path.relative(baseDir, target);
+
+    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+      throw new Error("Invalid file path");
+    }
+
+    return target;
   }
 }
