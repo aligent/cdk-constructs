@@ -1,5 +1,11 @@
 # @aligent/cdk-prerender-fargate
 
+## 2.16.4
+
+### Patch Changes
+
+- [#1638](https://github.com/aligent/cdk-constructs/pull/1638) [`7a8d347`](https://github.com/aligent/cdk-constructs/commit/7a8d3470b97fbdc769f18d55ce1c1a35b96cdf18) Thanks [@TheOrangePuff](https://github.com/TheOrangePuff)! - Update constructs peer dependency from ^10.3.0/^10.4.2 to ^10.5.0 to match aws-cdk-lib@2.245.0 requirements
+
 ## 2.16.3
 
 ### Patch Changes
