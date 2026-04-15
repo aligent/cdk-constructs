@@ -10,7 +10,7 @@ import path from "path";
 export interface StepFunctionFromFileProps<
   TPrefix extends string = "infra/",
 > extends StateMachineProps {
-  readonly filepath: `${TPrefix}${string}`;
+  readonly filepath: `${NoInfer<TPrefix>}${string}`;
   readonly lambdaFunctions?: Function[];
   /**
    * Base directory to resolve `filepath` from.

@@ -9,7 +9,7 @@ export interface NodejsFunctionFromEntryProps<
    * Path to the TypeScript handler source file
    * (e.g. `'runtime/handlers/fetch-data.ts'`).
    */
-  readonly entry: `${TPrefix}${string}`;
+  readonly entry: `${NoInfer<TPrefix>}${string}`;
   /**
    * Base directory to resolve paths from.
    * Typically set to `import.meta.dirname` of the calling module.
