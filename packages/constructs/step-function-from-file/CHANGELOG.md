@@ -1,5 +1,11 @@
 # @aligent/cdk-step-function-from-file
 
+## 0.4.0
+
+### Minor Changes
+
+- [#1643](https://github.com/aligent/cdk-constructs/pull/1643) [`486c193`](https://github.com/aligent/cdk-constructs/commit/486c193ed38892dad71c3eb7d3abe8354e62fe19) Thanks [@kai-nguyen-aligent](https://github.com/kai-nguyen-aligent)! - Add `NodejsFunctionFromEntry` construct for type-safe Lambda function creation from entry files with automatic source-to-dist path resolution. Update `StepFunctionFromFile` to use a `baseDir`-relative filepath pattern with a typed prefix constraint, preventing file inclusion attacks.
+
 ## 0.3.6
 
 ### Patch Changes
