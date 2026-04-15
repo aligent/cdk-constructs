@@ -7305,7 +7305,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"esbuild@npm:0.28.0":
+"esbuild@npm:^0.28.0":
   version: 0.28.0
   resolution: "esbuild@npm:0.28.0"
   dependencies:
