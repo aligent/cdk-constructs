@@ -1,6 +1,8 @@
 name: Pull Request
 
-on: [pull_request]
+on:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   install:
@@ -40,7 +42,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
     env:
-      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref || 'main' }}
 
   lint:
     name: 🔍 Lint affected packages
@@ -76,7 +78,7 @@ jobs:
         run: yarn nx affected:lint --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3 
 
     env:
-      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref || 'main' }}
 
   build:
     name: 🏭 Build affected packages
@@ -112,7 +114,7 @@ jobs:
         run: yarn nx affected:build --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3
 
     env:
-      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref || 'main' }}
 
   test:
     name: 🧪 Run tests
@@ -151,4 +153,4 @@ jobs:
         run: yarn nx affected:test --base=origin/${{ env.PR_BASE_REF }} --parallel --max-parallel=3
 
     env:
-      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref || 'main' }}
