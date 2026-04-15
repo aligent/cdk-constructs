@@ -1,10 +1,21 @@
-import { Code, Function, type FunctionProps } from "aws-cdk-lib/aws-lambda";
+import {
+  Code,
+  Function,
+  type FunctionProps,
+  Runtime,
+} from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 import path from "path";
 
 export interface NodejsFunctionFromEntryProps<
   TPrefix extends string = "runtime/handlers/",
-> extends Omit<FunctionProps, "code" | "handler"> {
+> extends Omit<FunctionProps, "code" | "handler" | "runtime"> {
+  /**
+   * The runtime environment for the Lambda function.
+   * Optional when using `NodeJsFunctionDefaultsAspect` to set the runtime via an aspect.
+   * @default Runtime.NODEJS_LATEST
+   */
+  readonly runtime?: FunctionProps["runtime"];
   /**
    * Path to the TypeScript handler source file
    * (e.g. `'runtime/handlers/fetch-data.ts'`).
@@ -79,7 +90,12 @@ export class NodejsFunctionFromEntry<
         distPrefix
       );
 
-    super(scope, id, { code, handler: resolvedHandler, ...rest });
+    super(scope, id, {
+      code,
+      handler: resolvedHandler,
+      runtime: Runtime.NODEJS_LATEST,
+      ...rest,
+    });
   }
 
   /**
