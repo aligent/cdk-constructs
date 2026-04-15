@@ -1,5 +1,11 @@
 # @aligent/cdk-esbuild
 
+## 2.5.6
+
+### Patch Changes
+
+- [#1609](https://github.com/aligent/cdk-constructs/pull/1609) [`ba5bc76`](https://github.com/aligent/cdk-constructs/commit/ba5bc7641349972a11dd8f0f993e236bb270c468) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump esbuild from 0.25.0 to 0.27.3 in the esbuild group across 1 directory
+
 ## 2.5.5
 
 ### Patch Changes
