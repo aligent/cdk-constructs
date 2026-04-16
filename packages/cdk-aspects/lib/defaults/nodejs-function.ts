@@ -52,10 +52,12 @@ export class NodeJsFunctionDefaultsAspect implements IAspect {
   }
 
   /**
-   * Visits a construct and applies runtime and tracing settings if it's a NodejsFunction
+   * Visits a construct and applies defaults if it's a Node.js Lambda function.
    *
-   * Applies configuration-specific runtime, tracing, and environment settings to Node.js
-   * Lambda functions that don't already have these properties explicitly set.
+   * The configured runtime is **always** applied to
+   * ensure consistency across the stack — even if the function already
+   * specifies a Node.js runtime. Tracing, memory, timeout, and source map
+   * settings are only applied when not already explicitly set.
    *
    * @param node - The construct to potentially modify
    */
