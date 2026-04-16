@@ -18,6 +18,12 @@ export interface StepFunctionFromFileProps<
    * so that `filepath` is resolved relative to the caller's location.
    */
   readonly baseDir: string;
+  /**
+   * Parent directory name used to determine the allowed root for path traversal.
+   * The allowed root is the first ancestor whose parent matches this name.
+   * @default `'services'`
+   */
+  readonly rootParentDir?: string;
 }
 
 /**
@@ -79,14 +85,15 @@ export class StepFunctionFromFile<
     const definitionSubstitutionsObject =
       StepFunctionFromFile.prepareDefinitionSubstitutions(props);
 
-    const { filepath, baseDir, ...newProps } = {
+    const { filepath, baseDir, rootParentDir = "services", ...newProps } = {
       ...props,
       ...definitionSubstitutionsObject,
     };
 
     const resolvedPath = StepFunctionFromFile.resolveAssetPath(
       filepath,
-      baseDir
+      baseDir,
+      rootParentDir
     );
 
     super(scope, id, {
@@ -125,14 +132,43 @@ export class StepFunctionFromFile<
   }
 
   /**
+   * Walks up from the given directory until it finds a path
+   * whose parent directory is named the given rootParentDir (e.g. `services/companies`).
+   */
+  private static findServiceRoot(dir: string, rootParentDir: string): string {
+    let current = path.resolve(dir);
+    const root = path.parse(current).root;
+
+    while (current !== root) {
+      if (path.basename(path.dirname(current)) === rootParentDir) {
+        return current;
+      }
+      current = path.dirname(current);
+    }
+
+    throw new Error(
+      `Could not find a '${rootParentDir}/<name>' ancestor from ${dir}`
+    );
+  }
+
+  /**
    * Resolves a path to assets relative to a given base directory.
    */
-  private static resolveAssetPath(assetPath: string, baseDir: string): string {
+  private static resolveAssetPath(
+    assetPath: string,
+    baseDir: string,
+    rootParentDir: string
+  ): string {
     const target = path.resolve(baseDir, assetPath);
-    const relative = path.relative(baseDir, target);
+    const allowedRoot = StepFunctionFromFile.findServiceRoot(
+      baseDir,
+      rootParentDir
+    );
 
-    if (relative.startsWith("..") || path.isAbsolute(relative)) {
-      throw new Error("Invalid file path");
+    if (!target.startsWith(allowedRoot + path.sep) && target !== allowedRoot) {
+      throw new Error(
+        `Path traversal detected: resolved path '${target}' is outside allowed root '${allowedRoot}'`
+      );
     }
 
     return target;
