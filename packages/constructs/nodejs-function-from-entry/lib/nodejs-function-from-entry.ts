@@ -1,41 +1,40 @@
+import { Code } from "aws-cdk-lib/aws-lambda";
 import {
-  Code,
-  Function,
-  type FunctionProps,
-  Runtime,
-} from "aws-cdk-lib/aws-lambda";
+  NodejsFunction,
+  NodejsFunctionProps,
+} from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
 import path from "path";
 
 export interface NodejsFunctionFromEntryProps<
   TPrefix extends string = "runtime/handlers/",
-> extends Omit<FunctionProps, "code" | "handler" | "runtime"> {
-  /**
-   * The runtime environment for the Lambda function.
-   * Optional when using `NodeJsFunctionDefaultsAspect` to set the runtime via an aspect.
-   * @default Runtime.NODEJS_LATEST
-   */
-  readonly runtime?: FunctionProps["runtime"];
-  /**
-   * Path to the TypeScript handler source file
-   * (e.g. `'runtime/handlers/fetch-data.ts'`).
-   */
-  readonly entry: `${NoInfer<TPrefix>}${string}`;
+> extends Omit<NodejsFunctionProps, "code" | "handler"> {
   /**
    * Base directory to resolve paths from.
    * Typically set to `import.meta.dirname` of the calling module.
    */
   readonly baseDir: string;
   /**
-   * Source path prefix to strip when mapping to the dist output.
+   * Path to the TypeScript handler source file
+   * (e.g. `'runtime/handlers/fetch-data.ts'`).
+   */
+  readonly entry: `${NoInfer<TPrefix>}${string}`;
+  /**
+   * Source path prefix (relative to baseDir) to strip when mapping to the dist output.
    * @default `'runtime/handlers/'`
    */
-  readonly sourcePrefix?: string;
+  readonly sourcePrefix?: TPrefix;
   /**
-   * Output dist path prefix to substitute in.
+   * Output dist path prefix to substitute in (relative to baseDir)
    * @default `'../dist/'`
    */
   readonly distPrefix?: string;
+  /**
+   * Parent directory name used to determine the allowed root for path traversal.
+   * The allowed root is the first ancestor whose parent matches this name.
+   * @default `'services'`
+   */
+  readonly rootParentDir?: string;
 }
 
 /**
@@ -57,8 +56,8 @@ export interface NodejsFunctionFromEntryProps<
  *   baseDir: import.meta.dirname,
  * });
  *
- * // With custom prefix and dist path
- * new NodejsFunctionFromEntry<'src/handlers/'>(stack, 'FetchData', {
+ * // With custom prefix and dist path (TPrefix inferred from sourcePrefix)
+ * new NodejsFunctionFromEntry(stack, 'FetchData', {
  *   entry: 'src/handlers/fetch-data.ts',
  *   baseDir: import.meta.dirname,
  *   sourcePrefix: 'src/handlers/',
@@ -68,7 +67,7 @@ export interface NodejsFunctionFromEntryProps<
  */
 export class NodejsFunctionFromEntry<
   TPrefix extends string = "runtime/handlers/",
-> extends Function {
+> extends NodejsFunction {
   constructor(
     scope: Construct,
     id: string,
@@ -79,6 +78,7 @@ export class NodejsFunctionFromEntry<
       baseDir,
       sourcePrefix = "runtime/handlers/",
       distPrefix = "../dist/",
+      rootParentDir = "services",
       ...rest
     } = props;
 
@@ -87,15 +87,31 @@ export class NodejsFunctionFromEntry<
         entry,
         baseDir,
         sourcePrefix,
-        distPrefix
+        distPrefix,
+        rootParentDir
       );
 
-    super(scope, id, {
-      code,
-      handler: resolvedHandler,
-      runtime: Runtime.NODEJS_LATEST,
-      ...rest,
-    });
+    super(scope, id, { code, handler: resolvedHandler, ...rest });
+  }
+
+  /**
+   * Walks up from the given directory until it finds a path
+   * whose parent directory is named `services` (e.g. `services/companies`).
+   */
+  private static findServiceRoot(dir: string, rootParentDir: string): string {
+    let current = path.resolve(dir);
+    const root = path.parse(current).root;
+
+    while (current !== root) {
+      if (path.basename(path.dirname(current)) === rootParentDir) {
+        return current;
+      }
+      current = path.dirname(current);
+    }
+
+    throw new Error(
+      `Could not find a '${rootParentDir}/<name>' ancestor from ${dir}`
+    );
   }
 
   /**
@@ -108,7 +124,8 @@ export class NodejsFunctionFromEntry<
     entry: string,
     baseDir: string,
     sourcePrefix: string,
-    distPrefix: string
+    distPrefix: string,
+    rootParentDir: string
   ): { code: Code; handler: string } {
     const escapedPrefix = sourcePrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const bundledPath = entry.replace(
@@ -117,10 +134,15 @@ export class NodejsFunctionFromEntry<
     );
 
     const target = path.resolve(baseDir, bundledPath);
-    const relative = path.relative(baseDir, target);
+    const allowedRoot = NodejsFunctionFromEntry.findServiceRoot(
+      baseDir,
+      rootParentDir
+    );
 
-    if (relative.startsWith("..") || path.isAbsolute(relative)) {
-      throw new Error("Invalid file path");
+    if (!target.startsWith(allowedRoot + path.sep) && target !== allowedRoot) {
+      throw new Error(
+        `Path traversal detected: resolved path '${target}' is outside allowed root '${allowedRoot}'`
+      );
     }
 
     return {
