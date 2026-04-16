@@ -8,6 +8,10 @@ import { StepFunctionFromFile } from "./step-function-from-file-construct";
 const snapshotMessage =
   "Rerun tests with the -u flag to update snapshots if changes are expected";
 
+// The test __dirname lives under packages/constructs/step-function-from-file/lib,
+// so "constructs" is the parent-of-parent dir name we can use as rootParentDir.
+const ROOT_PARENT_DIR = "constructs";
+
 describe("StepFunctionFromFile", () => {
   let stack: Stack;
 
@@ -16,6 +20,7 @@ describe("StepFunctionFromFile", () => {
     new StepFunctionFromFile<"__data__/">(stack, "MyStateMachine", {
       filepath: "__data__/test-machine.asl.yaml",
       baseDir: __dirname,
+      rootParentDir: ROOT_PARENT_DIR,
     });
   });
 
@@ -49,6 +54,7 @@ describe("StepFunctionFromFile", () => {
     new StepFunctionFromFile<"__data__/">(stack, "LambdaStateMachine", {
       filepath: "__data__/test-machine.asl.yaml",
       baseDir: __dirname,
+      rootParentDir: ROOT_PARENT_DIR,
       lambdaFunctions: [lambda, otherLambda],
       definitionSubstitutions: {
         ExtraParam: "ExtraValue",
@@ -80,5 +86,26 @@ describe("StepFunctionFromFile", () => {
         ]),
       },
     });
+  });
+
+  test("throws when filepath resolves outside the allowed root", () => {
+    expect(() => {
+      new StepFunctionFromFile<"__data__/">(stack, "BadPath", {
+        filepath:
+          "__data__/../../../../../../etc/passwd" as `__data__/${string}`,
+        baseDir: __dirname,
+        rootParentDir: ROOT_PARENT_DIR,
+      });
+    }).toThrow(/Path traversal detected/);
+  });
+
+  test("throws when no matching rootParentDir ancestor exists", () => {
+    expect(() => {
+      new StepFunctionFromFile<"__data__/">(stack, "NoRoot", {
+        filepath: "__data__/test-machine.asl.yaml",
+        baseDir: __dirname,
+        rootParentDir: "nonexistent-parent",
+      });
+    }).toThrow(/Could not find a 'nonexistent-parent\/<name>' ancestor/);
   });
 });
