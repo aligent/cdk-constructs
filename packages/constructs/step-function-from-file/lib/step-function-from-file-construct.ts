@@ -85,7 +85,12 @@ export class StepFunctionFromFile<
     const definitionSubstitutionsObject =
       StepFunctionFromFile.prepareDefinitionSubstitutions(props);
 
-    const { filepath, baseDir, rootParentDir = "services", ...newProps } = {
+    const {
+      filepath,
+      baseDir,
+      rootParentDir = "services",
+      ...newProps
+    } = {
       ...props,
       ...definitionSubstitutionsObject,
     };

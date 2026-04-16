@@ -91,7 +91,8 @@ describe("StepFunctionFromFile", () => {
   test("throws when filepath resolves outside the allowed root", () => {
     expect(() => {
       new StepFunctionFromFile<"__data__/">(stack, "BadPath", {
-        filepath: "__data__/../../../../../../etc/passwd" as `__data__/${string}`,
+        filepath:
+          "__data__/../../../../../../etc/passwd" as `__data__/${string}`,
         baseDir: __dirname,
         rootParentDir: ROOT_PARENT_DIR,
       });
