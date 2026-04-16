@@ -8,7 +8,7 @@ import path from "path";
 
 export interface NodejsFunctionFromEntryProps<
   TPrefix extends string = "runtime/handlers/",
-> extends Omit<NodejsFunctionProps, "code" | "handler"> {
+> extends Omit<NodejsFunctionProps, "code" | "handler" | "entry"> {
   /**
    * Base directory to resolve paths from.
    * Typically set to `import.meta.dirname` of the calling module.
@@ -38,7 +38,7 @@ export interface NodejsFunctionFromEntryProps<
 }
 
 /**
- * A self-contained construct that wraps `Function` and resolves a
+ * A self-contained construct that wraps `NodejsFunction` and resolves a
  * source `entry` path to a pre-bundled code asset.
  *
  * Given an entry like `runtime/handlers/fetch-data.ts`, the source prefix
@@ -96,7 +96,7 @@ export class NodejsFunctionFromEntry<
 
   /**
    * Walks up from the given directory until it finds a path
-   * whose parent directory is named `services` (e.g. `services/companies`).
+   * whose parent directory is named the given rootParentDir (e.g. `services/companies`).
    */
   private static findServiceRoot(dir: string, rootParentDir: string): string {
     let current = path.resolve(dir);
