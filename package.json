@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.6.0",
-    "@changesets/cli": "^2.30.0",
+    "@changesets/cli": "^2.31.0",
     "@nx/esbuild": "20.8.4",
     "@nx/eslint": "20.8.4",
     "@nx/eslint-plugin": "20.8.4",
@@ -39,7 +39,7 @@
     "@nx/node": "20.8.4",
     "@nx/workspace": "20.8.4",
     "@swc-node/register": "^1.10.9",
-    "@swc/core": "^1.15.24",
+    "@swc/core": "^1.15.30",
     "@types/jest": "^30.0.0",
     "@types/node": "20.19.39",
     "@typescript-eslint/eslint-plugin": "^8.58.1",
