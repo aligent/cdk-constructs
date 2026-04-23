@@ -105,6 +105,64 @@ const stack = new Stack(app, "MyStack");
 Aspects.of(stack).add(new MicroserviceChecks());
 ```
 
+## Resource Prefix
+
+Automatically prefixes physical resource names across supported AWS resource types. Ensures all resources in a stack share a consistent naming scheme (e.g. `myapp-prod-orders-function`), which is especially useful for identifying resources by environment or service in the AWS console.
+
+### Features
+
+- Prefixes names for Lambda functions, S3 buckets, DynamoDB tables, SQS queues, SNS topics, IAM roles, SSM parameters, Step Functions, EventBridge rules, and more
+- Handles resource-specific naming rules: S3 names are lowercased, FIFO queues/topics preserve the `.fifo` suffix, SSM parameters use path-style prefixes (`/prefix/name`)
+- **Automatic truncation**: if a prefixed name would exceed AWS's maximum length for that resource type, the aspect truncates the name and appends an 8-character SHA-256 hash to maintain uniqueness. A CDK warning is emitted for each truncated resource. This prevents L3 constructs (e.g. `BucketDeployment`) from generating child resources that cause synthesis failures.
+- Idempotent: already-prefixed resources are skipped
+- Supports an exclusion list to skip specific resource types
+
+### Usage
+
+```typescript
+import { Aspects } from "aws-cdk-lib";
+import { ResourcePrefixAspect } from "@aligent/cdk-aspects";
+
+const stage = new ApplicationStage(app, "prod");
+Aspects.of(stage).add(new ResourcePrefixAspect({ prefix: "myapp-prod" }));
+```
+
+Excluding specific resource types:
+
+```typescript
+Aspects.of(stage).add(
+  new ResourcePrefixAspect({
+    prefix: "myapp-prod",
+    exclude: ["AWS::IAM::Role"],
+  })
+);
+```
+
+### Truncation behaviour
+
+When a prefixed name exceeds the AWS maximum for its resource type, the aspect:
+
+1. Hashes the full (pre-truncation) name with SHA-256 and takes the first 8 hex characters
+2. Truncates the name to fit within the limit, preserving any required suffix (e.g. `.fifo`)
+3. Emits a `cdk synth` warning identifying the original and truncated name
+
+This applies to all overflows, including explicitly user-set names. The warning tells you which resources were affected so you can shorten the base name or prefix if desired.
+
+Example warning:
+```
+[ResourcePrefixAspect] "myapp-prod-VeryLongGeneratedFunctionName" (72 chars) exceeds the maximum allowed length of 64. Name has been truncated to "myapp-prod-VeryLongGenerate-a3f9c2d1". Shorten the resource base name or your prefix ("myapp-prod") to avoid truncation.
+```
+
+### Critical notes
+
+- **Apply to each `Stage`, not the `App`**: CDK Stage constructs create synthesis boundaries. Apply the aspect to each Stage individually.
+- **Aspect priority with versioning**: when combining with `LambdaAndStepFunctionVersioningAspect`, apply this aspect first using CDK's priority system (lower number = runs first):
+
+```typescript
+Aspects.of(stage).add(new ResourcePrefixAspect({ prefix: "myapp" }), { priority: 100 });
+Aspects.of(stage).add(new LambdaAndStepFunctionVersioningAspect(), { priority: 200 });
+```
+
 ## Version Functions
 
 An aspect that automatically adds versioning and aliases to Lambda functions and Step Functions.

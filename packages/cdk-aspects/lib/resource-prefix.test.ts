@@ -1,5 +1,6 @@
+import { createHash } from "crypto";
 import { App, Aspects, Stack } from "aws-cdk-lib";
-import { Match, Template } from "aws-cdk-lib/assertions";
+import { Annotations, Match, Template } from "aws-cdk-lib/assertions";
 import { AttributeType, Table } from "aws-cdk-lib/aws-dynamodb";
 import { Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { CfnFunction } from "aws-cdk-lib/aws-lambda";
@@ -220,6 +221,110 @@ describe("ResourcePrefixAspect", () => {
       const functionName = Object.values(resources)[0].Properties
         .FunctionName as string;
       expect(functionName).toMatch(/^myapp-/);
+    });
+  });
+
+  describe("truncation", () => {
+    // Lambda maxLength = 64. With prefix "myapp-" (6 chars), the construct ID must be
+    // > 58 chars so the prefixed name exceeds the limit. Using logical ID (construct ID)
+    // as the name source avoids relying on CDK's internal _cfnProperties API.
+    const longLambdaId =
+      "FunctionWithAVeryLongNameThatWillExceedTheLimitOfSixtyFourChars"; // 63 chars → prefixed = 69
+
+    it("should truncate a Lambda name that exceeds 64 chars and emit a warning", () => {
+      new CfnFunction(stack, longLambdaId, {
+        runtime: "nodejs22.x",
+        handler: "index.handler",
+        code: { zipFile: "exports.handler = () => {};" },
+        role: "arn:aws:iam::123456789012:role/test",
+      });
+
+      app.synth();
+
+      const template = Template.fromStack(stack);
+      const resources = template.findResources("AWS::Lambda::Function");
+      const functionName = Object.values(resources)[0].Properties
+        .FunctionName as string;
+
+      expect(functionName.length).toBeLessThanOrEqual(64);
+      expect(functionName).toMatch(/^myapp-/);
+      expect(functionName).toMatch(/-[0-9a-f]{8}$/);
+
+      Annotations.fromStack(stack).hasWarning(
+        `/TestStack/${longLambdaId}`,
+        Match.stringLikeRegexp("\\[ResourcePrefixAspect\\].*truncated.*")
+      );
+    });
+
+    it("should produce a deterministic truncated name", () => {
+      const fullName = `myapp-${longLambdaId}`;
+      const hash = createHash("sha256")
+        .update(fullName)
+        .digest("hex")
+        .slice(0, 8);
+      const budget = 64 - 8 - 1; // maxLength - hash length - dash separator
+      const expected = fullName.slice(0, budget) + "-" + hash;
+
+      new CfnFunction(stack, longLambdaId, {
+        runtime: "nodejs22.x",
+        handler: "index.handler",
+        code: { zipFile: "exports.handler = () => {};" },
+        role: "arn:aws:iam::123456789012:role/test",
+      });
+
+      app.synth();
+
+      const template = Template.fromStack(stack);
+      const resources = template.findResources("AWS::Lambda::Function");
+      const functionName = Object.values(resources)[0].Properties
+        .FunctionName as string;
+
+      expect(functionName).toBe(expected);
+    });
+
+    it("should truncate a long FIFO queue name and preserve the .fifo suffix", () => {
+      // SQS maxLength = 80. With "myapp-" (6) + id + ".fifo" (5), id must be > 69 chars.
+      const longFifoId =
+        "FifoQueueWithAVeryLongNameThatWillExceedTheEightyCharLimitForSqsQueues"; // 70 chars → prefixed+.fifo = 81
+
+      new CfnQueue(stack, longFifoId, { fifoQueue: true });
+
+      app.synth();
+
+      const template = Template.fromStack(stack);
+      const resources = template.findResources("AWS::SQS::Queue");
+      const queueName = Object.values(resources)[0].Properties
+        .QueueName as string;
+
+      expect(queueName.length).toBeLessThanOrEqual(80);
+      expect(queueName).toMatch(/^myapp-/);
+      expect(queueName).toMatch(/\.fifo$/);
+
+      Annotations.fromStack(stack).hasWarning(
+        `/TestStack/${longFifoId}`,
+        Match.stringLikeRegexp("\\[ResourcePrefixAspect\\].*truncated.*")
+      );
+    });
+
+    it("should not truncate names that are within the limit", () => {
+      new CfnFunction(stack, "ShortFunction", {
+        runtime: "nodejs22.x",
+        handler: "index.handler",
+        code: { zipFile: "exports.handler = () => {};" },
+        role: "arn:aws:iam::123456789012:role/test",
+      });
+
+      app.synth();
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties("AWS::Lambda::Function", {
+        FunctionName: "myapp-ShortFunction",
+      });
+
+      Annotations.fromStack(stack).hasNoWarning(
+        "/TestStack/ShortFunction",
+        Match.stringLikeRegexp(".*truncated.*")
+      );
     });
   });
 });
