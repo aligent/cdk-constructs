@@ -1,5 +1,11 @@
 # @aligent/cdk-aspects
 
+## 0.5.4
+
+### Patch Changes
+
+- [#1660](https://github.com/aligent/cdk-constructs/pull/1660) [`d2fb7aa`](https://github.com/aligent/cdk-constructs/commit/d2fb7aa1c03fcf4257d8f5883bf5765510885486) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - Fixed `StepFunctionsDefaultsAspect` missing IAM grants for CloudWatch Logs delivery. The aspect was setting `loggingConfiguration` directly on the L1 `CfnStateMachine`, bypassing CDK's IAM grant mechanism. The state machine role now receives the required `logs:*` permissions, preventing the `"IAM Role is not authorized to access the Log Destination"` CloudFormation error on deployment.
+
 ## 0.5.3
 
 ### Patch Changes
