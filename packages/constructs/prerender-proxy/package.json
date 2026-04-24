@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-prerender-proxy",
-  "version": "2.5.5",
+  "version": "2.5.6",
   "description": "Cloudfront Lambda@Edge constructs for integrating with prerender.io",
   "main": "index.js",
   "scripts": {

@@ -1,5 +1,26 @@
 # @aligent/cdk-aspects
 
+## 0.5.3
+
+### Patch Changes
+
+- [#1661](https://github.com/aligent/cdk-constructs/pull/1661) [`25cf7c9`](https://github.com/aligent/cdk-constructs/commit/25cf7c9fc6427a9c5a15f01928ee2121c03a3ec7) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - Fixed `ResourcePrefixAspect` failing synthesis when a prefixed resource name exceeds the AWS maximum length. The aspect now truncates the name and appends an 8-character SHA-256 hash to maintain uniqueness, and emits a `cdk synth` warning identifying the original and truncated name. This prevents L3 constructs (e.g. `BucketDeployment`) from generating child resources that the user has no control over causing failed deployments.
+
+- [#1654](https://github.com/aligent/cdk-constructs/pull/1654) [`99d96c9`](https://github.com/aligent/cdk-constructs/commit/99d96c95b237b9b1d9e341957d621025e0c3bd6a) Thanks [@kai-nguyen-aligent](https://github.com/kai-nguyen-aligent)! - ### `@aligent/cdk-nodejs-function-from-entry` (minor)
+  - **Changed base class from `Function` to `NodejsFunction`** — the construct now extends `NodejsFunction` (and accepts `NodejsFunctionProps`) instead of the generic `Function`, enabling Node.js-specific bundling options. The parent `entry` prop is omitted to avoid conflicts with the custom typed `entry`.
+  - **Added `NoInfer` to the `entry` generic parameter** — prevents TypeScript from incorrectly inferring `TPrefix` from the `entry` value; the prefix is now inferred solely from `sourcePrefix`.
+  - **Made `runtime` optional** — consumers no longer need to explicitly pass a runtime.
+  - **Improved path traversal validation** — replaced the simple relative-path check with a `findServiceRoot` helper that walks up to a configurable `rootParentDir` ancestor, giving clearer error messages on invalid paths.
+  - **Added `rootParentDir` prop** (default: `'services'`) to control the allowed root for asset resolution.
+
+  ### `@aligent/cdk-step-function-from-file` (minor)
+  - **Added `NoInfer` to the `filepath` generic parameter** — prevents unintended type inference from the `filepath` value.
+  - **Improved path traversal validation** — uses the same `findServiceRoot` approach as the Lambda construct for consistent, configurable path safety checks.
+  - **Added `rootParentDir` prop** (default: `'services'`) to control the allowed root for asset resolution.
+
+  ### `@aligent/cdk-aspects` (patch)
+  - **Updated `NodeJsFunctionDefaultsAspect` JSDoc** — clarified that the configured runtime is always applied to ensure consistency, while other defaults (tracing, memory, timeout, source maps) are only applied when not already set.
+
 ## 0.5.2
 
 ### Patch Changes
