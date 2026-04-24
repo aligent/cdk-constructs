@@ -1,5 +1,6 @@
 import { type IAspect } from "aws-cdk-lib";
-import { CfnLogGroup, LogGroup } from "aws-cdk-lib/aws-logs";
+import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 import {
   CfnStateMachine,
   LogLevel,
@@ -57,25 +58,46 @@ export class StepFunctionsDefaultsAspect implements IAspect {
           cfnStateMachine.stateMachineType === StateMachineType.EXPRESS &&
           cfnStateMachine.loggingConfiguration === undefined
         ) {
-          // Create a log group for the state machine
           const logGroup = new LogGroup(node, "LogGroup", {
             logGroupName: `/aws/vendedlogs/states/${node.node.id}`,
           });
-
-          // Get the underlying CFN log group to access its ARN
-          const cfnLogGroup = logGroup.node.defaultChild as CfnLogGroup;
 
           cfnStateMachine.loggingConfiguration = {
             destinations: [
               {
                 cloudWatchLogsLogGroup: {
-                  logGroupArn: cfnLogGroup.attrArn,
+                  logGroupArn: logGroup.logGroupArn,
                 },
               },
             ],
             level: LogLevel.ALL,
             includeExecutionData: true,
           };
+
+          // Grant the state machine role the permissions required to deliver logs.
+          // Mirrors what CDK's StateMachine.buildLoggingConfiguration() does internally.
+          //
+          // resources: ["*"] is intentional — all eight actions are vended-log-delivery
+          // control-plane APIs that operate at the account level and do not support
+          // resource-level scoping against a specific log group ARN.
+          // See: https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazoncloudwatchlogs.html
+          //      https://docs.aws.amazon.com/step-functions/latest/dg/cw-logs.html
+          node.addToRolePolicy(
+            new PolicyStatement({
+              effect: Effect.ALLOW,
+              actions: [
+                "logs:CreateLogDelivery",
+                "logs:GetLogDelivery",
+                "logs:UpdateLogDelivery",
+                "logs:DeleteLogDelivery",
+                "logs:ListLogDeliveries",
+                "logs:PutResourcePolicy",
+                "logs:DescribeResourcePolicies",
+                "logs:DescribeLogGroups",
+              ],
+              resources: ["*"],
+            })
+          );
         }
       }
     }
