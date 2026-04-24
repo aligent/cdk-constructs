@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { Annotations, CfnResource, IAspect, Stack } from "aws-cdk-lib";
 import { IConstruct } from "constructs";
 
@@ -174,18 +175,17 @@ export class ResourcePrefixAspect implements IAspect {
       return;
     }
 
-    const finalName = this.buildPrefixedName(
+    const prefixedName = this.buildPrefixedName(
       baseName,
       resourceType,
       cfnProperties
     );
 
-    const hasError = this.validateResourceName(
-      finalName,
-      resourceType,
-      maxLength,
-      node
-    );
+    // Truncation applies to all overflows — including user-set names — because L3
+    // constructs can generate names the user has no direct control over.
+    const finalName = this.truncateToFit(prefixedName, maxLength, node);
+
+    const hasError = this.validateResourceName(finalName, resourceType, node);
 
     if (hasError) return;
 
@@ -251,18 +251,45 @@ export class ResourcePrefixAspect implements IAspect {
   }
 
   /**
-   * Validates resource-specific naming requirements that AWS enforces.
-   * Throws synthesis errors for violations.
+   * Truncates a prefixed name to fit within maxLength by hashing the original
+   * for uniqueness. Emits a CDK warning when truncation occurs.
+   */
+  private truncateToFit(
+    name: string,
+    maxLength: number,
+    node: IConstruct
+  ): string {
+    if (name.length <= maxLength) return name;
+
+    const hash = createHash("sha256").update(name).digest("hex").slice(0, 8);
+
+    // Preserve .fifo suffix — AWS requires it at the end of FIFO resource names
+    const suffix = name.endsWith(".fifo") ? ".fifo" : "";
+    const nameWithoutSuffix = suffix ? name.slice(0, -suffix.length) : name;
+
+    // 1 accounts for the dash separator before the hash
+    const budget = maxLength - hash.length - 1 - suffix.length;
+    const truncated = nameWithoutSuffix.slice(0, budget) + "-" + hash + suffix;
+
+    Annotations.of(node).addWarning(
+      `[ResourcePrefixAspect] "${name}" (${name.length} chars) exceeds the maximum allowed length of ${maxLength}. ` +
+        `Name has been truncated to "${truncated}". Shorten the resource base name or your prefix ("${this.prefix}") to avoid truncation.`
+    );
+
+    return truncated;
+  }
+
+  /**
+   * Validates resource-specific structural naming requirements that AWS enforces.
+   * Length violations are handled upstream by truncateToFit.
    */
   private validateResourceName(
     name: string,
     cfnResourceType: string,
-    maxLength: number,
     node: IConstruct
   ): boolean {
     let hasError = false;
 
-    // S3 bucket names cannot contain underscores
     if (cfnResourceType === "AWS::S3::Bucket") {
       if (name !== name.toLowerCase()) {
         Annotations.of(node).addError(
@@ -279,15 +306,6 @@ export class ResourcePrefixAspect implements IAspect {
         );
         hasError = true;
       }
-    }
-
-    if (name.length > maxLength) {
-      Annotations.of(node).addError(
-        `[ResourcePrefixAspect] "${name}" (${name.length} chars) exceeds the ` +
-          `maximum allowed length of ${maxLength} for ${cfnResourceType}. ` +
-          `Shorten the resource base name or your prefix ("${this.prefix}").`
-      );
-      hasError = true;
     }
 
     return hasError;
