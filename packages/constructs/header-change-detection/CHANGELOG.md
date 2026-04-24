@@ -1,5 +1,11 @@
 # @aligent/cdk-header-change-detection
 
+## 1.7.7
+
+### Patch Changes
+
+- [#1657](https://github.com/aligent/cdk-constructs/pull/1657) [`f41ba97`](https://github.com/aligent/cdk-constructs/commit/f41ba9779d0c2fe4b8237cebe18a524e0cc3141a) Thanks [@aikido-autofix](https://github.com/apps/aikido-autofix)! - [Aikido] Fix 2 security issues in follow-redirects, axios
+
 ## 1.7.6
 
 ### Patch Changes

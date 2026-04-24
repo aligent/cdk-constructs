@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-nodejs-function-from-entry",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "index.js",
   "license": "MIT",
   "homepage": "https://github.com/aligent/cdk-constructs/tree/main/packages/constructs/nodejs-function-from-entry#readme",
