@@ -1,5 +1,13 @@
 # @aligent/cdk-header-change-detection
 
+## 1.7.8
+
+### Patch Changes
+
+- [#1658](https://github.com/aligent/cdk-constructs/pull/1658) [`9da935e`](https://github.com/aligent/cdk-constructs/commit/9da935eaf79dd4fa6a07fc1d183fbe04c5c74501) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the npm_and_yarn group across 1 directory with 2 updates
+
+- [#1664](https://github.com/aligent/cdk-constructs/pull/1664) [`20fdd64`](https://github.com/aligent/cdk-constructs/commit/20fdd64200489101ba89ff76ab5564ed60bab0f7) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the other-dependencies group across 1 directory with 4 updates
+
 ## 1.7.7
 
 ### Patch Changes
