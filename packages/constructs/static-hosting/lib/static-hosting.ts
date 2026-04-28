@@ -25,7 +25,7 @@ import {
   SSLMethod,
   ViewerProtocolPolicy,
 } from "aws-cdk-lib/aws-cloudfront";
-import { HttpOrigin, S3Origin } from "aws-cdk-lib/aws-cloudfront-origins";
+import { HttpOrigin, S3BucketOrigin } from "aws-cdk-lib/aws-cloudfront-origins";
 import {
   Effect,
   Group,
@@ -557,7 +557,7 @@ export class StaticHosting extends Construct {
       });
     }
 
-    const s3Origin = new S3Origin(this.bucket, {
+    const s3Origin = S3BucketOrigin.withOriginAccessIdentity(this.bucket, {
       originAccessIdentity: this.oai,
     });
     let backendOrigin = undefined;
