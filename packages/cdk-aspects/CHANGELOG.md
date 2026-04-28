@@ -1,5 +1,15 @@
 # @aligent/cdk-aspects
 
+## 0.5.5
+
+### Patch Changes
+
+- [#1639](https://github.com/aligent/cdk-constructs/pull/1639) [`060f291`](https://github.com/aligent/cdk-constructs/commit/060f29103f3fd2146bd2d88de54d0e2009f55910) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps-dev): bump ts-jest from 29.4.6 to 29.4.9 in the testing-tools group across 1 directory
+
+- [#1642](https://github.com/aligent/cdk-constructs/pull/1642) [`d760efe`](https://github.com/aligent/cdk-constructs/commit/d760efe3baec8e33df1b49415de815e2bfd128e5) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the aws group across 1 directory with 11 updates
+
+- [#1658](https://github.com/aligent/cdk-constructs/pull/1658) [`9da935e`](https://github.com/aligent/cdk-constructs/commit/9da935eaf79dd4fa6a07fc1d183fbe04c5c74501) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the npm_and_yarn group across 1 directory with 2 updates
+
 ## 0.5.4
 
 ### Patch Changes
