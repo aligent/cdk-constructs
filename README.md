@@ -18,6 +18,7 @@ These are all written for CDK v2. See the official AWS guide for how to migrate 
 | [prerender-fargate](packages/constructs/prerender-fargate)                     | Self-hosted prerender to handle prerender bot requests                                                                       |
 | [prerender-proxy](packages/constructs/prerender-proxy)                         | Provides functions to adjust self-hosted prerender behaviour                                                                 |
 | [rabbitmq](packages/constructs/rabbitmq)                                       | Create a RabbitMQ cluster within CDK                                                                                         |
+| [secure-rest-api](packages/constructs/secure-rest-api)                         | API Gateway REST API secured with API key authentication and usage plan throttling                                            |
 | [shared-vpc](packages/constructs/shared-vpc)                                   | Creates a single VPC with static IP for micro-services with DNS management                                                   |
 | [static-hosting](packages/constructs/static-hosting)                           | Construct to deploy infrastructure for static webpage hosting                                                                |
 | [step-function-from-file](packages/constructs/step-function-from-file)         | Create a Step Function state machine definition from a given JSON or YAML file                                               |
