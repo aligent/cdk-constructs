@@ -21,10 +21,10 @@
     "@aws-cdk/aws-apigatewayv2-alpha": "2.30.0-alpha.0",
     "@aws-cdk/aws-apigatewayv2-authorizers-alpha": "2.30.0-alpha.0",
     "@aws-cdk/aws-apigatewayv2-integrations-alpha": "2.30.0-alpha.0",
-    "@aws-sdk/client-s3": "^3.1038.0",
-    "@aws-sdk/client-secrets-manager": "^3.1038.0",
-    "@aws-sdk/client-sqs": "^3.1038.0",
-    "@aws-sdk/client-ssm": "^3.1038.0",
+    "@aws-sdk/client-s3": "^3.1041.0",
+    "@aws-sdk/client-secrets-manager": "^3.1041.0",
+    "@aws-sdk/client-sqs": "^3.1041.0",
+    "@aws-sdk/client-ssm": "^3.1041.0",
     "@aws-solutions-constructs/aws-lambda-sqs-lambda": "^2.101.0"
   },
   "peerDependencies": {
