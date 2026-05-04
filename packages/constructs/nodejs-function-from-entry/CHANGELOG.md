@@ -1,5 +1,11 @@
 # @aligent/cdk-nodejs-function-from-entry
 
+## 0.2.2
+
+### Patch Changes
+
+- [#1669](https://github.com/aligent/cdk-constructs/pull/1669) [`8006ed3`](https://github.com/aligent/cdk-constructs/commit/8006ed327661e66d9e9b91b2d3ec205594ba4c06) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the aws group across 1 directory with 9 updates
+
 ## 0.2.1
 
 ### Patch Changes
