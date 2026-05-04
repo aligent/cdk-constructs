@@ -240,11 +240,44 @@ describe("SecureRestApi", () => {
       );
     });
 
-    it("applies custom CORS allow-origins", () => {
+    it("appends additionalHeaders to the defaults", () => {
       const { stack } = createStack();
       new SecureRestApi(stack, "Api", {
         apiName: "my-api",
-        corsOptions: { allowOrigins: ["https://example.com"] },
+        corsOptions: { additionalHeaders: ["Authorization"] },
+        routes: [
+          {
+            path: "items",
+            methods: [HttpMethod.GET],
+            integration: mockIntegration(),
+          },
+        ],
+      });
+
+      // OPTIONS mock integration response headers include the allow-headers value
+      Template.fromStack(stack).hasResourceProperties(
+        "AWS::ApiGateway::Method",
+        {
+          HttpMethod: "OPTIONS",
+          Integration: {
+            IntegrationResponses: [
+              {
+                ResponseParameters: {
+                  "method.response.header.Access-Control-Allow-Headers":
+                    "'Content-Type,X-Api-Key,Authorization'",
+                },
+              },
+            ],
+          },
+        }
+      );
+    });
+
+    it("appends additionalMethods to the defaults", () => {
+      const { stack } = createStack();
+      new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        corsOptions: { additionalMethods: ["POST"] },
         routes: [
           {
             path: "items",
@@ -256,7 +289,19 @@ describe("SecureRestApi", () => {
 
       Template.fromStack(stack).hasResourceProperties(
         "AWS::ApiGateway::Method",
-        { HttpMethod: "OPTIONS" }
+        {
+          HttpMethod: "OPTIONS",
+          Integration: {
+            IntegrationResponses: [
+              {
+                ResponseParameters: {
+                  "method.response.header.Access-Control-Allow-Methods":
+                    "'GET,OPTIONS,POST'",
+                },
+              },
+            ],
+          },
+        }
       );
     });
   });

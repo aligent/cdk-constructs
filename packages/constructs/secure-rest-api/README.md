@@ -93,9 +93,9 @@ const api = new SecureRestApi(this, 'Api', {
 const api = new SecureRestApi(this, 'Api', {
   apiName: 'my-api',
   corsOptions: {
-    allowOrigins: ['https://example.com'],
-    allowMethods: ['GET', 'POST', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'X-Api-Key', 'Authorization'],
+    allowOrigins: ['https://example.com'],  // overrides default (all origins)
+    additionalMethods: ['POST'],            // appended to GET, OPTIONS
+    additionalHeaders: ['Authorization'],   // appended to Content-Type, X-Api-Key
   },
   routes: [...],
 });
@@ -136,11 +136,11 @@ Throttling limits applied to the usage plan.
 
 CORS preflight configuration applied to all resources.
 
-| Property | Type | Default |
-|----------|------|---------|
-| `allowOrigins` | `string[]` | All origins |
-| `allowMethods` | `string[]` | `['GET', 'OPTIONS']` |
-| `allowHeaders` | `string[]` | `['Content-Type', 'X-Api-Key']` |
+| Property | Type | Behaviour |
+|----------|------|-----------|
+| `allowOrigins` | `string[]` | Overrides the default (all origins) |
+| `additionalMethods` | `string[]` | Appended to the defaults: `GET`, `OPTIONS` |
+| `additionalHeaders` | `string[]` | Appended to the defaults: `Content-Type`, `X-Api-Key` |
 
 ### `apiKeyName` (string)
 

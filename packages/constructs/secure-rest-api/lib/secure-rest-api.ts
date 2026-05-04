@@ -28,12 +28,15 @@ export interface SecureRestApiProps {
 
   /**
    * CORS configuration.
-   * @default Allows all origins, GET/OPTIONS methods, Content-Type and X-Api-Key headers
+   *
+   * `allowOrigins` overrides the default (all origins).
+   * `additionalMethods` and `additionalHeaders` are appended to the defaults
+   * (GET/OPTIONS and Content-Type/X-Api-Key respectively).
    */
   corsOptions?: {
     allowOrigins?: string[];
-    allowMethods?: string[];
-    allowHeaders?: string[];
+    additionalMethods?: string[];
+    additionalHeaders?: string[];
   };
 
   /**
@@ -86,10 +89,15 @@ export class SecureRestApi extends Construct {
       description: description ?? `REST API for ${apiName} service`,
       defaultCorsPreflightOptions: {
         allowOrigins: corsOptions?.allowOrigins ?? Cors.ALL_ORIGINS,
-        allowMethods: corsOptions?.allowMethods ?? ["GET", "OPTIONS"],
-        allowHeaders: corsOptions?.allowHeaders ?? [
+        allowMethods: [
+          "GET",
+          "OPTIONS",
+          ...(corsOptions?.additionalMethods ?? []),
+        ],
+        allowHeaders: [
           "Content-Type",
           "X-Api-Key",
+          ...(corsOptions?.additionalHeaders ?? []),
         ],
       },
     });
