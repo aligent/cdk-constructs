@@ -1,5 +1,13 @@
 # @aligent/cdk-esbuild
 
+## 2.5.8
+
+### Patch Changes
+
+- [#1669](https://github.com/aligent/cdk-constructs/pull/1669) [`8006ed3`](https://github.com/aligent/cdk-constructs/commit/8006ed327661e66d9e9b91b2d3ec205594ba4c06) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the aws group across 1 directory with 9 updates
+
+- [#1671](https://github.com/aligent/cdk-constructs/pull/1671) [`927ab94`](https://github.com/aligent/cdk-constructs/commit/927ab944989abddfc149ca2a80c1f1692db4245a) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the other-dependencies group with 4 updates
+
 ## 2.5.7
 
 ### Patch Changes

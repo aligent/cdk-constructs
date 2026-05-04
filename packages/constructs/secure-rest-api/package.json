@@ -1,6 +1,6 @@
 {
   "name": "@aligent/cdk-secure-rest-api",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A CDK construct for creating API Gateway REST APIs secured with API Key authentication and usage plan throttling",
   "main": "index.js",
   "types": "index.d.ts",
