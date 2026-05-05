@@ -22,11 +22,6 @@ describe("DynamoDbDefaultsAspect", () => {
   let app: App;
   let stack: Stack;
 
-  afterEach(() => {
-    app = undefined as unknown as App;
-    stack = undefined as unknown as Stack;
-  });
-
   const setup = (duration: "SHORT" | "MEDIUM" | "LONG") => {
     app = new App();
     stack = new Stack(app, "TestStack");

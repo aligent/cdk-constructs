@@ -128,7 +128,7 @@ export class DynamoDbDefaultsAspect implements IAspect {
 
       if (
         cfnTable.provisionedThroughput === undefined &&
-        cfnTable.billingMode !== "PAY_PER_REQUEST" &&
+        cfnTable.billingMode !== BillingMode.PAY_PER_REQUEST &&
         this.isProvisionedThroughputConfigured()
       ) {
         cfnTable.provisionedThroughput = {
@@ -139,7 +139,7 @@ export class DynamoDbDefaultsAspect implements IAspect {
 
       if (
         cfnTable.onDemandThroughput === undefined &&
-        cfnTable.billingMode !== "PROVISIONED" &&
+        cfnTable.billingMode !== BillingMode.PROVISIONED &&
         this.isOnDemandThroughputConfigured()
       ) {
         cfnTable.onDemandThroughput = {
