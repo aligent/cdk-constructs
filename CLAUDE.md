@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-Nx-based monorepo of independently versioned AWS CDK v2 construct packages published under the `@aligent/cdk-*` scope. Yarn 4 (Berry) workspaces, managed via Corepack. Node version is pinned in `.nvmrc` (currently v22.14.0).
+Nx-based monorepo of independently versioned AWS CDK v2 construct packages published under the `@aligent/cdk-*` scope. Yarn 4 (Berry) workspaces, managed via Corepack. Node version is pinned in `.nvmrc`.
 
 Workspaces:
 - `packages/constructs/*` — one CDK construct per directory (e.g. `static-hosting`, `waf`, `prerender-fargate`)
