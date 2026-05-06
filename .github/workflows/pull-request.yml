@@ -2,6 +2,11 @@ name: Pull Request
 
 on:
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - '**/docs/**'
+      - 'LICENSE'
+      - '.github/CODEOWNERS'
   workflow_dispatch:
 
 jobs:
