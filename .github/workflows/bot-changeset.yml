@@ -8,6 +8,8 @@ on:
       - '**/docs/**'
       - 'LICENSE'
       - '.github/CODEOWNERS'
+      - '.github/workflows/**'
+      - '.github/dependabot.yml'
 
 permissions:
   contents: write
