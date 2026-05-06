@@ -60,7 +60,7 @@ yarn nx test <package-name> --testFile=<test-file-name>
 
 To add a new construct package to the monorepo:
 
-1. Create a new directory under `packages/constructs/<name>/`, mirroring the layout of an existing package (e.g. [static-hosting](packages/constructs/static-hosting)). Each package should include:
+1. Create a new directory under `packages/constructs/<name>/`, mirroring the layout of an existing package. Each package should include:
     - `index.ts` — main exports
     - `lib/` — construct source (and `lib/handlers/` for any Lambda handlers)
     - `package.json` — with the npm name `@aligent/cdk-<name>` and starting `version: 0.0.1`
