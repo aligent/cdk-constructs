@@ -1,5 +1,11 @@
 # @aligent/cdk-aspects
 
+## 0.5.7
+
+### Patch Changes
+
+- [#1672](https://github.com/aligent/cdk-constructs/pull/1672) [`4dff08d`](https://github.com/aligent/cdk-constructs/commit/4dff08d7f3055aefbd98effb42fde74cc6ac3a95) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - Fix `DynamoDbDefaultsAspect` injecting `ProvisionedThroughput` onto `PAY_PER_REQUEST` tables and `OnDemandThroughput` onto `PROVISIONED` tables
+
 ## 0.5.6
 
 ### Patch Changes
