@@ -6,6 +6,10 @@ on:
       - 'packages/constructs/**'
       - 'README.md'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-readme:
     name: 📖 Check readme for updates
