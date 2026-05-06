@@ -104,3 +104,26 @@ yarn nx lint <package-name> --fix
 6. Push to remote
 
 **Never push code that fails linting checks** - this will cause GitHub Actions to fail and block the PR.
+
+### Changesets
+
+This repo uses [Changesets](https://github.com/changesets/changesets) for versioning. Every PR that modifies a package must include a changeset file in `.changeset/`.
+
+Before writing a changeset, confirm with the user:
+- which package(s) are affected
+- the bump type (`patch`, `minor`, or `major`)
+- the description
+
+Then create `.changeset/<descriptive-slug>.md`:
+
+```markdown
+---
+"@aligent/<package-name>": patch | minor | major
+---
+
+Short description of the change.
+```
+
+- `patch` — bug fixes, non-breaking tweaks
+- `minor` — new backwards-compatible features
+- `major` — breaking changes
