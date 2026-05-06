@@ -11,6 +11,10 @@ on:
       - '.github/workflows/**'
       - '.github/dependabot.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: read
