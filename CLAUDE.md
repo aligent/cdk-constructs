@@ -4,117 +4,61 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is an Nx-based monorepo containing AWS CDK v2 construct packages. Each package provides reusable infrastructure components for common AWS patterns.
+Nx-based monorepo of independently versioned AWS CDK v2 construct packages published under the `@aligent/cdk-*` scope. Yarn 4 (Berry) workspaces, managed via Corepack. Node version is pinned in `.nvmrc` (currently v22.14.0).
+
+Workspaces:
+- `packages/constructs/*` — one CDK construct per directory (e.g. `static-hosting`, `waf`, `prerender-fargate`)
+- `packages/cdk-aspects` — shared CDK aspects
 
 ## Key Commands
 
-### Development
+### Setup and development
 ```bash
-# Install dependencies
-npm ci
+# Install dependencies (matches CI)
+yarn install --frozen-lockfile
 
-# Build a specific package
+# Build / test / lint a single package (use the project name from project.json, not the npm name)
 yarn nx build <package-name>
-
-# Run tests for a package
 yarn nx test <package-name>
-
-# Lint a package
 yarn nx lint <package-name>
 
 # Run a single test file
 yarn nx test <package-name> --testFile=<test-file-name>
+
+# Run tests across the whole monorepo
+yarn nx run-many -t test
 ```
 
-### Local Testing
+### Affected-only (mirrors CI)
+CI runs `nx affected` against `origin/main`. To reproduce locally:
 ```bash
-# After building, pack the package
-cd dist/<package-name> && npm pack
+yarn nx affected:lint  --base=origin/main
+yarn nx affected:build --base=origin/main
+yarn nx affected:test  --base=origin/main
 
-# Install in your target project
-npm i <path-to-tarball>
+# List affected @aligent/cdk-* packages — useful when adding a changeset
+yarn affected:packages
 ```
 
-### Publishing
+### Local consumption of a package
+Build target outputs in place (`outDir: "."`), not into `dist/`. To consume in another project:
 ```bash
-# Publish with version and tag
-yarn nx publish <package-name> --ver=<version> --tag=<tag>
+yarn nx build <package-name>
+cd packages/constructs/<package-name> && npm pack
+# then in the target project: npm i <path-to-tarball>
 ```
 
-## Architecture
+### Releases (Changesets)
+This repo uses [Changesets](https://github.com/changesets/changesets); each package has an independent release cycle. Manual `npm publish` / `nx publish` is **not** the normal flow.
 
-### Package Structure
-All packages follow this pattern:
-```
-packages/<package-name>/
-├── src/
-│   ├── index.ts              # Main exports
-│   └── lib/
-│       ├── <construct>.ts    # Main CDK construct
-│       └── handlers/         # Lambda function code
-├── package.json
-├── project.json              # Nx configuration
-├── tsconfig.json
-├── jest.config.ts
-└── README.md
-```
+Every PR that modifies a published package must include a changeset file in `.changeset/`. On merge to `main`, the `changeset-release` workflow opens/updates a "Release: Version Packages" PR; merging that PR publishes to npm and creates GitHub releases.
 
-### Construct Pattern
-Each package exports CDK Constructs that:
-- Extend the base `Construct` class from AWS CDK
-- Accept a typed props interface (e.g., `StaticHostingProps`)
-- Create and configure AWS resources
-- May include Lambda functions bundled with esbuild
-
-### Key Architectural Decisions
-1. **Independent Packages**: Each construct is independently versioned and can be used standalone
-2. **Lambda Bundling**: Uses `@aligent/cdk-esbuild` for efficient Lambda deployment
-3. **Peer Dependencies**: All packages require `aws-cdk-lib` and `constructs` as peer dependencies
-4. **TypeScript**: Entire codebase uses TypeScript with strict mode enabled
-
-### Package Dependencies
-- Packages can compose together (e.g., WAF + CloudFront)
-- Lambda functions use AWS SDK v3 clients
-- Build process uses Nx task orchestration with dependency graph
-
-## Testing Approach
-- Jest with ts-jest for all packages
-- 80% code coverage threshold
-- Mock AWS services in tests
-- Test files follow `*.test.ts` pattern
-
-## Code Quality and Git Workflow
-
-### Pre-commit Requirements
-**ALWAYS run linting before pushing code to git:**
-```bash
-# Run lint check for the package being modified
-yarn nx lint <package-name>
-
-# Fix any linting issues automatically when possible
-yarn nx lint <package-name> --fix
-```
-
-### Git Commit Process
-1. Make code changes
-2. **MANDATORY**: Run `yarn nx lint <package-name>` to check for linting issues
-3. Fix any linting errors or warnings
-4. Stage changes with `git add`
-5. Commit with descriptive message
-6. Push to remote
-
-**Never push code that fails linting checks** - this will cause GitHub Actions to fail and block the PR.
-
-### Changesets
-
-This repo uses [Changesets](https://github.com/changesets/changesets) for versioning. Every PR that modifies a package must include a changeset file in `.changeset/`.
-
-Before writing a changeset, confirm with the user:
+**Before writing a changeset, confirm with the user:**
 - which package(s) are affected
-- the bump type (`patch`, `minor`, or `major`)
+- the bump type (`patch` for bug fixes / non-breaking tweaks, `minor` for backwards-compatible features, `major` for breaking changes)
 - the description
 
-Then create `.changeset/<descriptive-slug>.md`:
+Then either run `yarn changeset` (interactive) or create `.changeset/<descriptive-slug>.md` directly:
 
 ```markdown
 ---
@@ -124,6 +68,51 @@ Then create `.changeset/<descriptive-slug>.md`:
 Short description of the change.
 ```
 
-- `patch` — bug fixes, non-breaking tweaks
-- `minor` — new backwards-compatible features
-- `major` — breaking changes
+Useful commands:
+```bash
+yarn changeset:status    # see pending changesets
+yarn affected:packages   # list affected @aligent/cdk-* packages — handy when picking targets
+```
+
+## Architecture
+
+### Package layout
+```
+packages/constructs/<name>/
+├── index.ts                  # main exports
+├── lib/
+│   ├── <construct>.ts        # CDK construct(s)
+│   └── handlers/             # Lambda source (excluded from tsc build; bundled via esbuild at synth time)
+├── project.json              # Nx targets: build / lint / test / publish
+├── package.json              # @aligent/cdk-<name>, peer-deps aws-cdk-lib + constructs
+├── tsconfig.json / tsconfig.app.json / tsconfig.spec.json
+├── jest.config.ts
+└── README.md
+```
+After `nx build`, compiled `index.js` / `index.d.ts` (and `lib/*.js`) sit next to the sources — that is what gets published.
+
+### Construct pattern
+Each package exports CDK Constructs that extend `Construct`, accept a typed props interface, and create AWS resources. Lambda handlers under `lib/handlers/` are excluded from the package's `tsc` build and are bundled via `@aligent/cdk-esbuild` during CDK synth (using AWS SDK v3 clients).
+
+### Cross-package rules
+- `aws-cdk-lib` and `constructs` are **peer** dependencies in every package — do not add them as regular `dependencies`.
+- ESLint enforces Nx module boundaries; the only cross-package import explicitly allowed is `@aligent/cdk-esbuild` (see `.eslintrc.json`). New cross-package coupling needs an explicit allowlist entry.
+- `constructs` is pinned via a workspace-level `resolutions` entry in the root `package.json`.
+
+## Testing
+- Jest + ts-jest, `*.test.ts` pattern, 80% coverage threshold per package.
+- Mock AWS SDK calls (e.g. `aws-sdk-client-mock`); do not hit real AWS.
+
+## Code Quality and Git Workflow
+
+### Pre-commit
+Always lint the affected package before pushing — CI runs `nx affected:lint` and will block the PR otherwise:
+```bash
+yarn nx lint <package-name>
+yarn nx lint <package-name> --fix    # auto-fix where possible
+```
+
+### PRs
+- One logical change per PR.
+- Include a changeset for any user-visible change to a published package (see [Releases (Changesets)](#releases-changesets) above).
+- The `check-readme` workflow flags missing README updates — keep the package README in sync with functional changes.
