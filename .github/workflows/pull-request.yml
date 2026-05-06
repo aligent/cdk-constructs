@@ -9,6 +9,7 @@ on:
       - '.github/CODEOWNERS'
       - '.github/workflows/**'
       - '!.github/workflows/pull-request.yml'
+      - '.github/dependabot.yml'
   workflow_dispatch:
 
 jobs:
