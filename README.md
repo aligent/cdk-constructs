@@ -56,6 +56,34 @@ To run a single test file:
 yarn nx test <package-name> --testFile=<test-file-name>
 ```
 
+### Adding a new package
+
+To add a new construct package to the monorepo:
+
+1. Create a new directory under `packages/constructs/<name>/`, mirroring the layout of an existing package (e.g. [static-hosting](packages/constructs/static-hosting)). Each package should include:
+    - `index.ts` — main exports
+    - `lib/` — construct source (and `lib/handlers/` for any Lambda handlers)
+    - `package.json` — with the npm name `@aligent/cdk-<name>` and starting `version: 0.0.1`
+    - `project.json` — Nx targets (build / lint / test)
+    - `tsconfig.json`, `tsconfig.app.json`, `tsconfig.spec.json`
+    - `jest.config.ts`
+    - `README.md`
+2. Add the package to the constructs table at the top of this README.
+3. Add a changeset (`yarn changeset`) for the initial release.
+
+#### First publish must be done manually
+
+> [!IMPORTANT]
+> The first time a new package is published to npm, it must be published manually by a maintainer. Subsequent releases are then handled automatically by the changeset-release workflow.
+
+Our release workflow (`.github/workflows/changeset-release.yml`) uses [npm OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers). OIDC can only publish *new versions* of packages that already exist on npm — **it cannot create a brand new package**. The package name has to be registered on the npm registry before automated releases can take over.
+
+To bootstrap a new package:
+
+1. Build the package locally: `yarn nx build <package-name>`
+2. From the package directory, log in to npm (`npm login`) with maintainer credentials and publish: `npm publish --access public`
+3. Once the package exists on npm, future versions will be released automatically by the changeset-release workflow when the corresponding "Release: Version Packages" PR is merged.
+
 ### Merging
 
 Once happy with the changes and there's no errors update the readme (if there's any functional changes) and [create a PR](https://github.com/aligent/cdk-constructs/compare) for your branch
