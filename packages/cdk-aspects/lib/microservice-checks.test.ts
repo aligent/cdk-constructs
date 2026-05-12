@@ -2,6 +2,8 @@ import { App, Aspects, Stack } from "aws-cdk-lib";
 import { Annotations, Match } from "aws-cdk-lib/assertions";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
+import { Bucket } from "aws-cdk-lib/aws-s3";
+import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
 import { MicroserviceChecks } from "./microservice-checks";
 
 describe("MicroserviceChecks", () => {
@@ -88,6 +90,64 @@ describe("MicroserviceChecks", () => {
       annotations.hasError(
         "/TestStack/TestLogGroup/Resource",
         Match.stringLikeRegexp("does not have an explicit retention policy")
+      );
+    });
+  });
+
+  describe("CDK-managed singletons", () => {
+    let annotations: Annotations;
+    let bucketDeploymentPath: string;
+
+    beforeAll(() => {
+      const app = new App({
+        context: {
+          "aws:cdk:bundling-stacks": [],
+        },
+      });
+      const stack = new Stack(app, "TestStack");
+      Aspects.of(stack).add(new MicroserviceChecks());
+
+      const bucket = new Bucket(stack, "DeployBucket");
+      new BucketDeployment(stack, "DeployAssets", {
+        destinationBucket: bucket,
+        sources: [Source.data("hello.txt", "hello world")],
+      });
+
+      const singleton = stack.node
+        .findAll()
+        .find(c => c.node.id.startsWith("Custom::CDKBucketDeployment"));
+      if (!singleton) {
+        throw new Error(
+          "BucketDeployment singleton not found — test setup invariant changed"
+        );
+      }
+      bucketDeploymentPath = singleton.node.path;
+
+      annotations = Annotations.fromStack(stack);
+    });
+
+    it("should not nag the BucketDeployment singleton lambda for memory size", () => {
+      annotations.hasNoError(
+        `/${bucketDeploymentPath}/Resource`,
+        Match.stringLikeRegexp(
+          "does not have an explicit memory value configured"
+        )
+      );
+    });
+
+    it("should not nag the BucketDeployment singleton lambda for timeout", () => {
+      annotations.hasNoError(
+        `/${bucketDeploymentPath}/Resource`,
+        Match.stringLikeRegexp(
+          "does not have an explicitly defined timeout value"
+        )
+      );
+    });
+
+    it("should not nag the BucketDeployment singleton lambda for tracing", () => {
+      annotations.hasNoError(
+        `/${bucketDeploymentPath}/Resource`,
+        Match.stringLikeRegexp("does not have tracing set to Tracing.ACTIVE")
       );
     });
   });
