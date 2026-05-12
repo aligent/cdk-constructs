@@ -1,5 +1,15 @@
 # @aligent/cdk-aspects
 
+## 0.6.0
+
+### Minor Changes
+
+- [#1680](https://github.com/aligent/cdk-constructs/pull/1680) [`727dc22`](https://github.com/aligent/cdk-constructs/commit/727dc22827da803bf8948ebd61b33894750e0092) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - `MicroserviceChecks` now skips CDK-managed singleton resources (BucketDeployment custom handler, `LogRetention`, `Custom::S3AutoDeleteObjects`, and `cr.Provider` framework lambdas). These nodes have framework-owned runtime config that consumers cannot tune, so surfacing memory size, timeout, tracing, and log retention nags on them is noise. Consumers no longer need bespoke suppression aspects for these resources.
+
+### Patch Changes
+
+- [#1678](https://github.com/aligent/cdk-constructs/pull/1678) [`50e4458`](https://github.com/aligent/cdk-constructs/commit/50e445871adb3cb6a8c0d98783a5b5fb09e13898) Thanks [@aikido-autofix](https://github.com/apps/aikido-autofix)! - [Aikido] Fix security issue in fast-uri via minor version upgrade from 3.1.0 to 3.1.2
+
 ## 0.5.7
 
 ### Patch Changes
