@@ -1,6 +1,6 @@
-import { createHash } from "crypto";
 import { Annotations, CfnResource, IAspect, Stack } from "aws-cdk-lib";
 import { IConstruct } from "constructs";
+import { createHash } from "crypto";
 
 interface ResourceNameConfig {
   /** The CloudFormation property that holds the resource's physical name */
@@ -164,12 +164,11 @@ export class ResourcePrefixAspect implements IAspect {
       (node as CfnResourceWithProps).cfnProperties ??
       {};
 
-    // Get any explicitly set name, or derive one from the logical ID
-    const existingName =
-      typeof cfnProperties[cfnName] === "string"
-        ? cfnProperties[cfnName]
-        : undefined;
-    const baseName = existingName ?? this.deriveNameFromLogicalId(node);
+    const baseName = this.resolveBaseName(node, cfnName, cfnProperties);
+
+    if (this.shouldSkipResource(resourceType, baseName)) {
+      return;
+    }
 
     if (this.isAlreadyPrefixed(baseName)) {
       return;
@@ -192,13 +191,38 @@ export class ResourcePrefixAspect implements IAspect {
     node.addPropertyOverride(cfnName, finalName);
   }
 
-  private isAlreadyPrefixed(name: string): boolean {
+  /**
+   * Determines whether a resource should be skipped from prefixing based on
+   * resource-type-specific rules (e.g., AWS-reserved naming conventions).
+   */
+  private shouldSkipResource(cfnResourceType: string, baseName: string) {
+    return (
+      cfnResourceType === "AWS::Logs::LogGroup" && baseName.startsWith("/aws/")
+    );
+  }
+
+  private isAlreadyPrefixed(name: string) {
     return (
       name.startsWith(`${this.prefix}-`) || name.startsWith(`/${this.prefix}/`)
     );
   }
 
-  private deriveNameFromLogicalId(node: CfnResource) {
+  /**
+   * Resolves the base name for a resource by checking explicitly set CFN properties
+   * first, then falling back to deriving a name from the logical ID.
+   * CDK stores L1 properties in camelCase internally, so both casings are checked.
+   */
+  private resolveBaseName(
+    node: CfnResource,
+    cfnName: string,
+    cfnProperties: Record<string, unknown>
+  ) {
+    const camelCfnName = cfnName.charAt(0).toLowerCase() + cfnName.slice(1);
+    const rawName = cfnProperties[cfnName] ?? cfnProperties[camelCfnName];
+    if (typeof rawName === "string") {
+      return rawName;
+    }
+
     const logicalId = Stack.of(node).getLogicalId(node);
     return logicalId
       .replace(/[^a-zA-Z0-9]+/g, "-") // non-alphanumeric → dash
@@ -217,7 +241,7 @@ export class ResourcePrefixAspect implements IAspect {
     baseName: string,
     cfnResourceType: string,
     cfnProperties: Record<string, unknown>
-  ): string {
+  ) {
     // Special case: FIFO queues must end with .fifo suffix
     if (
       cfnResourceType === "AWS::SQS::Queue" &&

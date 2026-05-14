@@ -1,14 +1,15 @@
-import { createHash } from "crypto";
 import { App, Aspects, Stack } from "aws-cdk-lib";
 import { Annotations, Match, Template } from "aws-cdk-lib/assertions";
+import { CfnApplication } from "aws-cdk-lib/aws-appconfig";
 import { AttributeType, Table } from "aws-cdk-lib/aws-dynamodb";
 import { Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { CfnFunction } from "aws-cdk-lib/aws-lambda";
+import { CfnLogGroup, LogGroup } from "aws-cdk-lib/aws-logs";
 import { CfnBucket } from "aws-cdk-lib/aws-s3";
 import { CfnTopic } from "aws-cdk-lib/aws-sns";
 import { CfnQueue } from "aws-cdk-lib/aws-sqs";
-import { CfnApplication } from "aws-cdk-lib/aws-appconfig";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
+import { createHash } from "crypto";
 import { ResourcePrefixAspect } from "./resource-prefix";
 
 describe("ResourcePrefixAspect", () => {
@@ -174,6 +175,41 @@ describe("ResourcePrefixAspect", () => {
       const functionName = Object.values(resources)[0].Properties
         .FunctionName as string;
       expect(functionName).toBe("myapp-OrdersProcessingFunction");
+    });
+  });
+
+  describe("skip rules", () => {
+    it("should skip log groups with AWS-managed /aws/ prefix", () => {
+      new LogGroup(stack, "LambdaLogGroup", {
+        logGroupName: "/aws/lambda/my-function",
+      });
+
+      app.synth();
+      const template = Template.fromStack(stack);
+      const resources = template.findResources("AWS::Logs::LogGroup");
+      const logGroupName = Object.values(resources)[0].Properties
+        .LogGroupName as string;
+      expect(logGroupName).toBe("/aws/lambda/my-function");
+    });
+
+    it("should prefix log groups with custom names", () => {
+      new LogGroup(stack, "AppLogGroup", { logGroupName: "my-app-logs" });
+
+      app.synth();
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties("AWS::Logs::LogGroup", {
+        LogGroupName: "myapp-my-app-logs",
+      });
+    });
+
+    it("should prefix log groups without an explicit name", () => {
+      new CfnLogGroup(stack, "DefaultLogGroup", {});
+
+      app.synth();
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties("AWS::Logs::LogGroup", {
+        LogGroupName: Match.stringLikeRegexp("^myapp-"),
+      });
     });
   });
 
