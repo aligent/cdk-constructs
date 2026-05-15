@@ -1,5 +1,11 @@
 # @aligent/cdk-domain-hosting
 
+## 1.0.7
+
+### Patch Changes
+
+- [#1678](https://github.com/aligent/cdk-constructs/pull/1678) [`50e4458`](https://github.com/aligent/cdk-constructs/commit/50e445871adb3cb6a8c0d98783a5b5fb09e13898) Thanks [@aikido-autofix](https://github.com/apps/aikido-autofix)! - [Aikido] Fix security issue in fast-uri via minor version upgrade from 3.1.0 to 3.1.2
+
 ## 1.0.6
 
 ### Patch Changes
