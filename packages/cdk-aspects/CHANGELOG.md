@@ -1,5 +1,11 @@
 # @aligent/cdk-aspects
 
+## 0.6.1
+
+### Patch Changes
+
+- [#1685](https://github.com/aligent/cdk-constructs/pull/1685) [`4a4b1aa`](https://github.com/aligent/cdk-constructs/commit/4a4b1aa137e371e7448cefc2de3de416f4bb0284) Thanks [@kai-nguyen-aligent](https://github.com/kai-nguyen-aligent)! - Skip prefixing AWS-reserved log group names (e.g. `/aws/lambda/...`, `/aws/apigateway/...`). Previously, the `ResourcePrefixAspect` would incorrectly rename these log groups, causing deployment failures since AWS reserves the `/aws/` prefix for its own services. Also fixed base name resolution to check both PascalCase and camelCase CFN property keys.
+
 ## 0.6.0
 
 ### Minor Changes
