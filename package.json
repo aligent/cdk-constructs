@@ -29,7 +29,7 @@
     "affected:packages": "ALL_PACKAGES=$(find packages -maxdepth 1 -type d -not -path packages | xargs -n1 basename | sed 's/^/@aligent\\/cdk-/'); AFFECTED=$(nx show projects --affected --json | jq -r '.[]'); for pkg in $AFFECTED; do echo \"$ALL_PACKAGES\" | grep -q \"@aligent/cdk-$pkg\" && echo \"@aligent/cdk-$pkg\"; done || echo 'No affected packages'"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.0",
     "@nx/esbuild": "20.8.4",
     "@nx/eslint": "20.8.4",
