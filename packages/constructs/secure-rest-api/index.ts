@@ -4,4 +4,5 @@ import {
   SecureRestApiRoute,
 } from "./lib/secure-rest-api";
 
-export { SecureRestApi, SecureRestApiProps, SecureRestApiRoute };
+export { SecureRestApi };
+export type { SecureRestApiProps, SecureRestApiRoute };
