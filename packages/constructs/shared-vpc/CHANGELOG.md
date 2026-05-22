@@ -1,5 +1,11 @@
 # @aligent/cdk-shared-vpc
 
+## 0.3.8
+
+### Patch Changes
+
+- [#1688](https://github.com/aligent/cdk-constructs/pull/1688) [`5fc3de2`](https://github.com/aligent/cdk-constructs/commit/5fc3de2da74962c1e11a57a375fb11c71406d5c8) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the aws group across 1 directory with 10 updates
+
 ## 0.3.7
 
 ### Patch Changes
