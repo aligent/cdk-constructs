@@ -1,5 +1,13 @@
 # @aligent/cdk-prerender-proxy
 
+## 2.5.9
+
+### Patch Changes
+
+- [#1688](https://github.com/aligent/cdk-constructs/pull/1688) [`5fc3de2`](https://github.com/aligent/cdk-constructs/commit/5fc3de2da74962c1e11a57a375fb11c71406d5c8) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the aws group across 1 directory with 10 updates
+
+- [#1690](https://github.com/aligent/cdk-constructs/pull/1690) [`d09a5f2`](https://github.com/aligent/cdk-constructs/commit/d09a5f24c58c9b64fbed8cecd8737cd1c2fe660f) Thanks [@aikido-autofix](https://github.com/apps/aikido-autofix)! - [Aikido] Fix security issue in axios via minor version upgrade from 1.15.1 to 1.16.1
+
 ## 2.5.8
 
 ### Patch Changes
