@@ -27,8 +27,8 @@
     "typescript": "^5.3.2"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.1052.0",
-    "@aws-sdk/client-sns": "3.1052.0",
+    "@aws-sdk/client-dynamodb": "^3.1053.0",
+    "@aws-sdk/client-sns": "3.1053.0",
     "axios": "^1.16.0",
     "source-map-support": "^0.5.21"
   },
