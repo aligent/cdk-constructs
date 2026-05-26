@@ -1,4 +1,4 @@
-import { Annotations, CfnResource, IAspect, Stack } from "aws-cdk-lib";
+import { Annotations, CfnResource, IAspect, Stack, Token } from "aws-cdk-lib";
 import { IConstruct } from "constructs";
 import { createHash } from "crypto";
 
@@ -30,6 +30,11 @@ type CfnResourceWithProps = CfnResource & {
   readonly _cfnProperties?: Record<string, unknown>;
   readonly cfnProperties?: Record<string, unknown>;
 };
+
+interface ResourceNames {
+  logicalName: string;
+  rawName: string | undefined;
+}
 
 /**
  * Maps CloudFormation resource types to their name property and AWS length limits.
@@ -164,18 +169,18 @@ export class ResourcePrefixAspect implements IAspect {
       (node as CfnResourceWithProps).cfnProperties ??
       {};
 
-    const baseName = this.resolveBaseName(node, cfnName, cfnProperties);
+    const names = this.resolveResourceNames(node, cfnName, cfnProperties);
 
-    if (this.shouldSkipResource(resourceType, baseName)) {
+    if (this.shouldSkipResource(resourceType, names)) {
       return;
     }
 
-    if (this.isAlreadyPrefixed(baseName)) {
+    if (this.isAlreadyPrefixed(names)) {
       return;
     }
 
     const prefixedName = this.buildPrefixedName(
-      baseName,
+      names,
       resourceType,
       cfnProperties
     );
@@ -195,83 +200,91 @@ export class ResourcePrefixAspect implements IAspect {
    * Determines whether a resource should be skipped from prefixing based on
    * resource-type-specific rules (e.g., AWS-reserved naming conventions).
    */
-  private shouldSkipResource(cfnResourceType: string, baseName: string) {
+  private shouldSkipResource(cfnResourceType: string, names: ResourceNames) {
+    const name = names.rawName ?? names.logicalName;
     return (
-      cfnResourceType === "AWS::Logs::LogGroup" && baseName.startsWith("/aws/")
+      cfnResourceType === "AWS::Logs::LogGroup" && name.startsWith("/aws/")
     );
   }
 
-  private isAlreadyPrefixed(name: string) {
+  private isAlreadyPrefixed(names: ResourceNames) {
+    const name = names.rawName ?? names.logicalName;
     return (
       name.startsWith(`${this.prefix}-`) || name.startsWith(`/${this.prefix}/`)
     );
   }
 
   /**
-   * Resolves the base name for a resource by checking explicitly set CFN properties
-   * first, then falling back to deriving a name from the logical ID.
-   * CDK stores L1 properties in camelCase internally, so both casings are checked.
+   * Resolves the name components for a resource: the explicitly set raw name (if any)
+   * and a sanitised logical ID derived from the construct tree.
+   *
+   * The raw name is looked up from the CFN properties in both PascalCase and camelCase
+   * (CDK stores L1 properties in camelCase internally). When no explicit name is set,
+   * `rawName` is `undefined`.
    */
-  private resolveBaseName(
+  private resolveResourceNames(
     node: CfnResource,
     cfnName: string,
     cfnProperties: Record<string, unknown>
-  ) {
+  ): ResourceNames {
     const camelCfnName = cfnName.charAt(0).toLowerCase() + cfnName.slice(1);
     const rawName = cfnProperties[cfnName] ?? cfnProperties[camelCfnName];
-    if (typeof rawName === "string") {
-      return rawName;
-    }
-
-    const logicalId = Stack.of(node).getLogicalId(node);
-    return logicalId
+    const logicalName = Stack.of(node)
+      .getLogicalId(node)
       .replace(/[^a-zA-Z0-9]+/g, "-") // non-alphanumeric → dash
       .replace(/^-+|-+$/g, ""); // trim leading/trailing dashes
+
+    return typeof rawName === "string"
+      ? { logicalName, rawName }
+      : { logicalName, rawName: undefined };
   }
 
   /**
    * Builds the prefixed name, handling special cases for specific resource types.
    *
-   * @param baseName - The base resource name (without prefix)
-   * @param cfnResourceType - The CloudFormation resource type
-   * @param cfnProperties - The CloudFormation resource properties
-   * @returns The final prefixed name with any special case handling applied
+   * Uses the raw name when it is a concrete string, falling back to the logical
+   * name when the raw name is an unresolved CDK token.
    */
   private buildPrefixedName(
-    baseName: string,
+    names: ResourceNames,
     cfnResourceType: string,
     cfnProperties: Record<string, unknown>
   ) {
+    const name =
+      !names.rawName || Token.isUnresolved(names.rawName)
+        ? names.logicalName
+        : names.rawName;
+
     // Special case: FIFO queues must end with .fifo suffix
     if (
       cfnResourceType === "AWS::SQS::Queue" &&
       cfnProperties.fifoQueue === true &&
-      !baseName.endsWith(".fifo")
+      !name.endsWith(".fifo")
     ) {
-      return `${this.prefix}-${baseName}.fifo`;
+      return `${this.prefix}-${name}.fifo`;
     }
 
     // Special case: FIFO topics must end with .fifo suffix
     if (
       cfnResourceType === "AWS::SNS::Topic" &&
       cfnProperties.fifoTopic === true &&
-      !baseName.endsWith(".fifo")
+      !name.endsWith(".fifo")
     ) {
-      return `${this.prefix}-${baseName}.fifo`;
+      return `${this.prefix}-${name}.fifo`;
     }
 
     // Special case: SSM parameter names use path-style prefix
     if (cfnResourceType === "AWS::SSM::Parameter") {
-      return `/${this.prefix}/${baseName}`;
+      return `/${this.prefix}/${name}`;
     }
 
     // Special case: S3 bucket name be lowercase only
     if (cfnResourceType === "AWS::S3::Bucket") {
-      return `${this.prefix}-${baseName}`.toLowerCase();
+      return `${this.prefix}-${name}`.toLowerCase();
     }
 
     // Default: simple prefix
-    return `${this.prefix}-${baseName}`;
+    return `${this.prefix}-${name}`;
   }
 
   /**

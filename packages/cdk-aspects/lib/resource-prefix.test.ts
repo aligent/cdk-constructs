@@ -1,4 +1,4 @@
-import { App, Aspects, Stack } from "aws-cdk-lib";
+import { App, Aspects, Fn, Lazy, Stack } from "aws-cdk-lib";
 import { Annotations, Match, Template } from "aws-cdk-lib/assertions";
 import { CfnApplication } from "aws-cdk-lib/aws-appconfig";
 import { AttributeType, Table } from "aws-cdk-lib/aws-dynamodb";
@@ -209,6 +209,40 @@ describe("ResourcePrefixAspect", () => {
       const template = Template.fromStack(stack);
       template.hasResourceProperties("AWS::Logs::LogGroup", {
         LogGroupName: Match.stringLikeRegexp("^myapp-"),
+      });
+    });
+  });
+
+  describe("token handling", () => {
+    it("should fall back to logical name when resource name is a CDK token", () => {
+      new CfnFunction(stack, "TokenFunction", {
+        runtime: "nodejs22.x",
+        handler: "index.handler",
+        code: { zipFile: "exports.handler = () => {};" },
+        role: "arn:aws:iam::123456789012:role/test",
+        functionName: Fn.ref("SomeParameter"),
+      });
+
+      app.synth();
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties("AWS::Lambda::Function", {
+        FunctionName: "myapp-TokenFunction",
+      });
+    });
+
+    it("should fall back to logical name when resource name is a Lazy token string", () => {
+      new CfnFunction(stack, "LazyTokenFunction", {
+        runtime: "nodejs22.x",
+        handler: "index.handler",
+        code: { zipFile: "exports.handler = () => {};" },
+        role: "arn:aws:iam::123456789012:role/test",
+        functionName: Lazy.string({ produce: () => "resolved-later" }),
+      });
+
+      app.synth();
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties("AWS::Lambda::Function", {
+        FunctionName: "myapp-LazyTokenFunction",
       });
     });
   });
