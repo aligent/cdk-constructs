@@ -1,5 +1,11 @@
 # @aligent/cdk-aspects
 
+## 0.6.3
+
+### Patch Changes
+
+- [#1696](https://github.com/aligent/cdk-constructs/pull/1696) [`d05f4f8`](https://github.com/aligent/cdk-constructs/commit/d05f4f895fb10ec388a981c36c532f428869c98c) Thanks [@kai-nguyen-aligent](https://github.com/kai-nguyen-aligent)! - Fix ResourcePrefixAspect to gracefully handle CDK tokens (e.g. `Fn.ref`, `Lazy.string`) in resource name properties by falling back to the sanitised logical ID.
+
 ## 0.6.2
 
 ### Patch Changes
