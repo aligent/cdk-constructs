@@ -19,7 +19,7 @@
     "@types/aws-lambda": "^8.10.161",
     "@types/jest": "^29.5.10",
     "@types/node": "^24.12.4",
-    "aws-cdk": "^2.1124.1",
+    "aws-cdk": "^2.1125.0",
     "aws-cdk-lib": "^2.257.0",
     "aws-sdk-client-mock": "^3.0.0",
     "constructs": "^10.5.0",
