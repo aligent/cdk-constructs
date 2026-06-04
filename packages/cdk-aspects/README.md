@@ -115,6 +115,8 @@ Automatically prefixes physical resource names across supported AWS resource typ
 - Handles resource-specific naming rules: S3 names are lowercased, FIFO queues/topics preserve the `.fifo` suffix, SSM parameters use path-style prefixes (`/prefix/name`)
 - **Automatic truncation**: if a prefixed name would exceed AWS's maximum length for that resource type, the aspect truncates the name and appends an 8-character SHA-256 hash to maintain uniqueness. A CDK warning is emitted for each truncated resource. This prevents L3 constructs (e.g. `BucketDeployment`) from generating child resources that cause synthesis failures.
 - Idempotent: already-prefixed resources are skipped
+- Skips AWS-reserved log group names (e.g. `/aws/lambda/...`)
+- Skips CDK-managed singleton/framework resources (`BucketDeployment` handler, `LogRetention`, `S3AutoDeleteObjects`, and `cr.Provider` framework lambdas). Their physical names are left CloudFormation-generated so a failed deploy's orphaned `/aws/lambda` log group never collides with a deterministic name on retry.
 - Supports an exclusion list to skip specific resource types
 
 ### Usage

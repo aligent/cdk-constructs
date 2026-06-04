@@ -1,23 +1,7 @@
 import { CfnResource } from "aws-cdk-lib";
 import { NagMessageLevel, NagPack, rules, type NagPackProps } from "cdk-nag";
 import type { IConstruct } from "constructs";
-
-/**
- * Path fragments identifying CDK-managed singleton resources that consumers
- * cannot configure. These nodes are skipped during rule evaluation because
- * surfacing nags on memory size, timeout, tracing, or log retention for
- * resources owned by the CDK framework is noise.
- */
-const CDK_MANAGED_PATH_FRAGMENTS = [
-  // aws-s3-deployment.BucketDeployment custom resource handler
-  "Custom::CDKBucketDeployment",
-  // Deprecated CDK log retention custom resource
-  "LogRetention",
-  // Bucket(autoDeleteObjects: true)
-  "Custom::S3AutoDeleteObjects",
-  // cr.Provider framework on-event / is-complete handler
-  "AWS679f53fac002430cb0da5b7982bd2287",
-];
+import { isCdkManagedSingleton } from "./cdk-managed-singletons";
 
 /**
  * Microservice Checks are a compilation of rules to validate infrastructure-as-code template
@@ -37,7 +21,7 @@ export class MicroserviceChecks extends NagPack {
   }
 
   public visit(node: IConstruct) {
-    if (this.isCdkManagedSingleton(node)) return;
+    if (isCdkManagedSingleton(node)) return;
 
     if (node instanceof CfnResource) {
       this.applyRule({
@@ -73,10 +57,5 @@ export class MicroserviceChecks extends NagPack {
         node: node,
       });
     }
-  }
-
-  private isCdkManagedSingleton(node: IConstruct): boolean {
-    const path = node.node.path;
-    return CDK_MANAGED_PATH_FRAGMENTS.some(fragment => path.includes(fragment));
   }
 }
