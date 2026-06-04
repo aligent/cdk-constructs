@@ -272,6 +272,28 @@ describe("ResourcePrefixAspect", () => {
       expect(resources[logicalId].Properties?.FunctionName).toBeUndefined();
     });
 
+    it("should not assign an explicit name to the BucketDeployment handler service role", () => {
+      // The singleton handler's IAM role is nested under the same path. A
+      // deterministic, logical-id-derived RoleName is identical across every
+      // stack in a prefix scope, and IAM role names are account-global — so two
+      // BucketDeployment-using stacks in the same stage collide on it.
+      const synthStack = synthWithBucketDeployment();
+      const role = synthStack.node
+        .findAll()
+        .find(
+          (c): c is CfnResource =>
+            c instanceof CfnResource &&
+            c.cfnResourceType === "AWS::IAM::Role" &&
+            c.node.path.includes("Custom::CDKBucketDeployment")
+        );
+      expect(role).toBeDefined();
+      const logicalId = synthStack.getLogicalId(role as CfnResource);
+
+      const template = Template.fromStack(synthStack);
+      const resources = template.findResources("AWS::IAM::Role");
+      expect(resources[logicalId].Properties?.RoleName).toBeUndefined();
+    });
+
     it("should not assign an explicit name to the S3AutoDeleteObjects handler lambda", () => {
       new Bucket(stack, "EphemeralBucket", {
         autoDeleteObjects: true,
