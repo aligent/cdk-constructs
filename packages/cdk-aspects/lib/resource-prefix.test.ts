@@ -1,11 +1,20 @@
-import { App, Aspects, Fn, Lazy, Stack } from "aws-cdk-lib";
+import {
+  App,
+  Aspects,
+  CfnResource,
+  Fn,
+  Lazy,
+  RemovalPolicy,
+  Stack,
+} from "aws-cdk-lib";
 import { Annotations, Match, Template } from "aws-cdk-lib/assertions";
 import { CfnApplication } from "aws-cdk-lib/aws-appconfig";
 import { AttributeType, Table } from "aws-cdk-lib/aws-dynamodb";
 import { Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { CfnFunction } from "aws-cdk-lib/aws-lambda";
 import { CfnLogGroup, LogGroup } from "aws-cdk-lib/aws-logs";
-import { CfnBucket } from "aws-cdk-lib/aws-s3";
+import { Bucket, CfnBucket } from "aws-cdk-lib/aws-s3";
+import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
 import { CfnTopic } from "aws-cdk-lib/aws-sns";
 import { CfnQueue } from "aws-cdk-lib/aws-sqs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
@@ -210,6 +219,105 @@ describe("ResourcePrefixAspect", () => {
       template.hasResourceProperties("AWS::Logs::LogGroup", {
         LogGroupName: Match.stringLikeRegexp("^myapp-"),
       });
+    });
+  });
+
+  describe("CDK-managed singletons", () => {
+    // BucketDeployment provisions a framework-owned singleton handler Lambda whose
+    // physical name the consumer cannot tune. Pinning a deterministic name onto it
+    // breaks CloudFormation's random-suffix orphan-avoidance for the /aws/lambda
+    // LogGroup the Lambda service auto-creates.
+    const synthWithBucketDeployment = () => {
+      const bundlingApp = new App({
+        context: { "aws:cdk:bundling-stacks": [] },
+      });
+      const bundlingStack = new Stack(bundlingApp, "TestStack");
+      Aspects.of(bundlingStack).add(
+        new ResourcePrefixAspect({ prefix: "myapp" })
+      );
+
+      const bucket = new Bucket(bundlingStack, "DeployBucket");
+      new BucketDeployment(bundlingStack, "DeployAssets", {
+        destinationBucket: bucket,
+        sources: [Source.data("hello.txt", "hello world")],
+      });
+
+      bundlingApp.synth();
+      return bundlingStack;
+    };
+
+    const findSingletonHandler = (stackToSearch: Stack) => {
+      const handler = stackToSearch.node
+        .findAll()
+        .find(
+          c =>
+            c instanceof CfnFunction &&
+            c.node.path.includes("Custom::CDKBucketDeployment")
+        ) as CfnFunction | undefined;
+      if (!handler) {
+        throw new Error(
+          "BucketDeployment singleton handler not found — test setup invariant changed"
+        );
+      }
+      return handler;
+    };
+
+    it("should not assign an explicit name to the BucketDeployment handler lambda", () => {
+      const synthStack = synthWithBucketDeployment();
+      const handler = findSingletonHandler(synthStack);
+      const logicalId = synthStack.getLogicalId(handler);
+
+      const template = Template.fromStack(synthStack);
+      const resources = template.findResources("AWS::Lambda::Function");
+      expect(resources[logicalId].Properties?.FunctionName).toBeUndefined();
+    });
+
+    it("should not assign an explicit name to the BucketDeployment handler service role", () => {
+      // The singleton handler's IAM role is nested under the same path. A
+      // deterministic, logical-id-derived RoleName is identical across every
+      // stack in a prefix scope, and IAM role names are account-global — so two
+      // BucketDeployment-using stacks in the same stage collide on it.
+      const synthStack = synthWithBucketDeployment();
+      const role = synthStack.node
+        .findAll()
+        .find(
+          (c): c is CfnResource =>
+            c instanceof CfnResource &&
+            c.cfnResourceType === "AWS::IAM::Role" &&
+            c.node.path.includes("Custom::CDKBucketDeployment")
+        );
+      expect(role).toBeDefined();
+      const logicalId = synthStack.getLogicalId(role as CfnResource);
+
+      const template = Template.fromStack(synthStack);
+      const resources = template.findResources("AWS::IAM::Role");
+      expect(resources[logicalId].Properties?.RoleName).toBeUndefined();
+    });
+
+    it("should not assign an explicit name to the S3AutoDeleteObjects handler lambda", () => {
+      new Bucket(stack, "EphemeralBucket", {
+        autoDeleteObjects: true,
+        removalPolicy: RemovalPolicy.DESTROY,
+      });
+
+      app.synth();
+
+      // The autoDeleteObjects handler is provisioned via CustomResourceProvider
+      // as a raw CfnResource (not a CfnFunction L1 instance).
+      const handler = stack.node
+        .findAll()
+        .find(
+          (c): c is CfnResource =>
+            c instanceof CfnResource &&
+            c.cfnResourceType === "AWS::Lambda::Function" &&
+            c.node.path.includes("Custom::S3AutoDeleteObjects")
+        );
+      expect(handler).toBeDefined();
+      const logicalId = stack.getLogicalId(handler as CfnResource);
+
+      const template = Template.fromStack(stack);
+      const resources = template.findResources("AWS::Lambda::Function");
+      expect(resources[logicalId].Properties?.FunctionName).toBeUndefined();
     });
   });
 

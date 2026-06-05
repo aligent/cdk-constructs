@@ -1,6 +1,7 @@
 import { Annotations, CfnResource, IAspect, Stack, Token } from "aws-cdk-lib";
 import { IConstruct } from "constructs";
 import { createHash } from "crypto";
+import { isCdkManagedSingleton } from "./cdk-managed-singletons";
 
 interface ResourceNameConfig {
   /** The CloudFormation property that holds the resource's physical name */
@@ -155,6 +156,13 @@ export class ResourcePrefixAspect implements IAspect {
 
   visit(node: IConstruct) {
     if (!(node instanceof CfnResource)) return;
+
+    // CDK-managed singleton/framework resources must keep their
+    // CloudFormation-generated physical names. Pinning a deterministic name onto
+    // them (e.g. the BucketDeployment handler) removes the random-suffix
+    // orphan-avoidance and wedges deploys on `/aws/lambda/<fn>` LogGroup
+    // "already exists" after any failed attempt.
+    if (isCdkManagedSingleton(node)) return;
 
     const resourceType = node.cfnResourceType;
     const config = RESOURCE_CONFIG[resourceType];
