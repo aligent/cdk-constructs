@@ -1,5 +1,21 @@
 # @aligent/cdk-aspects
 
+## 0.6.4
+
+### Patch Changes
+
+- [#1698](https://github.com/aligent/cdk-constructs/pull/1698) [`c9f490f`](https://github.com/aligent/cdk-constructs/commit/c9f490f17f42aed92646543f7978ac8e4fc9ebb6) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - Move `aws-cdk-lib` and `constructs` from `dependencies` to `peerDependencies`, matching the convention used by every `@aligent/cdk-*` construct package.
+
+  As regular dependencies, a consumer whose own `aws-cdk-lib` resolved to a different version ended up with two copies in the tree. The aspects' `instanceof CfnResource` checks compared against the nested copy's class, so `visit()` returned early for every node — aspects silently became a no-op (no prefixes, no defaults, no checks) with a valid-but-untouched synth. Declaring them as peers guarantees a single shared instance with the consumer.
+
+- [#1702](https://github.com/aligent/cdk-constructs/pull/1702) [`49f7a78`](https://github.com/aligent/cdk-constructs/commit/49f7a78418a566b4c868293c293ccab9528fc647) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - Fix `ResourcePrefixAspect` to skip CDK-managed singleton/framework resources (`BucketDeployment` handler, `LogRetention`, `S3AutoDeleteObjects`, and `cr.Provider` framework lambdas) and their nested children (IAM service roles, log groups) instead of pinning deterministic physical names onto them.
+
+  These singletons share a fixed logical id across every stack, so a deterministic prefixed name collapses to one value per prefix scope. That removed CloudFormation's per-stack and per-creation uniqueness and caused two deploy failures:
+  - **Cross-stack IAM role collision** — two `BucketDeployment`-using stacks in the same stage received the same account-global `RoleName`, so the second stack failed with `... already exists`.
+  - **Orphaned `/aws/lambda` log group collision on retry** — a failed deploy orphaned the service-created log group, and the deterministic function name regenerated the identical name, wedging every subsequent deploy on `AWS::Logs::LogGroup ... already exists`.
+
+  The aspect now leaves these resources CloudFormation-named, matching the singleton-skip behaviour `MicroserviceChecks` already applies.
+
 ## 0.6.3
 
 ### Patch Changes
