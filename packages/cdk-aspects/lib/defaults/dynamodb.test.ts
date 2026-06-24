@@ -60,7 +60,7 @@ describe("DynamoDbDefaultsAspect", () => {
       });
     });
 
-    it("does not override an existing ProvisionedThroughput", () => {
+    it("overrides existing ProvisionedThroughput with aspect defaults", () => {
       const table = makeTable(stack, "MyTable");
       const cfnTable = table.node.defaultChild as CfnTable;
       cfnTable.provisionedThroughput = {
@@ -71,10 +71,26 @@ describe("DynamoDbDefaultsAspect", () => {
 
       Template.fromStack(stack).hasResourceProperties("AWS::DynamoDB::Table", {
         ProvisionedThroughput: {
-          ReadCapacityUnits: 10,
-          WriteCapacityUnits: 10,
+          ReadCapacityUnits: 1,
+          WriteCapacityUnits: 1,
         },
       });
+    });
+
+    it("clears OnDemandThroughput when setting PROVISIONED billing mode", () => {
+      const table = makeTable(stack, "MyTable");
+      const cfnTable = table.node.defaultChild as CfnTable;
+      cfnTable.onDemandThroughput = {
+        maxReadRequestUnits: 50,
+        maxWriteRequestUnits: 50,
+      };
+      app.synth();
+
+      const resources = Template.fromStack(stack).findResources(
+        "AWS::DynamoDB::Table"
+      );
+      const props = Object.values(resources)[0].Properties;
+      expect(props["OnDemandThroughput"]).toBeUndefined();
     });
 
     it("applies DESTROY removal policy", () => {
@@ -127,7 +143,7 @@ describe("DynamoDbDefaultsAspect", () => {
       expect(props["OnDemandThroughput"]).toBeUndefined();
     });
 
-    it("does not override an existing OnDemandThroughput", () => {
+    it("overrides existing OnDemandThroughput with aspect defaults", () => {
       const table = makeTable(stack, "MyTable");
       const cfnTable = table.node.defaultChild as CfnTable;
       cfnTable.onDemandThroughput = {
@@ -138,10 +154,21 @@ describe("DynamoDbDefaultsAspect", () => {
 
       Template.fromStack(stack).hasResourceProperties("AWS::DynamoDB::Table", {
         OnDemandThroughput: {
-          MaxReadRequestUnits: 50,
-          MaxWriteRequestUnits: 50,
+          MaxReadRequestUnits: 100,
+          MaxWriteRequestUnits: 100,
         },
       });
+    });
+
+    it("clears ProvisionedThroughput set by CDK L2 defaults", () => {
+      makeTable(stack, "MyTable");
+      app.synth();
+
+      const resources = Template.fromStack(stack).findResources(
+        "AWS::DynamoDB::Table"
+      );
+      const props = Object.values(resources)[0].Properties;
+      expect(props["ProvisionedThroughput"]).toBeUndefined();
     });
 
     it("applies DESTROY removal policy", () => {
@@ -165,6 +192,17 @@ describe("DynamoDbDefaultsAspect", () => {
       Template.fromStack(stack).hasResourceProperties("AWS::DynamoDB::Table", {
         BillingMode: "PAY_PER_REQUEST",
       });
+    });
+
+    it("clears ProvisionedThroughput set by CDK L2 defaults", () => {
+      makeTable(stack, "MyTable");
+      app.synth();
+
+      const resources = Template.fromStack(stack).findResources(
+        "AWS::DynamoDB::Table"
+      );
+      const props = Object.values(resources)[0].Properties;
+      expect(props["ProvisionedThroughput"]).toBeUndefined();
     });
 
     it("does not set on-demand throughput limits (no cap for LONG)", () => {

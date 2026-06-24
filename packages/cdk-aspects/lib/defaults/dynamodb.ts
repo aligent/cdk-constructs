@@ -31,8 +31,10 @@ interface Config {
  *
  * @see https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_dynamodb.Table.html
  */
+type DefaultProps = TableProps & { billingMode: BillingMode };
+
 export class DynamoDbDefaultsAspect implements IAspect {
-  private readonly defaultProps: TableProps;
+  private readonly defaultProps: DefaultProps;
 
   /**
    * Creates a new DynamoDbDefaultsAspect
@@ -51,7 +53,7 @@ export class DynamoDbDefaultsAspect implements IAspect {
    */
   private retentionProperties(
     duration: "SHORT" | "MEDIUM" | "LONG"
-  ): TableProps {
+  ): DefaultProps {
     switch (duration) {
       case "SHORT":
         return {
@@ -122,29 +124,32 @@ export class DynamoDbDefaultsAspect implements IAspect {
       const cfnTable = node.node.defaultChild as CfnTable;
       if (!cfnTable) return;
 
-      if (cfnTable.billingMode === undefined) {
-        cfnTable.billingMode = billingMode;
+      cfnTable.billingMode = cfnTable.billingMode ?? billingMode;
+
+      // Clear conflicting throughput config to prevent CloudFormation errors
+      if (cfnTable.billingMode === BillingMode.PAY_PER_REQUEST) {
+        cfnTable.provisionedThroughput = undefined;
+      } else if (cfnTable.billingMode === BillingMode.PROVISIONED) {
+        cfnTable.onDemandThroughput = undefined;
       }
 
       if (
-        cfnTable.provisionedThroughput === undefined &&
-        cfnTable.billingMode !== BillingMode.PAY_PER_REQUEST &&
-        this.isProvisionedThroughputConfigured()
-      ) {
-        cfnTable.provisionedThroughput = {
-          readCapacityUnits: readCapacity!,
-          writeCapacityUnits: writeCapacity!,
-        };
-      }
-
-      if (
-        cfnTable.onDemandThroughput === undefined &&
-        cfnTable.billingMode !== BillingMode.PROVISIONED &&
+        cfnTable.billingMode === BillingMode.PAY_PER_REQUEST &&
         this.isOnDemandThroughputConfigured()
       ) {
         cfnTable.onDemandThroughput = {
           maxReadRequestUnits,
           maxWriteRequestUnits,
+        };
+      }
+
+      if (
+        cfnTable.billingMode === BillingMode.PROVISIONED &&
+        this.isProvisionedThroughputConfigured()
+      ) {
+        cfnTable.provisionedThroughput = {
+          readCapacityUnits: readCapacity!,
+          writeCapacityUnits: writeCapacity!,
         };
       }
     }
