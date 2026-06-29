@@ -1,9 +1,15 @@
 // handler.test.ts
-import { cwd } from "process";
 import { handler } from "./whitelist";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { setWhitelist } from "./lib/file";
-import { existsSync, rmSync } from "fs";
+import { existsSync, mkdtempSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+
+// Each suite owns an isolated directory so parallel suites can't race on a
+// shared maintenance file (see lib/file.ts MAINTENANCE_FILE_PATH).
+const maintenanceDir = mkdtempSync(join(tmpdir(), "maint-whitelist-"));
+process.env.MAINTENANCE_FILE_PATH = maintenanceDir;
 
 const createMockEvent = (
   method: string,
@@ -43,11 +49,11 @@ const mockAllowlist = [
 describe("Lambda handler", () => {
   beforeEach(() => {
     // Clean up any existing maintenance files before each test
-    if (existsSync(`${cwd()}/maintenance.enabled`)) {
-      rmSync(`${cwd()}/maintenance.enabled`);
+    if (existsSync(`${maintenanceDir}/maintenance.enabled`)) {
+      rmSync(`${maintenanceDir}/maintenance.enabled`);
     }
-    if (existsSync(`${cwd()}/maintenance.disabled`)) {
-      rmSync(`${cwd()}/maintenance.disabled`);
+    if (existsSync(`${maintenanceDir}/maintenance.disabled`)) {
+      rmSync(`${maintenanceDir}/maintenance.disabled`);
     }
     // Reset the whitelist before each test to ensure test isolation
     setWhitelist(mockAllowlist);
@@ -101,12 +107,6 @@ describe("Lambda handler", () => {
   });
 
   afterAll(() => {
-    if (existsSync(`${cwd()}/maintenance.enabled`)) {
-      rmSync(`${cwd()}/maintenance.enabled`);
-    }
-
-    if (existsSync(`${cwd()}/maintenance.disabled`)) {
-      rmSync(`${cwd()}/maintenance.disabled`);
-    }
+    rmSync(maintenanceDir, { recursive: true, force: true });
   });
 });

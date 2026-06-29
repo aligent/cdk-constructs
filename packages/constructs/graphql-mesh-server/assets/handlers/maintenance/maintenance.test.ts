@@ -1,9 +1,15 @@
 // handler.test.ts
-import { cwd } from "process";
 import { handler } from "./maintenance";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { updateMaintenanceStatus } from "./lib/file";
-import { existsSync, rmSync } from "fs";
+import { existsSync, mkdtempSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+
+// Each suite owns an isolated directory so parallel suites can't race on a
+// shared maintenance file (see lib/file.ts MAINTENANCE_FILE_PATH).
+const maintenanceDir = mkdtempSync(join(tmpdir(), "maint-maintenance-"));
+process.env.MAINTENANCE_FILE_PATH = maintenanceDir;
 
 const createMockEvent = (
   method: string,
@@ -28,11 +34,11 @@ const mockSites = { "example.com": false, "example.com.au": false };
 describe("Lambda handler", () => {
   beforeEach(() => {
     // Clean up any existing maintenance files before each test
-    if (existsSync(`${cwd()}/maintenance.enabled`)) {
-      rmSync(`${cwd()}/maintenance.enabled`);
+    if (existsSync(`${maintenanceDir}/maintenance.enabled`)) {
+      rmSync(`${maintenanceDir}/maintenance.enabled`);
     }
-    if (existsSync(`${cwd()}/maintenance.disabled`)) {
-      rmSync(`${cwd()}/maintenance.disabled`);
+    if (existsSync(`${maintenanceDir}/maintenance.disabled`)) {
+      rmSync(`${maintenanceDir}/maintenance.disabled`);
     }
     // Reset the maintenance status before each test to ensure test isolation
     updateMaintenanceStatus(mockSites);
@@ -55,7 +61,7 @@ describe("Lambda handler", () => {
 
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body)).toEqual(mockUpdate);
-    expect(existsSync(`${cwd()}/maintenance.enabled`)).toBe(true);
+    expect(existsSync(`${maintenanceDir}/maintenance.enabled`)).toBe(true);
   });
 
   it("should handle POST'ing a disable all sites", async () => {
@@ -67,7 +73,7 @@ describe("Lambda handler", () => {
     await handler(enableEvent);
 
     // Verify the file is in enabled state as expected
-    expect(existsSync(`${cwd()}/maintenance.enabled`)).toBe(true);
+    expect(existsSync(`${maintenanceDir}/maintenance.enabled`)).toBe(true);
 
     // Now test disabling all sites
     const mockUpdate = {
@@ -78,16 +84,10 @@ describe("Lambda handler", () => {
 
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body)).toEqual(mockUpdate);
-    expect(existsSync(`${cwd()}/maintenance.disabled`)).toBe(true);
+    expect(existsSync(`${maintenanceDir}/maintenance.disabled`)).toBe(true);
   });
 
   afterAll(() => {
-    if (existsSync(`${cwd()}/maintenance.enabled`)) {
-      rmSync(`${cwd()}/maintenance.enabled`);
-    }
-
-    if (existsSync(`${cwd()}/maintenance.disabled`)) {
-      rmSync(`${cwd()}/maintenance.disabled`);
-    }
+    rmSync(maintenanceDir, { recursive: true, force: true });
   });
 });
