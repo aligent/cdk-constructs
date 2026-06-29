@@ -91,6 +91,88 @@ describe("SecureRestApi", () => {
       });
     });
 
+    it("registers a nested multi-segment route", () => {
+      const { stack } = createStack();
+      new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes: [
+          {
+            path: "rewards/accounts/{accountId}/redeem",
+            methods: [HttpMethod.POST],
+            integration: mockIntegration(),
+          },
+        ],
+      });
+
+      Template.fromStack(stack).hasResourceProperties(
+        "AWS::ApiGateway::Method",
+        {
+          HttpMethod: "POST",
+          ApiKeyRequired: true,
+        }
+      );
+    });
+
+    it("creates intermediate resources for a nested route", () => {
+      const { stack } = createStack();
+      new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes: [
+          {
+            path: "rewards/accounts/{accountId}/redeem",
+            methods: [HttpMethod.POST],
+            integration: mockIntegration(),
+          },
+        ],
+      });
+
+      const template = Template.fromStack(stack);
+      for (const pathPart of ["rewards", "accounts", "{accountId}", "redeem"]) {
+        template.hasResourceProperties("AWS::ApiGateway::Resource", {
+          PathPart: pathPart,
+        });
+      }
+    });
+
+    it("resolves routes sharing a prefix without duplicate resources", () => {
+      const { stack } = createStack();
+      new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes: [
+          {
+            path: "rewards/accounts/{accountId}/redeem",
+            methods: [HttpMethod.POST],
+            integration: mockIntegration(),
+          },
+          {
+            path: "rewards/reversal",
+            methods: [HttpMethod.POST],
+            integration: mockIntegration(),
+          },
+        ],
+      });
+
+      const template = Template.fromStack(stack);
+      const resourcesByPathPart = (pathPart: string) =>
+        Object.values(
+          template.findResources("AWS::ApiGateway::Resource")
+        ).filter(r => r.Properties?.PathPart === pathPart);
+
+      // The shared "rewards" parent is created exactly once.
+      expect(resourcesByPathPart("rewards")).toHaveLength(1);
+
+      // Both leaf resources exist under the shared parent.
+      expect(resourcesByPathPart("redeem")).toHaveLength(1);
+      expect(resourcesByPathPart("reversal")).toHaveLength(1);
+
+      // Each leaf registers its POST method with apiKeyRequired.
+      template.resourcePropertiesCountIs(
+        "AWS::ApiGateway::Method",
+        { HttpMethod: "POST", ApiKeyRequired: true },
+        2
+      );
+    });
+
     it("accepts a LambdaIntegration as route integration", () => {
       const { stack } = createStack();
       new SecureRestApi(stack, "Api", {
@@ -105,6 +187,51 @@ describe("SecureRestApi", () => {
       });
 
       Template.fromStack(stack).resourceCountIs("AWS::Lambda::Function", 1);
+    });
+  });
+
+  describe("Deployment stage", () => {
+    it("uses a custom stage name from deployOptions", () => {
+      const { stack } = createStack();
+      new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        deployOptions: { stageName: "staging" },
+        routes: [
+          {
+            path: "items",
+            methods: [HttpMethod.GET],
+            integration: mockIntegration(),
+          },
+        ],
+      });
+
+      Template.fromStack(stack).hasResourceProperties(
+        "AWS::ApiGateway::Stage",
+        {
+          StageName: "staging",
+        }
+      );
+    });
+
+    it("defaults the stage name to prod", () => {
+      const { stack } = createStack();
+      new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes: [
+          {
+            path: "items",
+            methods: [HttpMethod.GET],
+            integration: mockIntegration(),
+          },
+        ],
+      });
+
+      Template.fromStack(stack).hasResourceProperties(
+        "AWS::ApiGateway::Stage",
+        {
+          StageName: "prod",
+        }
+      );
     });
   });
 

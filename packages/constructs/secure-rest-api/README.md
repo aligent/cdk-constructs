@@ -12,6 +12,8 @@ A CDK construct for provisioning an API Gateway REST API secured with API Key au
 - Usage plan with configurable throttle rate and burst limits
 - Configurable CORS preflight options
 - Accepts any CDK `Integration` per route (Lambda, HTTP, Mock, Step Functions, etc.)
+- Supports nested, multi-segment route paths (e.g. `rewards/accounts/{accountId}/redeem`)
+- Configurable deployment stage via `deployOptions` (stage name defaults to `prod`)
 
 ## Installation
 
@@ -74,6 +76,29 @@ const api = new SecureRestApi(this, 'Api', {
 });
 ```
 
+### Nested route paths
+
+Multi-segment paths create the intermediate resources automatically. Routes
+sharing a common prefix resolve to the same parent resource.
+
+```typescript
+const api = new SecureRestApi(this, 'Api', {
+  apiName: 'rewards-api',
+  routes: [
+    {
+      path: 'rewards/accounts/{accountId}/redeem',
+      methods: [HttpMethod.POST],
+      integration: new LambdaIntegration(redeemFunction),
+    },
+    {
+      path: 'rewards/reversal', // reuses the shared `rewards` resource
+      methods: [HttpMethod.POST],
+      integration: new LambdaIntegration(reversalFunction),
+    },
+  ],
+});
+```
+
 ### Custom throttling
 
 ```typescript
@@ -83,6 +108,19 @@ const api = new SecureRestApi(this, 'Api', {
     rateLimit: 50,   // requests per second
     burstLimit: 100,
   },
+  routes: [...],
+});
+```
+
+### Custom stage name
+
+By default the API deploys to a `prod` stage. Pass `deployOptions` to override
+the stage name (or any other CDK `StageOptions`, e.g. logging or tracing).
+
+```typescript
+const api = new SecureRestApi(this, 'Api', {
+  apiName: 'my-api',
+  deployOptions: { stageName: 'staging' },
   routes: [...],
 });
 ```
@@ -119,9 +157,16 @@ Routes to register on the API. Each route requires:
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `path` | `string` | The resource path (leading slash is stripped automatically) |
+| `path` | `string` | The resource path; may be nested/multi-segment (leading slash is stripped automatically) |
 | `methods` | `HttpMethod[]` | HTTP methods to register on the resource |
 | `integration` | `Integration` | Any CDK API Gateway integration |
+
+### `deployOptions` (StageOptions)
+
+Stage options for the API's default deployment, passed through to the underlying
+CDK `RestApi`. Use `stageName` to override the deployed stage name.
+
+Default: CDK default (`prod` stage).
 
 ### `throttle` (object)
 
