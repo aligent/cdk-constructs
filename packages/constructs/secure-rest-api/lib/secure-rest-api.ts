@@ -4,6 +4,7 @@ import {
   Integration,
   IRestApi,
   RestApi,
+  StageOptions,
   UsagePlan,
 } from "aws-cdk-lib/aws-apigateway";
 import { HttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
@@ -45,6 +46,14 @@ export interface SecureRestApiProps {
   routes: SecureRestApiRoute[];
 
   /**
+   * Stage options for the API's default deployment.
+   *
+   * Use `stageName` to override the deployed stage name.
+   * @default stageName "prod" (CDK default)
+   */
+  deployOptions?: StageOptions;
+
+  /**
    * Throttling limits for the usage plan.
    * @default { rateLimit: 100, burstLimit: 200 }
    */
@@ -79,6 +88,7 @@ export class SecureRestApi extends Construct {
       description,
       corsOptions,
       routes,
+      deployOptions,
       throttle = { rateLimit: 100, burstLimit: 200 },
       apiKeyName,
       usagePlanName,
@@ -87,6 +97,7 @@ export class SecureRestApi extends Construct {
     this.api = new RestApi(this, "Api", {
       restApiName: apiName,
       description: description ?? `REST API for ${apiName} service`,
+      deployOptions,
       defaultCorsPreflightOptions: {
         allowOrigins: corsOptions?.allowOrigins ?? Cors.ALL_ORIGINS,
         allowMethods: [
@@ -103,7 +114,9 @@ export class SecureRestApi extends Construct {
     });
 
     for (const route of routes) {
-      const resource = this.api.root.addResource(route.path.replace(/^\//, ""));
+      const resource = this.api.root.resourceForPath(
+        route.path.replace(/^\//, "")
+      );
       for (const method of route.methods) {
         resource.addMethod(method, route.integration, { apiKeyRequired: true });
       }
