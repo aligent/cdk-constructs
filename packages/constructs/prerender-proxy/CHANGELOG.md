@@ -1,5 +1,11 @@
 # @aligent/cdk-prerender-proxy
 
+## 2.5.10
+
+### Patch Changes
+
+- [#1715](https://github.com/aligent/cdk-constructs/pull/1715) [`19fb43f`](https://github.com/aligent/cdk-constructs/commit/19fb43f2d2d19426515531102c2ab2b5ee291e72) Thanks [@aikido-autofix](https://github.com/apps/aikido-autofix)! - [Aikido] Fix security issue in axios via minor version upgrade from 1.16.1 to 1.18.0
+
 ## 2.5.9
 
 ### Patch Changes

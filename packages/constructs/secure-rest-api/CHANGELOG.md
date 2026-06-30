@@ -1,5 +1,13 @@
 # @aligent/cdk-secure-rest-api
 
+## 1.2.0
+
+### Minor Changes
+
+- [#1720](https://github.com/aligent/cdk-constructs/pull/1720) [`2649bf8`](https://github.com/aligent/cdk-constructs/commit/2649bf833e9b8bec9261918bd013b4b71f368fe5) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - Support nested (multi-segment) route paths in the `routes` helper. Paths such as `rewards/accounts/{accountId}/redeem` now create the intermediate resources instead of throwing `ResourceSPathPartOnly` at synth time. Routes sharing a common prefix resolve idempotently.
+
+  Add a `deployOptions` prop (CDK `StageOptions`) so the deployed stage name and other stage settings can be configured. Defaults to the CDK `prod` stage when omitted.
+
 ## 1.1.2
 
 ### Patch Changes
