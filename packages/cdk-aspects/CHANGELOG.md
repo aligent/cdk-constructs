@@ -1,5 +1,11 @@
 # @aligent/cdk-aspects
 
+## 0.6.5
+
+### Patch Changes
+
+- [#1717](https://github.com/aligent/cdk-constructs/pull/1717) [`3dd2e7a`](https://github.com/aligent/cdk-constructs/commit/3dd2e7a126d245bf5eb8d785ea5b46ad11b50580) Thanks [@kai-nguyen-aligent](https://github.com/kai-nguyen-aligent)! - Fix conflicting throughput config when aspect overrides DynamoDB billing mode
+
 ## 0.6.4
 
 ### Patch Changes
