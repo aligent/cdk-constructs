@@ -1,7 +1,42 @@
 import { CfnResource } from "aws-cdk-lib";
-import { NagMessageLevel, NagPack, rules, type NagPackProps } from "cdk-nag";
+import { CfnStage } from "aws-cdk-lib/aws-apigateway";
+import {
+  NagMessageLevel,
+  NagPack,
+  NagRuleCompliance,
+  NagRuleResult,
+  NagRules,
+  rules,
+  type NagPackProps,
+} from "cdk-nag";
 import type { IConstruct } from "constructs";
 import { isCdkManagedSingleton } from "./cdk-managed-singletons";
+
+type RuleResult = (node: CfnResource) => NagRuleResult;
+
+/**
+ * Checks that an API Gateway stage name matches the expected value.
+ */
+function apiGatewayStageName(expected: string): RuleResult {
+  return (node: CfnResource) => {
+    if (node instanceof CfnStage) {
+      const stageName = NagRules.resolveIfPrimitive(node, node.stageName);
+      if (stageName !== expected) {
+        return NagRuleCompliance.NON_COMPLIANT;
+      }
+      return NagRuleCompliance.COMPLIANT;
+    }
+    return NagRuleCompliance.NOT_APPLICABLE;
+  };
+}
+
+export interface MicroserviceChecksProps extends NagPackProps {
+  /**
+   * The expected API Gateway stage name.
+   * Must be exactly 3 lowercase alphanumeric characters (e.g. dev, stg, prd).
+   */
+  readonly stageName: string;
+}
 
 /**
  * Microservice Checks are a compilation of rules to validate infrastructure-as-code template
@@ -12,12 +47,21 @@ import { isCdkManagedSingleton } from "./cdk-managed-singletons";
  * @example
  * const app = new App();
  * const stack = new Stack(app, 'MyStack');
- * Aspects.of(stack).add(new MicroservicesChecks());
+ * Aspects.of(stack).add(new MicroservicesChecks({ stageName: 'prd' }));
  */
 export class MicroserviceChecks extends NagPack {
-  constructor(props?: NagPackProps) {
+  private readonly stageName: string;
+
+  constructor(props: MicroserviceChecksProps) {
     super(props);
     this.packName = "Microservices";
+
+    if (!/^[a-z0-9]{3}$/.test(props.stageName)) {
+      throw new Error(
+        `stageName must be exactly 3 lowercase alphanumeric characters, got: "${props.stageName}"`
+      );
+    }
+    this.stageName = props.stageName;
   }
 
   public visit(node: IConstruct) {
@@ -54,6 +98,13 @@ export class MicroserviceChecks extends NagPack {
           "By default, logs are kept indefinitely and never expire. You can adjust the retention policy for each log group, keeping the indefinite retention, or choosing a retention period between one day and 10 years. For Lambda functions, this applies to their automatically created CloudWatch Log Groups.",
         level: NagMessageLevel.ERROR,
         rule: rules.cloudwatch.CloudWatchLogGroupRetentionPeriod,
+        node: node,
+      });
+      this.applyRule({
+        info: "The API Gateway stage does not have a valid stageName configured.",
+        explanation: `The API Gateway stage name must be exactly 3 lowercase alphanumeric characters and match the expected value "${this.stageName}". This ensures consistent naming conventions across environments (e.g. dev, stg, prd).`,
+        level: NagMessageLevel.ERROR,
+        rule: apiGatewayStageName(this.stageName),
         node: node,
       });
     }

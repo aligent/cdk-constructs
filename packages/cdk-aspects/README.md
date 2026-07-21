@@ -92,6 +92,7 @@ A set of rules that validate your infrastructure against recommended practices u
 - Validates Lambda function timeout configuration
 - Validates Lambda function tracing configuration
 - Validates CloudWatch Log Group retention policy
+- Validates API Gateway stage name matches the expected value (must be exactly 3 lowercase alphanumeric characters, e.g. `dev`, `stg`, `prd`)
 
 ### Usage
 
@@ -102,7 +103,7 @@ import { MicroserviceChecks } from "@aligent/cdk-aspects";
 const app = new App();
 const stack = new Stack(app, "MyStack");
 
-Aspects.of(stack).add(new MicroserviceChecks());
+Aspects.of(stack).add(new MicroserviceChecks({ stageName: "prd" }));
 ```
 
 ## Resource Prefix

@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/aligent/aws-cdk-constructs#readme",
   "scripts": {
+    "audit": "nx run-many -t lint typecheck test --configuration coverage --skip-nx-cache",
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "changeset:version-and-install": "changeset version && yarn install --no-immutable",
