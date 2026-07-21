@@ -2,26 +2,35 @@ import { Duration, RemovalPolicy, type IAspect } from "aws-cdk-lib";
 import { Bucket, CfnBucket, type BucketProps } from "aws-cdk-lib/aws-s3";
 import { IConstruct } from "constructs";
 
+/**
+ * Configuration for the {@link S3DefaultsAspect}.
+ *
+ * @property duration - Controls the retention behaviour applied to S3 buckets:
+ *   - `SHORT`  — 30-day object expiration, auto-delete on stack removal.
+ *   - `MEDIUM` — 90-day object expiration, auto-delete on stack removal.
+ *   - `LONG`   — No expiration, bucket is retained on stack removal.
+ */
 interface Config {
   duration: "SHORT" | "MEDIUM" | "LONG";
 }
 
 /**
- * Aspect that automatically applies configuration-aware defaults to S3 Buckets
+ * CDK Aspect that applies duration-based lifecycle and removal policies to S3 Buckets.
  *
- * Visits all constructs in the scope and automatically applies configuration-specific
- * lifecycle and removal policies to S3 buckets. Different configurations balance
- * between cost optimization and data retention needs.
+ * When added to a scope, this aspect visits every {@link Bucket} construct and:
+ * 1. Sets the removal policy (`DESTROY` for SHORT/MEDIUM, `RETAIN` for LONG).
+ * 2. Adds lifecycle rules with an object expiration (30 or 90 days) — only if the
+ *    bucket does not already have an explicit lifecycle configuration.
  *
  * @example
  * ```typescript
- * // Apply configuration-specific defaults to all buckets
- * Aspects.of(app).add(new S3DefaultsAspect({ autoDelete: true, duration: 'SHORT' }));
+ * import { Aspects } from 'aws-cdk-lib';
  *
- * // Buckets automatically inherit configuration defaults
- * new Bucket(stack, 'MyBucket', {
- *   // lifecycle and removal policy applied automatically
- * });
+ * // Short-lived buckets: objects expire after 30 days, bucket deleted with stack
+ * Aspects.of(stack).add(new S3DefaultsAspect({ duration: 'SHORT' }));
+ *
+ * // Long-lived buckets: no expiration, bucket retained on stack removal
+ * Aspects.of(stack).add(new S3DefaultsAspect({ duration: 'LONG' }));
  * ```
  *
  * @see https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_s3.Bucket.html
@@ -30,9 +39,9 @@ export class S3DefaultsAspect implements IAspect {
   private readonly defaultProps: BucketProps;
 
   /**
-   * Creates a new S3DefaultsAspect
+   * Creates a new S3DefaultsAspect.
    *
-   * @param config - Configuration identifier used to select appropriate defaults.
+   * @param config - Determines which retention profile to apply to buckets in scope.
    */
   constructor(config: Config) {
     const props = this.retentionProperties(config.duration);
@@ -40,10 +49,11 @@ export class S3DefaultsAspect implements IAspect {
   }
 
   /**
-   * Get duration-specific object expiration
+   * Returns duration-specific bucket properties (lifecycle rules, removal policy,
+   * and auto-delete flag).
    *
-   * @param duration - The duration to get the expiration for
-   * @returns The expiration Duration, or undefined for LONG retention
+   * @param duration - The retention profile to resolve.
+   * @returns Partial {@link BucketProps} appropriate for the given duration.
    */
   private retentionProperties(duration: "SHORT" | "MEDIUM" | "LONG") {
     switch (duration) {
@@ -51,11 +61,13 @@ export class S3DefaultsAspect implements IAspect {
         return {
           lifecycleRules: [{ expiration: Duration.days(30) }],
           removalPolicy: RemovalPolicy.DESTROY,
+          autoDeleteObjects: true,
         };
       case "MEDIUM":
         return {
           lifecycleRules: [{ expiration: Duration.days(90) }],
           removalPolicy: RemovalPolicy.DESTROY,
+          autoDeleteObjects: true,
         };
       default:
         return {
@@ -66,12 +78,13 @@ export class S3DefaultsAspect implements IAspect {
   }
 
   /**
-   * Visits a construct and applies configuration-appropriate defaults
+   * Visits a construct and, if it is an S3 {@link Bucket}, applies the
+   * configured removal policy and lifecycle rules.
    *
-   * Applies a removal policy and lifecycle rules to buckets that don't
-   * already have a lifecycle configuration explicitly set.
+   * Lifecycle rules are only added when the bucket's underlying
+   * {@link CfnBucket} does not already have a `lifecycleConfiguration`.
    *
-   * @param node - The construct to potentially modify
+   * @param node - The construct being visited by the CDK aspect traversal.
    */
   visit(node: IConstruct): void {
     if (node instanceof Bucket) {
