@@ -2,6 +2,11 @@ import { Duration, RemovalPolicy, type IAspect } from "aws-cdk-lib";
 import { Bucket, CfnBucket, type BucketProps } from "aws-cdk-lib/aws-s3";
 import { IConstruct } from "constructs";
 
+/** Exposes the private {@link Bucket.enableAutoDeleteObjects} method. */
+interface BucketWithAutoDelete {
+  enableAutoDeleteObjects(): void;
+}
+
 /**
  * Configuration for the {@link S3DefaultsAspect}.
  *
@@ -79,7 +84,10 @@ export class S3DefaultsAspect implements IAspect {
 
   /**
    * Visits a construct and, if it is an S3 {@link Bucket}, applies the
-   * configured removal policy and lifecycle rules.
+   * configured removal policy, auto-delete behaviour, and lifecycle rules.
+   *
+   * When `autoDeleteObjects` is enabled, we call the private `enableAutoDeleteObjects` which
+   * provisions a Lambda-backed custom resource is to empty the bucket before CloudFormation deletes it.
    *
    * Lifecycle rules are only added when the bucket's underlying
    * {@link CfnBucket} does not already have a `lifecycleConfiguration`.
@@ -88,9 +96,16 @@ export class S3DefaultsAspect implements IAspect {
    */
   visit(node: IConstruct): void {
     if (node instanceof Bucket) {
-      const { lifecycleRules, removalPolicy } = this.defaultProps;
+      const { lifecycleRules, removalPolicy, autoDeleteObjects } =
+        this.defaultProps;
       if (removalPolicy) {
         node.applyRemovalPolicy(removalPolicy);
+      }
+
+      if (autoDeleteObjects) {
+        // NOTE: This relies on a private CDK API and may break in future aws-cdk-lib releases.
+        // @see https://github.com/aws/aws-cdk/blob/main/packages/aws-cdk-lib/aws-s3/lib/bucket.ts#L3357
+        (node as unknown as BucketWithAutoDelete).enableAutoDeleteObjects();
       }
 
       if (lifecycleRules?.length) {
