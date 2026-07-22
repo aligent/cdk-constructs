@@ -36,6 +36,7 @@ interface PreRenderRequestBody {
 
 const QueueUrl = process.env.SQS_QUEUE_URL;
 const Bucket = process.env.PRERENDER_CACHE_BUCKET;
+const RecacheDelaySeconds = Number(process.env.RECACHE_DELAY_SECONDS ?? "1");
 
 export const MAX_URLS = 1000;
 
@@ -186,7 +187,7 @@ const deleteCacheContentForUrls = async (
 const queueRecachingUrls = async (urlsToRecache: string[]) => {
   const generateEntry = (url: string): SendMessageBatchRequestEntry => {
     return {
-      DelaySeconds: 1,
+      DelaySeconds: RecacheDelaySeconds,
       Id: md5hash(url) + url.replace(/[^A-Z0-9_-]+/gi, "_").slice(-47),
       MessageBody: url,
     };

@@ -39,7 +39,21 @@ export interface PrerenderRecacheApiOptions {
    * @default - ID of the RestApi construct.
    */
   restApiName?: string;
+
+  /**
+   * The delay between purging the cached object from S3 and the recache
+   * consumer fetching the URL to re-render it. Backed by the SQS message
+   * delay, so the maximum is 15 minutes.
+   *
+   * @default - Duration.seconds(1)
+   */
+  recacheDelay?: Duration;
 }
+
+/**
+ * The maximum delay supported by SQS message delivery, in seconds.
+ */
+const MAX_RECACHE_DELAY_SECONDS = 900;
 
 /**
  * Represents an API for recaching prerendered pages.
@@ -139,6 +153,17 @@ const createApiLambdaFunction = (
   );
 
   apiHandler.addEnvironment("TOKEN_SECRET", options.tokenSecret);
+
+  const recacheDelaySeconds = options.recacheDelay?.toSeconds() ?? 1;
+  if (recacheDelaySeconds > MAX_RECACHE_DELAY_SECONDS) {
+    throw new Error(
+      `recacheDelay must not exceed ${MAX_RECACHE_DELAY_SECONDS} seconds (15 minutes), got ${recacheDelaySeconds}`
+    );
+  }
+  apiHandler.addEnvironment(
+    "RECACHE_DELAY_SECONDS",
+    recacheDelaySeconds.toString()
+  );
 
   return apiHandler;
 };

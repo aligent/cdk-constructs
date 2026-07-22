@@ -87,6 +87,8 @@ To use the PrerenderFargate construct, you can instantiate it with suitable Prer
 ### `prerenderFargateRecachingOptions` (PrerenderFargateRecachingOptions, optional)
 
 - This allows to alter the re-caching behaviour. The default configuration should be sufficient.
+- `maxConcurrentExecutions` (number, optional) - The maximum number of concurrent executions of the recache consumer. Default: 1
+- `recacheDelay` (Duration, optional) - The delay between purging the cached object from S3 and the recache consumer fetching the URL to re-render it. Use this to allow frontend cache (e.g. CloudFront) invalidations to propagate before the page is re-rendered, avoiding a race condition where stale upstream content is re-cached. Backed by the SQS message delay, so the maximum is 15 minutes. Default: `Duration.seconds(1)`
 
 ### `enableRecache` (boolean, optional)
 
@@ -105,7 +107,7 @@ To use the PrerenderFargate construct, you can instantiate it with suitable Prer
 Here's an example of how to use the PrerenderFargate construct in a TypeScript CDK application:
 
 ```typescript
-import { Stack, StackProps } from "aws-cdk-lib";
+import { Duration, Stack, StackProps } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import {
   PrerenderFargate,
@@ -134,6 +136,7 @@ export class RagPrerenderStackStack extends Stack {
       enableS3Endpoint: false,
       prerenderFargateRecachingOptions: {
         maxConcurrentExecutions: 1,
+        recacheDelay: Duration.seconds(30),
       },
       prerenderFargateScalingOptions: {
         healthCheckGracePeriod: 20,

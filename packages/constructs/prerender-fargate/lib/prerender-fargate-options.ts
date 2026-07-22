@@ -1,4 +1,5 @@
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { Duration } from "aws-cdk-lib";
 
 /**
  * Options for configuring the Prerender Fargate construct.
@@ -228,4 +229,16 @@ export interface PrerenderFargateRecachingOptions {
    * @default - 1
    */
   maxConcurrentExecutions?: number;
+  /**
+   * The delay between purging the cached object from S3 and the recache
+   * consumer fetching the URL to re-render it.
+   *
+   * Use this to allow frontend cache (e.g. CloudFront) invalidations to
+   * propagate before the page is re-rendered, avoiding a race condition
+   * where stale upstream content is re-cached.
+   *
+   * Backed by the SQS message delay, so the maximum is 15 minutes.
+   * @default - Duration.seconds(1)
+   */
+  recacheDelay?: Duration;
 }
