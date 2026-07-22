@@ -81,6 +81,38 @@ const app = new App();
 Aspects.of(app).add(new StepFunctionsDefaultsAspect());
 ```
 
+### DynamoDB Defaults
+
+Automatically applies configuration-aware billing mode, throughput, and removal-policy defaults to DynamoDB tables.
+
+#### Features
+
+- Sets billing mode, throughput, and removal policy based on the duration profile
+- Duration profiles:
+  - **SHORT**: `PROVISIONED` (1 RCU / 1 WCU), destroy on stack deletion
+  - **MEDIUM**: `PAY_PER_REQUEST` capped at 100 max read / 100 max write request units, destroy on stack deletion
+  - **LONG**: `PAY_PER_REQUEST` uncapped, retain on stack deletion
+- Treats throughput as a **default, not an override**: values set on the `Table` construct are respected. To lift the MEDIUM cap on a high-throughput table, set the throughput explicitly on that table (billing mode included, so the value survives CDK's L2 defaults):
+
+  ```typescript
+  new Table(stack, "HighWriteTable", {
+    partitionKey: { name: "pk", type: AttributeType.STRING },
+    billingMode: BillingMode.PAY_PER_REQUEST,
+    maxReadRequestUnits: 4000,
+    maxWriteRequestUnits: 4000,
+  });
+  ```
+
+#### Usage
+
+```typescript
+import { Aspects } from "aws-cdk-lib";
+import { DynamoDbDefaultsAspect } from "@aligent/cdk-aspects";
+
+const app = new App();
+Aspects.of(app).add(new DynamoDbDefaultsAspect({ duration: "MEDIUM" }));
+```
+
 
 ## Microservice Checks
 
