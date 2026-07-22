@@ -133,9 +133,14 @@ export class DynamoDbDefaultsAspect implements IAspect {
         cfnTable.onDemandThroughput = undefined;
       }
 
+      // Stamp throughput as a default, not an override: the first predicate asks
+      // "does this profile carry throughput numbers?" (aspect config); the
+      // `=== undefined` check asks "has the table not already set its own?" (per
+      // table). Together they let a consumer raise/clear a cap via construct props.
       if (
         cfnTable.billingMode === BillingMode.PAY_PER_REQUEST &&
-        this.isOnDemandThroughputConfigured()
+        this.isOnDemandThroughputConfigured() &&
+        cfnTable.onDemandThroughput === undefined
       ) {
         cfnTable.onDemandThroughput = {
           maxReadRequestUnits,
@@ -145,7 +150,8 @@ export class DynamoDbDefaultsAspect implements IAspect {
 
       if (
         cfnTable.billingMode === BillingMode.PROVISIONED &&
-        this.isProvisionedThroughputConfigured()
+        this.isProvisionedThroughputConfigured() &&
+        cfnTable.provisionedThroughput === undefined
       ) {
         cfnTable.provisionedThroughput = {
           readCapacityUnits: readCapacity!,

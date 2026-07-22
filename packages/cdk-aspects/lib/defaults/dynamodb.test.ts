@@ -60,19 +60,19 @@ describe("DynamoDbDefaultsAspect", () => {
       });
     });
 
-    it("overrides existing ProvisionedThroughput with aspect defaults", () => {
-      const table = makeTable(stack, "MyTable");
-      const cfnTable = table.node.defaultChild as CfnTable;
-      cfnTable.provisionedThroughput = {
-        readCapacityUnits: 10,
-        writeCapacityUnits: 10,
-      };
+    it("respects provisioned throughput explicitly set via construct props", () => {
+      new Table(stack, "HighCapacityTable", {
+        partitionKey: { name: "pk", type: AttributeType.STRING },
+        billingMode: BillingMode.PROVISIONED,
+        readCapacity: 25,
+        writeCapacity: 25,
+      });
       app.synth();
 
       Template.fromStack(stack).hasResourceProperties("AWS::DynamoDB::Table", {
         ProvisionedThroughput: {
-          ReadCapacityUnits: 1,
-          WriteCapacityUnits: 1,
+          ReadCapacityUnits: 25,
+          WriteCapacityUnits: 25,
         },
       });
     });
@@ -143,19 +143,19 @@ describe("DynamoDbDefaultsAspect", () => {
       expect(props["OnDemandThroughput"]).toBeUndefined();
     });
 
-    it("overrides existing OnDemandThroughput with aspect defaults", () => {
-      const table = makeTable(stack, "MyTable");
-      const cfnTable = table.node.defaultChild as CfnTable;
-      cfnTable.onDemandThroughput = {
-        maxReadRequestUnits: 50,
-        maxWriteRequestUnits: 50,
-      };
+    it("respects on-demand throughput explicitly set via construct props", () => {
+      new Table(stack, "HighWriteTable", {
+        partitionKey: { name: "pk", type: AttributeType.STRING },
+        billingMode: BillingMode.PAY_PER_REQUEST,
+        maxReadRequestUnits: 4000,
+        maxWriteRequestUnits: 4000,
+      });
       app.synth();
 
       Template.fromStack(stack).hasResourceProperties("AWS::DynamoDB::Table", {
         OnDemandThroughput: {
-          MaxReadRequestUnits: 100,
-          MaxWriteRequestUnits: 100,
+          MaxReadRequestUnits: 4000,
+          MaxWriteRequestUnits: 4000,
         },
       });
     });
