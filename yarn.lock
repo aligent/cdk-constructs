@@ -28,7 +28,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-basic-auth@workspace:packages/constructs/basic-auth"
   dependencies:
-    "@aligent/cdk-esbuild": "npm:^2.5.10"
+    "@aligent/cdk-esbuild": "npm:^2.5.11"
     "@types/aws-lambda": "npm:^8.10.162"
     "@types/jest": "npm:^29.5.10"
     "@types/node": "npm:^24.13.3"
@@ -48,7 +48,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-cloudfront-security-headers@workspace:packages/constructs/cloudfront-security-headers"
   dependencies:
-    "@aligent/cdk-esbuild": "npm:^2.5.10"
+    "@aligent/cdk-esbuild": "npm:^2.5.11"
     "@types/aws-lambda": "npm:^8.10.162"
     "@types/jest": "npm:^29.5.10"
     "@types/node": "npm:^24.13.3"
@@ -99,7 +99,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-domain-hosting@workspace:packages/constructs/domain-hosting"
   dependencies:
-    "@aligent/cdk-esbuild": "npm:^2.5.10"
+    "@aligent/cdk-esbuild": "npm:^2.5.11"
     "@types/aws-lambda": "npm:^8.10.162"
     "@types/jest": "npm:^29.5.10"
     "@types/node": "npm:^24.13.3"
@@ -123,7 +123,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aligent/cdk-esbuild@npm:^2.5.10, @aligent/cdk-esbuild@workspace:packages/constructs/esbuild":
+"@aligent/cdk-esbuild@npm:^2.5.11, @aligent/cdk-esbuild@workspace:packages/constructs/esbuild":
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-esbuild@workspace:packages/constructs/esbuild"
   dependencies:
@@ -154,7 +154,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-geoip-redirect@workspace:packages/constructs/geoip-redirect"
   dependencies:
-    "@aligent/cdk-esbuild": "npm:^2.5.10"
+    "@aligent/cdk-esbuild": "npm:^2.5.11"
     "@types/aws-lambda": "npm:^8.10.162"
     "@types/jest": "npm:^29.5.10"
     "@types/node": "npm:^24.13.3"
@@ -253,7 +253,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-prerender-proxy@workspace:packages/constructs/prerender-proxy"
   dependencies:
-    "@aligent/cdk-esbuild": "npm:^2.5.10"
+    "@aligent/cdk-esbuild": "npm:^2.5.11"
     "@types/aws-lambda": "npm:^8.10.162"
     "@types/jest": "npm:^29.5.10"
     "@types/node": "npm:^24.13.3"
@@ -328,7 +328,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/cdk-static-hosting@workspace:packages/constructs/static-hosting"
   dependencies:
-    "@aligent/cdk-esbuild": "npm:^2.5.10"
+    "@aligent/cdk-esbuild": "npm:^2.5.11"
     "@aws-sdk/client-s3": "npm:^3.1092.0"
     "@types/aws-lambda": "npm:^8.10.162"
     "@types/jest": "npm:^29.5.10"

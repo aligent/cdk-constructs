@@ -1,5 +1,17 @@
 # @aligent/cdk-secure-rest-api
 
+## 1.2.1
+
+### Patch Changes
+
+- [#1694](https://github.com/aligent/cdk-constructs/pull/1694) [`14c21ef`](https://github.com/aligent/cdk-constructs/commit/14c21ef9a92a1412c2a94a9a6a83ec9a963ba8cc) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps-dev): bump ts-jest from 29.4.9 to 29.4.11 in the testing-tools group across 1 directory
+
+- [#1724](https://github.com/aligent/cdk-constructs/pull/1724) [`efba4ec`](https://github.com/aligent/cdk-constructs/commit/efba4ec206c255d7bdb3b868ab625cbcfa55496d) Thanks [@aikido-autofix](https://github.com/apps/aikido-autofix)! - [Aikido] Fix 6 security issues in axios, fast-uri, aws-cdk-lib and 2 more
+
+- [#1732](https://github.com/aligent/cdk-constructs/pull/1732) [`841757c`](https://github.com/aligent/cdk-constructs/commit/841757c2e15914a6435e5127b5d7b0dd9320cbfb) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the aws group across 1 directory with 11 updates
+
+- [#1734](https://github.com/aligent/cdk-constructs/pull/1734) [`7759e15`](https://github.com/aligent/cdk-constructs/commit/7759e15e77c2da4e1f2e2b2d6990a0da23f1957b) Thanks [@aikido-autofix](https://github.com/apps/aikido-autofix)! - [Aikido] Fix security issue in brace-expansion via minor version upgrade from 1.1.12 to 1.1.16
+
 ## 1.2.0
 
 ### Minor Changes
