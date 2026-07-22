@@ -1,5 +1,11 @@
 # @aligent/cdk-prerender-fargate
 
+## 2.17.0
+
+### Minor Changes
+
+- [#1735](https://github.com/aligent/cdk-constructs/pull/1735) [`72ae6da`](https://github.com/aligent/cdk-constructs/commit/72ae6da91651b61af83ac220aa2a5f72ef90b2f4) Thanks [@AdamJHall](https://github.com/AdamJHall)! - Add a configurable `recacheDelay` to `prerenderFargateRecachingOptions`. This controls the delay between purging the cached object from S3 and the recache consumer fetching the URL to re-render it, allowing frontend cache (e.g. CloudFront or Fastly) invalidations to propagate first and avoiding a race condition where stale upstream content is re-cached. Backed by the SQS message delay (max 15 minutes); defaults to 1 second, preserving existing behaviour.
+
 ## 2.16.4
 
 ### Patch Changes
