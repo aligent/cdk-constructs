@@ -5,13 +5,19 @@ const IP_REGEX =
 const IP_V6_REGEX =
   /(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))/;
 
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-const MAINTENANCE_FILE_PATH = process.env.MAINTENANCE_FILE_PATH!;
 const FILE_NAME = "maintenance";
-const PATHS = [
-  `${MAINTENANCE_FILE_PATH}/${FILE_NAME}.disabled`,
-  `${MAINTENANCE_FILE_PATH}/${FILE_NAME}.enabled`,
-];
+
+// Resolved lazily so each caller honours the current MAINTENANCE_FILE_PATH
+// rather than a value captured at module load.
+const getPaths = (): [string, string] => {
+  const basePath = process.env.MAINTENANCE_FILE_PATH;
+  if (!basePath) throw new Error("Maintenance File path is missing.");
+
+  return [
+    `${basePath}/${FILE_NAME}.disabled`,
+    `${basePath}/${FILE_NAME}.enabled`,
+  ];
+};
 
 export interface MaintenanceFile {
   whitelist: Array<string>;
@@ -19,15 +25,16 @@ export interface MaintenanceFile {
 }
 
 export const getFilePath = (): string => {
-  for (const path of PATHS) {
+  const paths = getPaths();
+  for (const path of paths) {
     if (existsSync(path)) {
       return path;
     }
   }
 
   // If the maintenance file wasn't found, create one
-  writeFileSync(PATHS[0], JSON.stringify({ whitelist: [], sites: {} }));
-  return PATHS[0];
+  writeFileSync(paths[0], JSON.stringify({ whitelist: [], sites: {} }));
+  return paths[0];
 };
 
 export const getMaintenanceFile = (): MaintenanceFile => {
@@ -63,12 +70,10 @@ export const updateMaintenanceStatus = (sites: Record<string, boolean>) => {
 };
 
 export const toggleMaintenanceStatus = (status: boolean) => {
-  const desiredStatus = status ? "enabled" : "disabled";
+  const [disabledPath, enabledPath] = getPaths();
+  const target = status ? enabledPath : disabledPath;
 
-  renameSync(
-    getFilePath(),
-    `${MAINTENANCE_FILE_PATH}/${FILE_NAME}.${desiredStatus}`
-  );
+  renameSync(getFilePath(), target);
 };
 
 const validateIps = (ipList: Array<string>) => {
