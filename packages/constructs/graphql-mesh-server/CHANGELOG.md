@@ -1,5 +1,11 @@
 # @aligent/cdk-graphql-mesh-server
 
+## 3.3.9
+
+### Patch Changes
+
+- [#1703](https://github.com/aligent/cdk-constructs/pull/1703) [`6aa5251`](https://github.com/aligent/cdk-constructs/commit/6aa5251a87abecf6221576bd4e53eeaade9ca610) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - Resolve MAINTENANCE_FILE_PATH lazily so the maintenance handler honours the runtime-configured path; fixes flaky maintenance handler tests via per-suite filesystem isolation.
+
 ## 3.3.8
 
 ### Patch Changes
