@@ -1,5 +1,11 @@
 # @aligent/cdk-aspects
 
+## 0.8.0
+
+### Minor Changes
+
+- [#1737](https://github.com/aligent/cdk-constructs/pull/1737) [`150ee9d`](https://github.com/aligent/cdk-constructs/commit/150ee9d4ee137bf2a397ccf61ca68518d9079254) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - `DynamoDbDefaultsAspect` now treats profile throughput as a default rather than an override. Read/write throughput explicitly set on a `Table` construct is respected instead of being clobbered by the profile, so a high-throughput table can lift the MEDIUM on-demand cap (or set its own provisioned capacity) via normal construct props.
+
 ## 0.7.0
 
 ### Minor Changes
