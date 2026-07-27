@@ -171,6 +171,27 @@ describe("DynamoDbDefaultsAspect", () => {
       expect(props["ProvisionedThroughput"]).toBeUndefined();
     });
 
+    it("clears GSI-level ProvisionedThroughput set by CDK L2 defaults", () => {
+      const table = new Table(stack, "TableWithGSI", {
+        partitionKey: { name: "pk", type: AttributeType.STRING },
+      });
+      table.addGlobalSecondaryIndex({
+        indexName: "gsi1",
+        partitionKey: { name: "gsi1pk", type: AttributeType.STRING },
+      });
+      app.synth();
+
+      const resources = Template.fromStack(stack).findResources(
+        "AWS::DynamoDB::Table"
+      );
+      const props = Object.values(resources)[0].Properties;
+      const gsis = props["GlobalSecondaryIndexes"];
+      expect(gsis).toBeDefined();
+      gsis.forEach((gsi: Record<string, unknown>) => {
+        expect(gsi["ProvisionedThroughput"]).toBeUndefined();
+      });
+    });
+
     it("applies DESTROY removal policy", () => {
       makeTable(stack, "MyTable");
       app.synth();

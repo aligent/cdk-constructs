@@ -1,4 +1,4 @@
-import { RemovalPolicy, type IAspect } from "aws-cdk-lib";
+import { RemovalPolicy, Stack, type IAspect } from "aws-cdk-lib";
 import {
   BillingMode,
   CfnTable,
@@ -126,11 +126,21 @@ export class DynamoDbDefaultsAspect implements IAspect {
 
       cfnTable.billingMode = cfnTable.billingMode ?? billingMode;
 
-      // Clear conflicting throughput config to prevent CloudFormation errors
+      // Use addPropertyDeletionOverride instead of direct assignment to bypass
+      // CDK L2 lazy token producers that re-resolve at synth time.
       if (cfnTable.billingMode === BillingMode.PAY_PER_REQUEST) {
-        cfnTable.provisionedThroughput = undefined;
+        cfnTable.addPropertyDeletionOverride("ProvisionedThroughput");
+
+        const gsis = Stack.of(node).resolve(cfnTable.globalSecondaryIndexes);
+        if (Array.isArray(gsis)) {
+          gsis.forEach((_, i) => {
+            cfnTable.addPropertyDeletionOverride(
+              `GlobalSecondaryIndexes.${i}.ProvisionedThroughput`
+            );
+          });
+        }
       } else if (cfnTable.billingMode === BillingMode.PROVISIONED) {
-        cfnTable.onDemandThroughput = undefined;
+        cfnTable.addPropertyDeletionOverride("OnDemandThroughput");
       }
 
       // Stamp throughput as a default, not an override: the first predicate asks
