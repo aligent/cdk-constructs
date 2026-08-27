@@ -6,6 +6,7 @@ import {
   StateMachine,
 } from "aws-cdk-lib/aws-stepfunctions";
 import { IConstruct } from "constructs";
+import { isCdkManagedSingleton } from "./cdk-managed-singletons";
 
 /**
  * Aspect that automatically adds versioning and aliases to Lambda and Step Functions
@@ -51,6 +52,11 @@ export class LambdaAndStepFunctionVersioningAspect implements IAspect {
    * @param node - The construct to potentially add versioning to
    */
   visit(node: IConstruct): void {
+    // CDK-managed singleton/framework resources (e.g. the BucketDeployment
+    // handler, cr.Provider on-event handler) are consumer-invisible — versioning
+    // them creates aliases the consumer cannot reference and doesn't own.
+    if (isCdkManagedSingleton(node)) return;
+
     if (node instanceof StateMachine) {
       const version = new CfnStateMachineVersion(node, `Version`, {
         stateMachineArn: node.stateMachineArn,
