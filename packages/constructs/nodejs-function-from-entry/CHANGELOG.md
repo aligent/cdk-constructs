@@ -1,5 +1,11 @@
 # @aligent/cdk-nodejs-function-from-entry
 
+## 0.3.0
+
+### Minor Changes
+
+- [#1753](https://github.com/aligent/cdk-constructs/pull/1753) [`24c8dc1`](https://github.com/aligent/cdk-constructs/commit/24c8dc1a4a93377ce8c193ec18806c69b3085cef) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - Allow overriding the resolved Lambda `handler`, needed for handler-wrapping mechanisms (e.g. a Lambda Layer wrapper) that require a fixed handler string. Existing callers are unaffected — omitting `handler` still defaults to the resolved `index.handler`.
+
 ## 0.2.4
 
 ### Patch Changes
