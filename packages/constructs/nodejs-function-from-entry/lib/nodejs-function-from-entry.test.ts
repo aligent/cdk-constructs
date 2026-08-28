@@ -70,6 +70,21 @@ describe("NodejsFunctionFromEntry", () => {
     );
   });
 
+  test("caller-supplied handler overrides the resolved default", () => {
+    new NodejsFunctionFromEntry(stack, "CustomHandler", {
+      entry: "runtime/handlers/fetch-data.ts",
+      baseDir: __dirname,
+      runtime: Runtime.NODEJS_22_X,
+      rootParentDir: ROOT_PARENT_DIR,
+      handler: "newrelic-lambda-wrapper.handler",
+    });
+
+    const template = Template.fromStack(stack);
+    template.hasResourceProperties("AWS::Lambda::Function", {
+      Handler: "newrelic-lambda-wrapper.handler",
+    });
+  });
+
   test("throws when resolved path is outside the allowed root", () => {
     expect(() => {
       new NodejsFunctionFromEntry(stack, "BadPath", {

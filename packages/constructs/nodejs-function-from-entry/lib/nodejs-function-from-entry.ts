@@ -35,6 +35,12 @@ export interface NodejsFunctionFromEntryProps<
    * @default `'services'`
    */
   readonly rootParentDir?: string;
+  /**
+   * Overrides the resolved `"index.handler"` default.
+   * Needed for handler-wrapping mechanisms (e.g. a Lambda Layer wrapper)
+   * that require a fixed handler string.
+   */
+  readonly handler?: NodejsFunctionProps["handler"];
 }
 
 /**
@@ -79,6 +85,7 @@ export class NodejsFunctionFromEntry<
       sourcePrefix = "runtime/handlers/",
       distPrefix = "../dist/",
       rootParentDir = "services",
+      handler,
       ...rest
     } = props;
 
@@ -91,7 +98,7 @@ export class NodejsFunctionFromEntry<
         rootParentDir
       );
 
-    super(scope, id, { code, handler: resolvedHandler, ...rest });
+    super(scope, id, { code, handler: handler ?? resolvedHandler, ...rest });
   }
 
   /**

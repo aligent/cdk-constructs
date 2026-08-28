@@ -27,4 +27,15 @@ new NodejsFunctionFromEntry<"src/handlers/">(this, "FetchData", {
   sourcePrefix: "src/handlers/",
   distPrefix: "../build/",
 });
+
+// Overriding the handler (e.g. for a Lambda Layer wrapper that requires
+// a fixed handler string, with the real handler passed via env var)
+new NodejsFunctionFromEntry(this, "FetchData", {
+  entry: "runtime/handlers/fetch-data.ts",
+  baseDir: import.meta.dirname,
+  handler: "newrelic-lambda-wrapper.handler",
+  environment: {
+    NEW_RELIC_LAMBDA_HANDLER: "index.handler",
+  },
+});
 ```
