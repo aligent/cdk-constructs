@@ -1,5 +1,11 @@
 # @aligent/cdk-aspects
 
+## 0.8.1
+
+### Patch Changes
+
+- [#1752](https://github.com/aligent/cdk-constructs/pull/1752) [`2ec5779`](https://github.com/aligent/cdk-constructs/commit/2ec57790cea828d7c753d4b26ac3c9cff42f7d87) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - Skip CDK-managed singleton/framework resources in `LambdaAndStepFunctionVersioningAspect` so it no longer adds aliases/versions to handlers like the `BucketDeployment` custom resource.
+
 ## 0.8.0
 
 ### Minor Changes
