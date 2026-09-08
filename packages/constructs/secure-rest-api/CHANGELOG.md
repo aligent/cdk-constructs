@@ -1,5 +1,11 @@
 # @aligent/cdk-secure-rest-api
 
+## 1.3.0
+
+### Minor Changes
+
+- [#1756](https://github.com/aligent/cdk-constructs/pull/1756) [`e28a7f9`](https://github.com/aligent/cdk-constructs/commit/e28a7f9c4dea45b892441aa05645eacfd9936659) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - Add `aliasPaths` to `SecureRestApiRoute`, allowing a route to be exposed under additional paths with the same methods and integration (e.g. renaming an endpoint without breaking existing consumers).
+
 ## 1.2.1
 
 ### Patch Changes
