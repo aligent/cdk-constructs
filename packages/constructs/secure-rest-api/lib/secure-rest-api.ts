@@ -11,8 +11,21 @@ import { HttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
 import { Construct } from "constructs";
 
 export interface SecureRestApiRoute {
+  /**
+   * The resource path; may be nested/multi-segment (e.g.
+   * `rewards/accounts/{accountId}/redeem`). A leading slash is stripped
+   * automatically.
+   */
   path: string;
+
+  /**
+   * HTTP methods to register on the resource.
+   */
   methods: HttpMethod[];
+
+  /**
+   * The CDK API Gateway integration to invoke for each method.
+   */
   integration: Integration;
 
   /**
