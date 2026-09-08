@@ -14,6 +14,14 @@ export interface SecureRestApiRoute {
   path: string;
   methods: HttpMethod[];
   integration: Integration;
+
+  /**
+   * Additional paths that expose the same methods and integration as `path`.
+   *
+   * Useful for renaming a route without breaking existing consumers: keep
+   * the old path as an alias until callers migrate to the new one.
+   */
+  aliasPaths?: string[];
 }
 
 export interface SecureRestApiProps {
@@ -114,11 +122,14 @@ export class SecureRestApi extends Construct {
     });
 
     for (const route of routes) {
-      const resource = this.api.root.resourceForPath(
-        route.path.replace(/^\//, "")
-      );
-      for (const method of route.methods) {
-        resource.addMethod(method, route.integration, { apiKeyRequired: true });
+      const paths = [route.path, ...(route.aliasPaths ?? [])];
+      for (const path of paths) {
+        const resource = this.api.root.resourceForPath(path.replace(/^\//, ""));
+        for (const method of route.methods) {
+          resource.addMethod(method, route.integration, {
+            apiKeyRequired: true,
+          });
+        }
       }
     }
 

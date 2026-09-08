@@ -173,6 +173,60 @@ describe("SecureRestApi", () => {
       );
     });
 
+    it("registers alias paths with the same methods and integration", () => {
+      const { stack } = createStack();
+      new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes: [
+          {
+            path: "customers",
+            methods: [HttpMethod.GET],
+            integration: mockIntegration(),
+            aliasPaths: ["people"],
+          },
+        ],
+      });
+
+      const template = Template.fromStack(stack);
+      for (const pathPart of ["customers", "people"]) {
+        template.hasResourceProperties("AWS::ApiGateway::Resource", {
+          PathPart: pathPart,
+        });
+      }
+      template.resourcePropertiesCountIs(
+        "AWS::ApiGateway::Method",
+        { HttpMethod: "GET", ApiKeyRequired: true },
+        2
+      );
+    });
+
+    it("registers a nested alias path sharing a param name", () => {
+      const { stack } = createStack();
+      new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes: [
+          {
+            path: "customers/{id}/addresses",
+            methods: [HttpMethod.GET],
+            integration: mockIntegration(),
+            aliasPaths: ["people/{id}/addresses"],
+          },
+        ],
+      });
+
+      const template = Template.fromStack(stack);
+      for (const pathPart of ["customers", "people", "{id}", "addresses"]) {
+        template.hasResourceProperties("AWS::ApiGateway::Resource", {
+          PathPart: pathPart,
+        });
+      }
+      template.resourcePropertiesCountIs(
+        "AWS::ApiGateway::Method",
+        { HttpMethod: "GET", ApiKeyRequired: true },
+        2
+      );
+    });
+
     it("accepts a LambdaIntegration as route integration", () => {
       const { stack } = createStack();
       new SecureRestApi(stack, "Api", {

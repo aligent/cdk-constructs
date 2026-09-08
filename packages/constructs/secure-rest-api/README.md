@@ -13,6 +13,7 @@ A CDK construct for provisioning an API Gateway REST API secured with API Key au
 - Configurable CORS preflight options
 - Accepts any CDK `Integration` per route (Lambda, HTTP, Mock, Step Functions, etc.)
 - Supports nested, multi-segment route paths (e.g. `rewards/accounts/{accountId}/redeem`)
+- Supports alias paths so a route can be exposed under an additional path (e.g. renaming an endpoint without breaking existing consumers)
 - Configurable deployment stage via `deployOptions` (stage name defaults to `prod`)
 
 ## Installation
@@ -99,6 +100,42 @@ const api = new SecureRestApi(this, 'Api', {
 });
 ```
 
+### Alias paths
+
+Expose a route under one or more additional paths, useful when renaming an
+endpoint without breaking existing consumers: keep the old path as an alias
+until callers migrate to the new one, then drop `aliasPaths` once it's safe.
+
+```typescript
+const api = new SecureRestApi(this, 'Api', {
+  apiName: 'my-api',
+  routes: [
+    {
+      path: 'customers',
+      methods: [HttpMethod.GET],
+      integration: new LambdaIntegration(customersFunction),
+      aliasPaths: ['people'], // old path, kept working during migration
+    },
+  ],
+});
+```
+
+Alias paths work with nested routes too, as long as the parameter names match:
+
+```typescript
+const api = new SecureRestApi(this, 'Api', {
+  apiName: 'my-api',
+  routes: [
+    {
+      path: 'customers/{id}/addresses',
+      methods: [HttpMethod.GET],
+      integration: new LambdaIntegration(addressesFunction),
+      aliasPaths: ['people/{id}/addresses'],
+    },
+  ],
+});
+```
+
 ### Custom throttling
 
 ```typescript
@@ -160,6 +197,7 @@ Routes to register on the API. Each route requires:
 | `path` | `string` | The resource path; may be nested/multi-segment (leading slash is stripped automatically) |
 | `methods` | `HttpMethod[]` | HTTP methods to register on the resource |
 | `integration` | `Integration` | Any CDK API Gateway integration |
+| `aliasPaths` | `string[]` | Optional. Additional paths that register the same `methods` and `integration` |
 
 ### `deployOptions` (StageOptions)
 
