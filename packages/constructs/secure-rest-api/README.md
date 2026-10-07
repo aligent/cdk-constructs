@@ -15,6 +15,7 @@ A CDK construct for provisioning an API Gateway REST API secured with API Key au
 - Supports nested, multi-segment route paths (e.g. `rewards/accounts/{accountId}/redeem`)
 - Supports alias paths so a route can be exposed under an additional path (e.g. renaming an endpoint without breaking existing consumers)
 - Configurable deployment stage via `deployOptions` (stage name defaults to `prod`)
+- Optional IP allowlist via `allowedIps`, enforced with an API Gateway resource policy
 
 ## Installation
 
@@ -176,6 +177,16 @@ const api = new SecureRestApi(this, 'Api', {
 });
 ```
 
+### IP allowlist
+
+```typescript
+const api = new SecureRestApi(this, 'Api', {
+  apiName: 'my-api',
+  allowedIps: ['203.0.113.0/24', '198.51.100.7', '2001:db8::/32'],
+  routes: [...],
+});
+```
+
 ## Configuration Reference
 
 ### `apiName` (string) — required
@@ -236,6 +247,17 @@ Default: `{apiName}-api-key`
 Override the name of the generated usage plan.
 
 Default: `{apiName}-usage-plan`
+
+### `allowedIps` (string[])
+
+IPv4/IPv6 addresses or CIDR ranges allowed to invoke the API. Enforced with an API Gateway resource policy that allows `execute-api:Invoke` and denies any source IP not in the list.
+
+- Applies to every request, including CORS preflight (`OPTIONS`), so browsers calling from an IP outside the list will see a blocked preflight rather than a readable 403.
+- Entries are validated at synth; an empty array or any malformed entry throws an error naming the offending values.
+- `0.0.0.0/0` and `::/0` are accepted but disable the restriction.
+- The API key and usage plan still apply to allowed callers.
+
+Default: no IP restriction.
 
 ## Local Development
 

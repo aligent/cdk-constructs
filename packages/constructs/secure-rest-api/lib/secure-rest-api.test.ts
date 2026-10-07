@@ -486,4 +486,136 @@ describe("SecureRestApi", () => {
       );
     });
   });
+
+  describe("IP allowlist", () => {
+    const routes = () => [
+      {
+        path: "items",
+        methods: [HttpMethod.GET],
+        integration: mockIntegration(),
+      },
+    ];
+
+    it("allows invocation only from the given IPs via a resource policy", () => {
+      const { stack } = createStack();
+      new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        allowedIps: ["203.0.113.0/24"],
+        routes: routes(),
+      });
+
+      Template.fromStack(stack).hasResourceProperties(
+        "AWS::ApiGateway::RestApi",
+        {
+          Policy: {
+            Version: "2012-10-17",
+            Statement: [
+              {
+                Effect: "Allow",
+                Principal: { AWS: "*" },
+                Action: "execute-api:Invoke",
+                Resource: "execute-api:/*",
+              },
+              {
+                Effect: "Deny",
+                Principal: { AWS: "*" },
+                Action: "execute-api:Invoke",
+                Resource: "execute-api:/*",
+                Condition: {
+                  NotIpAddress: { "aws:SourceIp": ["203.0.113.0/24"] },
+                },
+              },
+            ],
+          },
+        }
+      );
+    });
+
+    it("sets no resource policy when allowedIps is omitted", () => {
+      const { stack } = createStack();
+      new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes: routes(),
+      });
+
+      const [restApi] = Object.values(
+        Template.fromStack(stack).findResources("AWS::ApiGateway::RestApi")
+      );
+      expect(restApi.Properties.Policy).toBeUndefined();
+    });
+
+    it("throws when allowedIps is empty", () => {
+      const { stack } = createStack();
+
+      expect(
+        () =>
+          new SecureRestApi(stack, "Api", {
+            apiName: "my-api",
+            allowedIps: [],
+            routes: routes(),
+          })
+      ).toThrow("allowedIps must contain at least one entry");
+    });
+
+    it("throws naming every invalid IP address or CIDR range", () => {
+      const { stack } = createStack();
+      const invalid = [
+        "999.1.1.1",
+        "10.0.0.0/33",
+        "::1/129",
+        "10.0.0.0/",
+        "10.0.0.0/8/8",
+        "not-an-ip",
+      ];
+
+      expect(
+        () =>
+          new SecureRestApi(stack, "Api", {
+            apiName: "my-api",
+            allowedIps: ["203.0.113.0/24", ...invalid],
+            routes: routes(),
+          })
+      ).toThrow(
+        "allowedIps contains invalid IP addresses or CIDR ranges: " +
+          "999.1.1.1, 10.0.0.0/33, ::1/129, 10.0.0.0/, 10.0.0.0/8/8, not-an-ip"
+      );
+    });
+
+    it.each([
+      ["a bare IPv4 address", "203.0.113.7"],
+      ["a bare IPv6 address", "2001:db8::1"],
+      ["an IPv6 CIDR range", "2001:db8::/32"],
+      ["the IPv4 match-all range", "0.0.0.0/0"],
+      ["the IPv6 match-all range", "::/0"],
+    ])("accepts %s", (_description, ip) => {
+      const { stack } = createStack();
+
+      expect(
+        () =>
+          new SecureRestApi(stack, "Api", {
+            apiName: "my-api",
+            allowedIps: [ip],
+            routes: routes(),
+          })
+      ).not.toThrow();
+    });
+
+    it("redeploys the API when the allowlist changes", () => {
+      const deploymentIdFor = (allowedIps: string[]) => {
+        const { stack } = createStack();
+        new SecureRestApi(stack, "Api", {
+          apiName: "my-api",
+          allowedIps,
+          routes: routes(),
+        });
+        return Object.keys(
+          Template.fromStack(stack).findResources("AWS::ApiGateway::Deployment")
+        )[0];
+      };
+
+      expect(deploymentIdFor(["203.0.113.0/24"])).not.toEqual(
+        deploymentIdFor(["198.51.100.0/24"])
+      );
+    });
+  });
 });
