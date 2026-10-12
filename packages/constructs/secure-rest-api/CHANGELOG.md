@@ -1,5 +1,11 @@
 # @aligent/cdk-secure-rest-api
 
+## 1.4.0
+
+### Minor Changes
+
+- [#1767](https://github.com/aligent/cdk-constructs/pull/1767) [`252e6c7`](https://github.com/aligent/cdk-constructs/commit/252e6c743819f317f74af8b18611e56053af4ec8) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - Add optional `allowedIps` prop to restrict API access by IP via a resource policy.
+
 ## 1.3.0
 
 ### Minor Changes
