@@ -16,6 +16,11 @@ Automatically applies configuration-aware defaults to CloudWatch Log Groups, bal
 
 - Automatically configures retention periods based on duration profile
 - Applies appropriate removal policies
+- Retention is a default, removal policy is an override:
+  - L2 `LogGroup` with no `retention` gets the profile retention
+  - Any other explicit `retention` (including `RetentionDays.INFINITE`) is respected
+  - An explicit `RetentionDays.TWO_YEARS` is overridden, since CDK renders an omitted `retention` as the same value
+- Only L2 `LogGroup`s are covered; raw `CfnLogGroup`s are left untouched
 - Duration profiles:
   - **SHORT**: 1 week retention, destroy on stack deletion
   - **MEDIUM**: 6 months retention, destroy on stack deletion

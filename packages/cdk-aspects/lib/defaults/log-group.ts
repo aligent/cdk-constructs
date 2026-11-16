@@ -14,18 +14,25 @@ interface Config {
 /**
  * Aspect that automatically applies configuration-aware defaults to CloudWatch Log Groups
  *
- * Visits all constructs in the scope and automatically applies configuration-specific to log groups.
+ * Visits all constructs in the scope and automatically applies configuration-specific defaults to L2 log groups.
  * Different configurations balance between cost optimization and data retention needs.
+ *
+ * - Removal policy is always overridden.
+ * - Retention is applied when the L2 `LogGroup` has no explicit `retention` (CDK renders this as `TWO_YEARS`).
+ * - Any other explicit `retention`, including `INFINITE`, is respected.
+ * - An explicit `TWO_YEARS` is overridden, since it is indistinguishable from the CDK default.
+ * - L1 `CfnLogGroup`s are not modified.
  *
  * @example
  * ```typescript
  * // Apply configuration-specific defaults to all log groups
  * Aspects.of(app).add(new LogGroupDefaultsAspect({ duration: 'SHORT' }));
  *
- * // Log groups automatically inherit configuration defaults
- * new LogGroup(stack, 'MyLogGroup', {
- *   // retention and removal policy applied automatically
- * });
+ * // Retention (1 week) and removal policy (DESTROY) applied automatically
+ * new LogGroup(stack, 'MyLogGroup');
+ *
+ * // Explicit retention is respected; removal policy is still applied
+ * new LogGroup(stack, 'AuditLogGroup', { retention: RetentionDays.ONE_YEAR });
  * ```
  *
  * @see https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_logs.LogGroup.html
@@ -72,8 +79,8 @@ export class LogGroupDefaultsAspect implements IAspect {
   /**
    * Visits a construct and applies configuration-appropriate defaults
    *
-   * Applies configuration-specific retention and removal policies to log groups
-   * that don't already have these properties explicitly set.
+   * Always applies the configuration-specific removal policy, and applies
+   * retention to log groups that don't set their own.
    *
    * @param node - The construct to potentially modify
    */
@@ -85,7 +92,12 @@ export class LogGroupDefaultsAspect implements IAspect {
 
       if (this.defaultProps.retention) {
         const cfnLogGroup = node.node.defaultChild as CfnLogGroup;
-        if (cfnLogGroup && cfnLogGroup.retentionInDays === undefined) {
+        /**
+         * The L2 renders an omitted `retention` as `TWO_YEARS`, and leaves
+         * `retentionInDays` undefined only for an explicit `INFINITE` (or the
+         * `DELIVERY` class). So `TWO_YEARS` is the only "unset" signal we get.
+         */
+        if (cfnLogGroup?.retentionInDays === RetentionDays.TWO_YEARS) {
           cfnLogGroup.retentionInDays = this.defaultProps.retention;
         }
       }
