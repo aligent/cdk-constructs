@@ -163,17 +163,90 @@ A set of rules that validate your infrastructure against recommended practices u
 - Validates Lambda function tracing configuration
 - Validates CloudWatch Log Group retention policy
 - Validates API Gateway stage name matches the expected value (must be exactly 3 lowercase alphanumeric characters, e.g. `dev`, `stg`, `prd`)
+- Validates key resources have a non-blank description (see [Describing resources](#describing-resources))
+- Validates stacks (including nested stacks) have a non-blank description
 
 ### Usage
 
 ```typescript
-import { Aspects } from "aws-cdk-lib";
+import { App, AspectPriority, Aspects, Stack } from "aws-cdk-lib";
 import { MicroserviceChecks } from "@aligent/cdk-aspects";
 
 const app = new App();
-const stack = new Stack(app, "MyStack");
+const stack = new Stack(app, "MyStack", { description: "Order service" });
 
-Aspects.of(stack).add(new MicroserviceChecks({ stageName: "prd" }));
+Aspects.of(stack).add(new MicroserviceChecks({ stageName: "prd" }), {
+  priority: AspectPriority.READONLY,
+});
+```
+
+> [!NOTE]
+> Add the checks with `AspectPriority.READONLY` (CDK ≥ 2.172) so they run after every mutating aspect.
+> Without it, tags added via `Tags.of(construct)` and changes made by the Defaults aspects may not be visible to the checks, unless the `@aws-cdk/core:aspectPrioritiesMutating` feature flag is enabled.
+
+### Props
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `stageName` | `string` | — | Expected API Gateway stage name (exactly 3 lowercase alphanumeric characters) |
+| `resourceDescriptionLevel` | `NagMessageLevel.ERROR \| NagMessageLevel.WARN` | `ERROR` | Severity of `Microservices-ResourceDescription`. Use `WARN` to adopt the rule without blocking synth |
+
+Any other [`NagPackProps`](https://github.com/cdklabs/cdk-nag#nagpackprops) (e.g. `verbose`, `reports`) are passed through to cdk-nag.
+
+### Describing resources
+
+`Microservices-ResourceDescription` only checks the resource types below. A resource passes if any accepted source is non-blank. Values that can't be resolved at synth time (e.g. `Fn::Sub`, `Fn::Join`) also pass.
+
+| Resource | Accepted sources |
+|---|---|
+| Lambda function | `description` prop |
+| API Gateway REST API / HTTP API | `description` prop |
+| EventBridge rule / Scheduler schedule / Pipe | `description` prop |
+| SSM parameter / Secrets Manager secret / KMS key | `description` prop |
+| S3 bucket / DynamoDB table (v1 `Table`) / SQS queue / SNS topic | `Description` tag |
+| Step Functions state machine | `comment` prop (top-level ASL `Comment`) or `Description` tag |
+
+- Types with a native `description` prop must use it; a `Description` tag doesn't count for them.
+- File-based state machine definitions (e.g. `DefinitionBody.fromFile`, `@aligent/cdk-step-function-from-file`) are uploaded to S3, so their `Comment` can't be read at synth time. Use a `Description` tag instead.
+- Tag values are limited to 256 characters and, on many services, to letters, digits, spaces and `+ - = . _ : / @`. Commas and apostrophes can fail at deploy time.
+
+```typescript
+new Function(stack, "OrderHandler", { description: "Creates orders from checkout events", ... });
+Tags.of(new Bucket(stack, "OrderExports")).add("Description", "Nightly order exports");
+```
+
+### Rule IDs
+
+| Rule ID | Checks |
+|---|---|
+| `Microservices-LambdaDefaultMemorySize` | Lambda has an explicit memory size |
+| `Microservices-LambdaDefaultTimeout` | Lambda has an explicit timeout |
+| `Microservices-LambdaTracing` | Lambda tracing is `ACTIVE` |
+| `Microservices-CloudWatchLogGroupRetentionPeriod` | Log group has an explicit retention |
+| `Microservices-ApiGatewayStageName` | API Gateway stage name matches `stageName` |
+| `Microservices-ResourceDescription` | Resource has a description ([see above](#describing-resources)) |
+| `Microservices-StackDescription` | Stack has a description |
+
+### Suppressing findings
+
+Resources created inside constructs you don't own (e.g. third-party constructs) can be suppressed per resource:
+
+```typescript
+import { NagSuppressions } from "cdk-nag";
+
+NagSuppressions.addResourceSuppressions(
+  thirdPartyConstruct,
+  [{ id: "Microservices-ResourceDescription", reason: "Owned by a third-party construct" }],
+  true // apply to children
+);
+```
+
+`Microservices-StackDescription` is reported directly on the stack rather than through cdk-nag, so it doesn't appear in cdk-nag reports. It still honours stack suppressions, e.g. for CDK-generated stacks such as `edge-lambda-stack-*` when the checks are applied at app level:
+
+```typescript
+NagSuppressions.addStackSuppressions(edgeStack, [
+  { id: "Microservices-StackDescription", reason: "CDK-generated support stack" },
+]);
 ```
 
 ## Resource Prefix
