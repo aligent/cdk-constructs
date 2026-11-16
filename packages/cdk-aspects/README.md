@@ -153,6 +153,9 @@ Aspects.of(app).add(new S3DefaultsAspect({ duration: "SHORT" }));
 
 A set of rules that validate your infrastructure against recommended practices using the cdk-nag library.
 
+> [!IMPORTANT]
+> `cdk-nag` is a peer dependency and must be **v2** (`^2.38.2`). cdk-nag v3 replaced aspect-based packs with `Validations` plugins, so under v3 these checks run but report nothing.
+
 ### Features
 
 - Validates Lambda function memory configuration
