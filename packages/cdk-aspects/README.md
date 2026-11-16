@@ -118,6 +118,36 @@ const app = new App();
 Aspects.of(app).add(new DynamoDbDefaultsAspect({ duration: "MEDIUM" }));
 ```
 
+### S3 Bucket Defaults
+
+Automatically applies configuration-aware object expiry, auto-delete, and removal-policy defaults to S3 buckets.
+
+#### Features
+
+- Duration profiles:
+  - **SHORT**: objects expire after 30 days, auto-delete objects, destroy on stack deletion
+  - **MEDIUM**: objects expire after 90 days, auto-delete objects, destroy on stack deletion
+  - **LONG**: no expiry, retain on stack deletion
+- Expiry is a **default, not an override**: it is only added to L2 `Bucket`s with no `lifecycleRules` of their own
+- Buckets that set `autoDeleteObjects: true` themselves are honoured in every profile, including **LONG**: the aspect keeps their `DESTROY` removal policy and does not register auto-delete twice
+- To opt a bucket out of expiry (e.g. an SPA bucket only filled on deploy), give it a lifecycle rule that does not expire current objects:
+
+  ```typescript
+  new Bucket(stack, "SpaBucket", {
+    lifecycleRules: [{ abortIncompleteMultipartUploadAfter: Duration.days(7) }],
+  });
+  ```
+
+#### Usage
+
+```typescript
+import { Aspects } from "aws-cdk-lib";
+import { S3DefaultsAspect } from "@aligent/cdk-aspects";
+
+const app = new App();
+Aspects.of(app).add(new S3DefaultsAspect({ duration: "SHORT" }));
+```
+
 
 ## Microservice Checks
 

@@ -1,4 +1,4 @@
-import { Duration, RemovalPolicy, type IAspect } from "aws-cdk-lib";
+import { Duration, RemovalPolicy, Stack, type IAspect } from "aws-cdk-lib";
 import { Bucket, CfnBucket, type BucketProps } from "aws-cdk-lib/aws-s3";
 import { IConstruct } from "constructs";
 
@@ -6,6 +6,12 @@ import { IConstruct } from "constructs";
 interface BucketWithAutoDelete {
   enableAutoDeleteObjects(): void;
 }
+
+/**
+ * Child id `enableAutoDeleteObjects()` gives its custom resource. Hardcoded in
+ * aws-cdk-lib, so it is no more fragile than the private call itself.
+ */
+const AUTO_DELETE_OBJECTS_CHILD_ID = "AutoDeleteObjectsCustomResource";
 
 /**
  * Configuration for the {@link S3DefaultsAspect}.
@@ -23,9 +29,13 @@ interface Config {
  * CDK Aspect that applies duration-based lifecycle and removal policies to S3 Buckets.
  *
  * When added to a scope, this aspect visits every {@link Bucket} construct and:
- * 1. Sets the removal policy (`DESTROY` for SHORT/MEDIUM, `RETAIN` for LONG).
- * 2. Adds lifecycle rules with an object expiration (30 or 90 days) — only if the
- *    bucket does not already have an explicit lifecycle configuration.
+ * 1. Sets the removal policy (`DESTROY` for SHORT/MEDIUM, `RETAIN` for LONG) — unless
+ *    the bucket enabled auto-delete itself, which keeps its own `DESTROY` in every profile.
+ * 2. Enables auto-delete objects for SHORT/MEDIUM, unless the bucket already enabled it.
+ * 3. Adds lifecycle rules with an object expiration (30 or 90 days) — only if the
+ *    bucket does not already have its own lifecycle rules. To opt a bucket out of
+ *    expiry, give it a rule that does not expire current objects
+ *    (e.g. `abortIncompleteMultipartUploadAfter`).
  *
  * @example
  * ```typescript
@@ -98,11 +108,23 @@ export class S3DefaultsAspect implements IAspect {
     if (node instanceof Bucket) {
       const { lifecycleRules, removalPolicy, autoDeleteObjects } =
         this.defaultProps;
-      if (removalPolicy) {
+      const hasAutoDelete = Boolean(
+        node.node.tryFindChild(AUTO_DELETE_OBJECTS_CHILD_ID)
+      );
+
+      /**
+       * Auto-delete requires DESTROY. Overriding it with RETAIN (LONG) would
+       * keep the bucket but still empty it when the stack is deleted.
+       */
+      if (removalPolicy && !hasAutoDelete) {
         node.applyRemovalPolicy(removalPolicy);
       }
 
-      if (autoDeleteObjects) {
+      /**
+       * CDK has no idempotency guard, so a second call throws on the duplicate
+       * child id, e.g. when the bucket already set `autoDeleteObjects: true`.
+       */
+      if (autoDeleteObjects && !hasAutoDelete) {
         // NOTE: This relies on a private CDK API and may break in future aws-cdk-lib releases.
         // @see https://github.com/aws/aws-cdk/blob/main/packages/aws-cdk-lib/aws-s3/lib/bucket.ts#L3357
         (node as unknown as BucketWithAutoDelete).enableAutoDeleteObjects();
@@ -110,7 +132,14 @@ export class S3DefaultsAspect implements IAspect {
 
       if (lifecycleRules?.length) {
         const cfnBucket = node.node.defaultChild as CfnBucket;
-        if (cfnBucket && cfnBucket.lifecycleConfiguration === undefined) {
+        /**
+         * The L2 always passes a lazy value, so the raw property is never
+         * `undefined`. Only the resolved value tells whether it has rules.
+         */
+        if (
+          cfnBucket &&
+          Stack.of(node).resolve(cfnBucket.lifecycleConfiguration) === undefined
+        ) {
           lifecycleRules.forEach(rule => node.addLifecycleRule(rule));
         }
       }
