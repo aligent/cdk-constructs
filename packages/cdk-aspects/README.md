@@ -204,10 +204,10 @@ Any other [`NagPackProps`](https://github.com/cdklabs/cdk-nag#nagpackprops) (e.g
 | EventBridge rule / Scheduler schedule / Pipe | `description` prop |
 | SSM parameter / Secrets Manager secret / KMS key | `description` prop |
 | S3 bucket / DynamoDB table (v1 `Table`) / SQS queue / SNS topic | `Description` tag |
-| Step Functions state machine | `comment` prop (top-level ASL `Comment`) or `Description` tag |
+| Step Functions state machine | `comment` prop (top-level ASL `Comment`) |
 
 - Types with a native `description` prop must use it; a `Description` tag doesn't count for them.
-- File-based state machine definitions (e.g. `DefinitionBody.fromFile`, `@aligent/cdk-step-function-from-file`) are uploaded to S3, so their `Comment` can't be read at synth time. Use a `Description` tag instead.
+- File-based state machine definitions (e.g. `DefinitionBody.fromFile`, `@aligent/cdk-step-function-from-file`) are uploaded to S3, so their `Comment` can't be read at synth time. They always fail, so suppress `Microservices-ResourceDescription` for them (see [Suppressing findings](#suppressing-findings)).
 - Tag values are limited to 256 characters and, on many services, to letters, digits, spaces and `+ - = . _ : / @`. Commas and apostrophes can fail at deploy time.
 
 ```typescript

@@ -4,7 +4,7 @@
 
 `MicroserviceChecks` now requires descriptions:
 
-- `Microservices-ResourceDescription`: Lambda functions, API Gateway REST/HTTP APIs, EventBridge rules/schedules/pipes, SSM parameters, Secrets Manager secrets and KMS keys need a non-blank `description`. S3 buckets, DynamoDB tables (v1 `Table`), SQS queues and SNS topics need a `Description` tag. Step Functions state machines need a top-level ASL `Comment` or a `Description` tag.
+- `Microservices-ResourceDescription`: Lambda functions, API Gateway REST/HTTP APIs, EventBridge rules/schedules/pipes, SSM parameters, Secrets Manager secrets and KMS keys need a non-blank `description`. S3 buckets, DynamoDB tables (v1 `Table`), SQS queues and SNS topics need a `Description` tag. Step Functions state machines need a top-level ASL `Comment`. File-based definitions (`DefinitionBody.fromFile`, `@aligent/cdk-step-function-from-file`) can't be checked at synth time and must be suppressed.
 - `Microservices-StackDescription`: stacks (incl. nested stacks) need a `description`.
 
 **Heads up:**

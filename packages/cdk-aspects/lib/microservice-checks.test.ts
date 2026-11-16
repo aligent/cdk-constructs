@@ -575,7 +575,7 @@ describe("MicroserviceChecks", () => {
         );
       });
 
-      it("should trigger an error for a file definition without a Description tag", () => {
+      it("should trigger an error for a file definition", () => {
         const stack = createStack();
         new StateMachine(stack, "Target", {
           definitionBody: DefinitionBody.fromFile(aslPath),
@@ -587,14 +587,14 @@ describe("MicroserviceChecks", () => {
         );
       });
 
-      it("should accept a Description tag on a file definition", () => {
+      it("should not accept a Description tag", () => {
         const stack = createStack();
         const stateMachine = new StateMachine(stack, "Target", {
           definitionBody: DefinitionBody.fromFile(aslPath),
         });
         Tags.of(stateMachine).add("Description", "Processes orders");
 
-        Annotations.fromStack(stack).hasNoError(
+        Annotations.fromStack(stack).hasError(
           "/TestStack/Target/Resource",
           RESOURCE_DESCRIPTION
         );

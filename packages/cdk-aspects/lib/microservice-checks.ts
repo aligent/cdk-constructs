@@ -44,7 +44,7 @@ function apiGatewayStageName(expected: string): RuleResult {
 }
 
 /**
- * Tag accepted as the description for resource types that have no native `Description` property.
+ * Tag accepted as the description for S3, DynamoDB, SQS and SNS, which have no native `Description` property.
  */
 const DESCRIPTION_TAG_KEY = "Description";
 
@@ -113,7 +113,8 @@ function flattenJoin(value: unknown): string | undefined {
 /**
  * Reads the top-level ASL `Comment` only. States carry their own `Comment`s, which
  * describe a step rather than the state machine, so a regex match would be wrong.
- * File-based definitions (`definitionS3Location`) have no Comment at synth time.
+ * File-based definitions (`definitionS3Location`) have no Comment at synth time, so they
+ * always fail and need a suppression.
  */
 function aslComment(node: CfnStateMachine): DescriptionStatus {
   const stack = Stack.of(node);
@@ -151,7 +152,7 @@ function describedBy<T extends CfnResource>(
 /**
  * Curated rather than "every type with a description" so CDK-generated helpers (e.g. a
  * Lambda's auto-created IAM role) aren't flagged. Types with a native property must use
- * it; tags are only accepted where CloudFormation offers no description property.
+ * it, S3/DynamoDB/SQS/SNS use a tag, and state machines use the ASL Comment only.
  */
 const DESCRIPTION_CHECKS: DescriptionCheck[] = [
   describedBy(CfnFunction, nativeDescription),
@@ -307,7 +308,7 @@ export class MicroserviceChecks extends NagPack {
       });
       this.applyRule({
         info: "The resource does not have a description.",
-        explanation: `A description documents the resource's purpose in the AWS console, which speeds up incident triage and ownership lookups. Set the \`description\` prop on Lambda functions, API Gateway REST/HTTP APIs, EventBridge rules/schedules/pipes, SSM parameters, Secrets Manager secrets and KMS keys. Add a \`${DESCRIPTION_TAG_KEY}\` tag to S3 buckets, DynamoDB tables, SQS queues and SNS topics. Set the state machine \`comment\` or add a \`${DESCRIPTION_TAG_KEY}\` tag to Step Functions state machines.`,
+        explanation: `A description documents the resource's purpose in the AWS console, which speeds up incident triage and ownership lookups. Set the \`description\` prop on Lambda functions, API Gateway REST/HTTP APIs, EventBridge rules/schedules/pipes, SSM parameters, Secrets Manager secrets and KMS keys. Add a \`${DESCRIPTION_TAG_KEY}\` tag to S3 buckets, DynamoDB tables, SQS queues and SNS topics. Set the \`comment\` prop on Step Functions state machines.`,
         level: this.resourceDescriptionLevel,
         rule: resourceDescription,
         ruleSuffixOverride: "ResourceDescription",
