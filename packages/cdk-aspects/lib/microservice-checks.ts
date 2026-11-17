@@ -1,5 +1,18 @@
-import { CfnResource } from "aws-cdk-lib";
-import { CfnStage } from "aws-cdk-lib/aws-apigateway";
+import { Annotations, CfnResource, Stack, TagManager } from "aws-cdk-lib";
+import { CfnRestApi, CfnStage } from "aws-cdk-lib/aws-apigateway";
+import { CfnApi } from "aws-cdk-lib/aws-apigatewayv2";
+import { CfnTable } from "aws-cdk-lib/aws-dynamodb";
+import { CfnRule } from "aws-cdk-lib/aws-events";
+import { CfnKey } from "aws-cdk-lib/aws-kms";
+import { CfnFunction } from "aws-cdk-lib/aws-lambda";
+import { CfnPipe } from "aws-cdk-lib/aws-pipes";
+import { CfnBucket } from "aws-cdk-lib/aws-s3";
+import { CfnSchedule } from "aws-cdk-lib/aws-scheduler";
+import { CfnSecret } from "aws-cdk-lib/aws-secretsmanager";
+import { CfnTopic } from "aws-cdk-lib/aws-sns";
+import { CfnQueue } from "aws-cdk-lib/aws-sqs";
+import { CfnParameter as SsmCfnParameter } from "aws-cdk-lib/aws-ssm";
+import { CfnStateMachine } from "aws-cdk-lib/aws-stepfunctions";
 import {
   NagMessageLevel,
   NagPack,
@@ -30,12 +43,180 @@ function apiGatewayStageName(expected: string): RuleResult {
   };
 }
 
+/**
+ * Tag accepted as the description for S3, DynamoDB, SQS and SNS, which have no native `Description` property.
+ */
+const DESCRIPTION_TAG_KEY = "Description";
+
+/**
+ * Outcome of reading one description source. `unresolvable` passes because
+ * intrinsics (e.g. `Fn::Sub`) can't be checked at synth time.
+ */
+type DescriptionStatus = "present" | "absent" | "unresolvable";
+
+/**
+ * Reads every description source of a resource, or returns undefined when its type isn't covered.
+ */
+type DescriptionCheck = (node: CfnResource) => DescriptionStatus[] | undefined;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Resolves with `Stack.resolve` rather than `NagRules.resolveIfPrimitive`, which throws on
+ * intrinsics and makes cdk-nag report a validation failure instead of a finding.
+ */
+function classify(node: CfnResource, value: unknown): DescriptionStatus {
+  const resolved: unknown = Stack.of(node).resolve(value);
+  if (resolved === undefined || resolved === null) return "absent";
+  if (typeof resolved === "string") {
+    return resolved.trim() ? "present" : "absent";
+  }
+  return "unresolvable";
+}
+
+function nativeDescription(
+  node: CfnResource & { readonly description?: string }
+): DescriptionStatus {
+  return classify(node, node.description);
+}
+
+/**
+ * Only sees tags applied before this pack visits the node, which is why the README
+ * recommends adding `MicroserviceChecks` with `AspectPriority.READONLY`.
+ */
+function descriptionTag(node: CfnResource): DescriptionStatus {
+  return classify(node, TagManager.of(node)?.tagValues()[DESCRIPTION_TAG_KEY]);
+}
+
+/**
+ * Rebuilds ASL JSON from a resolved `DefinitionString`. Token parts (ARNs, Refs) sit inside
+ * JSON string values, so dropping them keeps the JSON parseable. A token outside a string
+ * makes parsing fail, and the definition is then treated as unresolvable.
+ */
+function flattenJoin(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (!isRecord(value)) return undefined;
+
+  const join: unknown = value["Fn::Join"];
+  if (!Array.isArray(join) || join.length !== 2) return undefined;
+
+  const [separator, parts]: unknown[] = join;
+  if (typeof separator !== "string" || !Array.isArray(parts)) return undefined;
+
+  return parts
+    .map((part: unknown) => (typeof part === "string" ? part : ""))
+    .join(separator);
+}
+
+/**
+ * Reads the top-level ASL `Comment` only. States carry their own `Comment`s, which
+ * describe a step rather than the state machine, so a regex match would be wrong.
+ * File-based definitions (`definitionS3Location`) have no Comment at synth time, so they
+ * always fail and need a suppression.
+ */
+function aslComment(node: CfnStateMachine): DescriptionStatus {
+  const stack = Stack.of(node);
+  let definition: unknown;
+
+  const definitionString: unknown = stack.resolve(node.definitionString);
+  if (definitionString !== undefined) {
+    const json = flattenJoin(definitionString);
+    if (json === undefined) return "unresolvable";
+    try {
+      definition = JSON.parse(json);
+    } catch {
+      return "unresolvable";
+    }
+  } else {
+    definition = stack.resolve(node.definition);
+  }
+
+  if (definition === undefined) return "absent";
+  if (!isRecord(definition)) return "unresolvable";
+  return classify(node, definition.Comment);
+}
+
+/**
+ * Binds sources to an L1 class so each source receives a correctly typed node.
+ */
+function describedBy<T extends CfnResource>(
+  type: abstract new (...args: never[]) => T,
+  ...sources: Array<(node: T) => DescriptionStatus>
+): DescriptionCheck {
+  return node =>
+    node instanceof type ? sources.map(source => source(node)) : undefined;
+}
+
+/**
+ * Curated rather than "every type with a description" so CDK-generated helpers (e.g. a
+ * Lambda's auto-created IAM role) aren't flagged. Types with a native property must use
+ * it, S3/DynamoDB/SQS/SNS use a tag, and state machines use the ASL Comment only.
+ */
+const DESCRIPTION_CHECKS: DescriptionCheck[] = [
+  describedBy(CfnFunction, nativeDescription),
+  describedBy(CfnRestApi, nativeDescription),
+  describedBy(CfnApi, nativeDescription),
+  describedBy(CfnRule, nativeDescription),
+  describedBy(CfnSchedule, nativeDescription),
+  describedBy(CfnPipe, nativeDescription),
+  describedBy(SsmCfnParameter, nativeDescription),
+  describedBy(CfnSecret, nativeDescription),
+  describedBy(CfnKey, nativeDescription),
+  describedBy(CfnBucket, descriptionTag),
+  describedBy(CfnTable, descriptionTag),
+  describedBy(CfnQueue, descriptionTag),
+  describedBy(CfnTopic, descriptionTag),
+  describedBy(CfnStateMachine, aslComment),
+];
+
+/**
+ * Checks that a covered resource has a non-blank description from any of its accepted sources.
+ */
+function resourceDescription(node: CfnResource): NagRuleResult {
+  for (const check of DESCRIPTION_CHECKS) {
+    const statuses = check(node);
+    if (statuses) {
+      return statuses.some(status => status !== "absent")
+        ? NagRuleCompliance.COMPLIANT
+        : NagRuleCompliance.NON_COMPLIANT;
+    }
+  }
+  return NagRuleCompliance.NOT_APPLICABLE;
+}
+
+/**
+ * Mirrors cdk-nag's stack-level suppressions so `NagSuppressions.addStackSuppressions` works
+ * for the stack check, which can't use `applyRule` because a Stack isn't a CfnResource.
+ */
+function isStackSuppressed(stack: Stack, ruleId: string): boolean {
+  const cdkNag: unknown = stack.templateOptions.metadata?.cdk_nag;
+  if (!isRecord(cdkNag)) return false;
+
+  const suppressions: unknown = cdkNag.rules_to_suppress;
+  if (!Array.isArray(suppressions)) return false;
+
+  return suppressions.some(
+    (suppression: unknown) => isRecord(suppression) && suppression.id === ruleId
+  );
+}
+
 export interface MicroserviceChecksProps extends NagPackProps {
   /**
    * The expected API Gateway stage name.
    * Must be exactly 3 lowercase alphanumeric characters (e.g. dev, stg, prd).
    */
   readonly stageName: string;
+
+  /**
+   * Severity of the `Microservices-ResourceDescription` rule.
+   * WARN lets teams adopt the rule without blocking synth.
+   *
+   * @default NagMessageLevel.ERROR
+   */
+  readonly resourceDescriptionLevel?:
+    NagMessageLevel.ERROR | NagMessageLevel.WARN;
 }
 
 /**
@@ -46,11 +227,15 @@ export interface MicroserviceChecksProps extends NagPackProps {
  *
  * @example
  * const app = new App();
- * const stack = new Stack(app, 'MyStack');
- * Aspects.of(stack).add(new MicroservicesChecks({ stageName: 'prd' }));
+ * const stack = new Stack(app, 'MyStack', { description: 'Order service' });
+ * Aspects.of(stack).add(new MicroserviceChecks({ stageName: 'prd' }), {
+ *   priority: AspectPriority.READONLY,
+ * });
  */
 export class MicroserviceChecks extends NagPack {
   private readonly stageName: string;
+  private readonly resourceDescriptionLevel:
+    NagMessageLevel.ERROR | NagMessageLevel.WARN;
 
   constructor(props: MicroserviceChecksProps) {
     super(props);
@@ -62,10 +247,22 @@ export class MicroserviceChecks extends NagPack {
       );
     }
     this.stageName = props.stageName;
+
+    const level = props.resourceDescriptionLevel ?? NagMessageLevel.ERROR;
+    if (level !== NagMessageLevel.ERROR && level !== NagMessageLevel.WARN) {
+      throw new Error(
+        `resourceDescriptionLevel must be NagMessageLevel.ERROR or NagMessageLevel.WARN, got: "${level}"`
+      );
+    }
+    this.resourceDescriptionLevel = level;
   }
 
   public visit(node: IConstruct) {
     if (isCdkManagedSingleton(node)) return;
+
+    if (node instanceof Stack) {
+      this.checkStackDescription(node);
+    }
 
     if (node instanceof CfnResource) {
       this.applyRule({
@@ -105,8 +302,32 @@ export class MicroserviceChecks extends NagPack {
         explanation: `The API Gateway stage name must be exactly 3 lowercase alphanumeric characters and match the expected value "${this.stageName}". This ensures consistent naming conventions across environments (e.g. dev, stg, prd).`,
         level: NagMessageLevel.ERROR,
         rule: apiGatewayStageName(this.stageName),
+        /** The rule is an anonymous closure, so cdk-nag can't derive a usable ID from its name. */
+        ruleSuffixOverride: "ApiGatewayStageName",
+        node: node,
+      });
+      this.applyRule({
+        info: "The resource does not have a description.",
+        explanation: `A description documents the resource's purpose in the AWS console, which speeds up incident triage and ownership lookups. Set the \`description\` prop on Lambda functions, API Gateway REST/HTTP APIs, EventBridge rules/schedules/pipes, SSM parameters, Secrets Manager secrets and KMS keys. Add a \`${DESCRIPTION_TAG_KEY}\` tag to S3 buckets, DynamoDB tables, SQS queues and SNS topics. Set the \`comment\` prop on Step Functions state machines.`,
+        level: this.resourceDescriptionLevel,
+        rule: resourceDescription,
+        ruleSuffixOverride: "ResourceDescription",
         node: node,
       });
     }
+  }
+
+  /**
+   * Stacks aren't CfnResources, so this reports through Annotations directly instead of cdk-nag.
+   */
+  private checkStackDescription(stack: Stack) {
+    if (stack.templateOptions.description?.trim()) return;
+
+    const ruleId = `${this.packName}-StackDescription`;
+    if (isStackSuppressed(stack, ruleId)) return;
+
+    Annotations.of(stack).addError(
+      `${ruleId}: The stack does not have a description. Set the \`description\` prop on the Stack so its purpose is visible in the CloudFormation console.`
+    );
   }
 }
