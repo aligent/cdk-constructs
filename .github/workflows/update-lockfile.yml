@@ -41,17 +41,22 @@ jobs:
           cache: "yarn"
 
       - name: Update Lockfile
+        id: lockfile
         run: |
           # Update lockfile to match package.json changes
           yarn install --mode update-lockfile
-          
-          # Check if lockfile was modified
+
+          # Expose the result so the commit step is skipped when nothing changed;
+          # `exit 0` here would only end this step, not the job
           if git diff --quiet yarn.lock; then
             echo "No lockfile changes needed"
-            exit 0
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Commit Lockfile Changes
+        if: steps.lockfile.outputs.changed == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
