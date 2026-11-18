@@ -1,10 +1,22 @@
-import { App, Stack } from "aws-cdk-lib";
-import { Template } from "aws-cdk-lib/assertions";
-import { LambdaIntegration, MockIntegration } from "aws-cdk-lib/aws-apigateway";
+import { App, Duration, Stack } from "aws-cdk-lib";
+import { Match, Template } from "aws-cdk-lib/assertions";
+import {
+  AuthorizationType,
+  CognitoUserPoolsAuthorizer,
+  LambdaIntegration,
+  MockIntegration,
+  TokenAuthorizer,
+} from "aws-cdk-lib/aws-apigateway";
 import { HttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
+import { UserPool } from "aws-cdk-lib/aws-cognito";
 import { Function, InlineCode, Runtime } from "aws-cdk-lib/aws-lambda";
+import { CfnSecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
-import { SecureRestApi } from "./secure-rest-api";
+import {
+  SecureRestApi,
+  SecureRestApiProps,
+  SecureRestApiRoute,
+} from "./secure-rest-api";
 
 const createStack = () => {
   const app = new App();
@@ -67,7 +79,7 @@ describe("SecureRestApi", () => {
       );
     });
 
-    it("registers each route method with apiKeyRequired", () => {
+    it("registers each route method without requiring an API key", () => {
       const { stack } = createStack();
       new SecureRestApi(stack, "Api", {
         apiName: "my-api",
@@ -83,11 +95,11 @@ describe("SecureRestApi", () => {
       const template = Template.fromStack(stack);
       template.hasResourceProperties("AWS::ApiGateway::Method", {
         HttpMethod: "GET",
-        ApiKeyRequired: true,
+        ApiKeyRequired: Match.absent(),
       });
       template.hasResourceProperties("AWS::ApiGateway::Method", {
         HttpMethod: "POST",
-        ApiKeyRequired: true,
+        ApiKeyRequired: Match.absent(),
       });
     });
 
@@ -108,7 +120,7 @@ describe("SecureRestApi", () => {
         "AWS::ApiGateway::Method",
         {
           HttpMethod: "POST",
-          ApiKeyRequired: true,
+          AuthorizationType: "CUSTOM",
         }
       );
     });
@@ -165,10 +177,9 @@ describe("SecureRestApi", () => {
       expect(resourcesByPathPart("redeem")).toHaveLength(1);
       expect(resourcesByPathPart("reversal")).toHaveLength(1);
 
-      // Each leaf registers its POST method with apiKeyRequired.
       template.resourcePropertiesCountIs(
         "AWS::ApiGateway::Method",
-        { HttpMethod: "POST", ApiKeyRequired: true },
+        { HttpMethod: "POST", AuthorizationType: "CUSTOM" },
         2
       );
     });
@@ -195,7 +206,7 @@ describe("SecureRestApi", () => {
       }
       template.resourcePropertiesCountIs(
         "AWS::ApiGateway::Method",
-        { HttpMethod: "GET", ApiKeyRequired: true },
+        { HttpMethod: "GET", AuthorizationType: "CUSTOM" },
         2
       );
     });
@@ -222,7 +233,7 @@ describe("SecureRestApi", () => {
       }
       template.resourcePropertiesCountIs(
         "AWS::ApiGateway::Method",
-        { HttpMethod: "GET", ApiKeyRequired: true },
+        { HttpMethod: "GET", AuthorizationType: "CUSTOM" },
         2
       );
     });
@@ -240,7 +251,9 @@ describe("SecureRestApi", () => {
         ],
       });
 
-      Template.fromStack(stack).resourceCountIs("AWS::Lambda::Function", 1);
+      Template.fromStack(stack).hasResourceProperties("AWS::Lambda::Function", {
+        Handler: "index.handler",
+      });
     });
   });
 
@@ -289,49 +302,410 @@ describe("SecureRestApi", () => {
     });
   });
 
-  describe("API Key", () => {
-    it("creates an API key with a default name", () => {
+  describe("Default token authorizer", () => {
+    const createDefaultApi = () => {
       const { stack } = createStack();
-      new SecureRestApi(stack, "Api", {
+      const secureApi = new SecureRestApi(stack, "Api", {
         apiName: "my-api",
         routes: [
           {
             path: "items",
+            methods: [HttpMethod.GET, HttpMethod.POST],
+            integration: mockIntegration(),
+          },
+          {
+            path: "customers/{id}/addresses",
             methods: [HttpMethod.GET],
             integration: mockIntegration(),
+            aliasPaths: ["people/{id}/addresses"],
           },
         ],
       });
+      return { stack, secureApi, template: Template.fromStack(stack) };
+    };
 
-      Template.fromStack(stack).hasResourceProperties(
-        "AWS::ApiGateway::ApiKey",
-        { Name: "my-api-api-key" }
+    const methodsExcludingPreflight = (template: Template) =>
+      Object.values(template.findResources("AWS::ApiGateway::Method")).filter(
+        method => method.Properties.HttpMethod !== "OPTIONS"
       );
+
+    it("requires the default authorizer on every registered method, including nested and alias paths", () => {
+      const { template } = createDefaultApi();
+
+      const methods = methodsExcludingPreflight(template);
+      expect(methods).toHaveLength(4);
+      for (const method of methods) {
+        expect(method.Properties.AuthorizationType).toBe("CUSTOM");
+        expect(method.Properties.AuthorizerId).toBeDefined();
+      }
     });
 
-    it("uses a custom API key name when provided", () => {
+    it("leaves CORS preflight methods without an authorizer", () => {
+      const { template } = createDefaultApi();
+
+      template.hasResourceProperties("AWS::ApiGateway::Method", {
+        HttpMethod: "OPTIONS",
+        AuthorizationType: "NONE",
+      });
+    });
+
+    it("creates a TOKEN authorizer reading the Authorization header with a 60 second cache TTL", () => {
+      const { template } = createDefaultApi();
+
+      template.resourceCountIs("AWS::ApiGateway::Authorizer", 1);
+      template.hasResourceProperties("AWS::ApiGateway::Authorizer", {
+        Type: "TOKEN",
+        IdentitySource: "method.request.header.Authorization",
+        AuthorizerResultTtlInSeconds: 60,
+      });
+    });
+
+    it("generates a plain string secret and exposes it on the construct", () => {
+      const { secureApi, template } = createDefaultApi();
+
+      expect(secureApi.secret).toBeDefined();
+      template.resourceCountIs("AWS::SecretsManager::Secret", 1);
+      const [secret] = Object.values(
+        template.findResources("AWS::SecretsManager::Secret")
+      );
+      expect(secret.Properties.GenerateSecretString).toBeDefined();
+      expect(
+        secret.Properties.GenerateSecretString.SecretStringTemplate
+      ).toBeUndefined();
+      expect(secret.Properties.SecretString).toBeUndefined();
+    });
+
+    it("passes the secret to the authorizer function via environment variable", () => {
+      const { stack, secureApi, template } = createDefaultApi();
+      const secretLogicalId = stack.getLogicalId(
+        secureApi.secret?.node.defaultChild as CfnSecret
+      );
+
+      template.hasResourceProperties("AWS::Lambda::Function", {
+        Environment: { Variables: { SECRET_ARN: { Ref: secretLogicalId } } },
+      });
+    });
+
+    it("grants the authorizer function read access to the secret", () => {
+      const { stack, secureApi, template } = createDefaultApi();
+      const secretLogicalId = stack.getLogicalId(
+        secureApi.secret?.node.defaultChild as CfnSecret
+      );
+
+      template.hasResourceProperties("AWS::IAM::Policy", {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: Match.arrayWith(["secretsmanager:GetSecretValue"]),
+              Effect: "Allow",
+              Resource: { Ref: secretLogicalId },
+            }),
+          ]),
+        },
+      });
+    });
+
+    it("runs the bundled token authorizer handler", () => {
+      const { template } = createDefaultApi();
+
+      template.hasResourceProperties("AWS::Lambda::Function", {
+        Handler: "token-authorizer.handler",
+        Runtime: "nodejs24.x",
+      });
+    });
+  });
+
+  describe("Customising the default authorizer", () => {
+    const routes: SecureRestApiProps["routes"] = [
+      {
+        path: "items",
+        methods: [HttpMethod.GET],
+        integration: mockIntegration(),
+      },
+    ];
+
+    it("overrides the authorizer cache TTL", () => {
       const { stack } = createStack();
       new SecureRestApi(stack, "Api", {
         apiName: "my-api",
-        apiKeyName: "custom-key",
-        routes: [
-          {
-            path: "items",
-            methods: [HttpMethod.GET],
-            integration: mockIntegration(),
-          },
-        ],
+        routes,
+        authorizerCacheTtl: Duration.seconds(300),
       });
 
       Template.fromStack(stack).hasResourceProperties(
-        "AWS::ApiGateway::ApiKey",
-        { Name: "custom-key" }
+        "AWS::ApiGateway::Authorizer",
+        { AuthorizerResultTtlInSeconds: 300 }
       );
     });
   });
 
-  describe("Usage Plan", () => {
-    it("creates a usage plan with default throttle settings", () => {
+  describe("Bring your own authorizer", () => {
+    const routes: SecureRestApiProps["routes"] = [
+      {
+        path: "items",
+        methods: [HttpMethod.GET, HttpMethod.POST],
+        integration: mockIntegration(),
+      },
+      {
+        path: "customers/{id}/addresses",
+        methods: [HttpMethod.GET],
+        integration: mockIntegration(),
+        aliasPaths: ["people/{id}/addresses"],
+      },
+    ];
+
+    const createWithCustomAuthorizer = (
+      extraProps: Partial<SecureRestApiProps>
+    ) => {
+      const { stack } = createStack();
+      const handler = new Function(stack, "CustomAuthorizerHandler", {
+        runtime: Runtime.NODEJS_22_X,
+        handler: "custom.handler",
+        code: InlineCode.fromInline("exports.handler = () => {}"),
+      });
+      return () =>
+        new SecureRestApi(stack, "Api", {
+          apiName: "my-api",
+          routes,
+          authorizer: new TokenAuthorizer(stack, "CustomAuthorizer", {
+            handler,
+          }),
+          ...extraProps,
+        });
+    };
+
+    it("throws when authorizerCacheTtl is supplied with a custom authorizer", () => {
+      const create = createWithCustomAuthorizer({
+        authorizerCacheTtl: Duration.seconds(30),
+      });
+
+      expect(create).toThrow(/authorizerCacheTtl.*authorizer/i);
+    });
+
+    const createCognitoApi = () => {
+      const { stack } = createStack();
+      const userPool = new UserPool(stack, "UserPool");
+      const secureApi = new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes,
+        authorizer: new CognitoUserPoolsAuthorizer(stack, "CognitoAuthorizer", {
+          cognitoUserPools: [userPool],
+        }),
+      });
+      return { stack, secureApi, template: Template.fromStack(stack) };
+    };
+
+    const createLambdaAuthorizerApi = () => {
+      const { stack } = createStack();
+      const handler = new Function(stack, "CustomAuthorizerHandler", {
+        runtime: Runtime.NODEJS_22_X,
+        handler: "custom.handler",
+        code: InlineCode.fromInline("exports.handler = () => {}"),
+      });
+      const secureApi = new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes,
+        authorizer: new TokenAuthorizer(stack, "CustomAuthorizer", { handler }),
+      });
+      return { stack, secureApi, template: Template.fromStack(stack) };
+    };
+
+    const methodsExcludingPreflight = (template: Template) =>
+      Object.values(template.findResources("AWS::ApiGateway::Method")).filter(
+        method => method.Properties.HttpMethod !== "OPTIONS"
+      );
+
+    it("attaches a Cognito authorizer to every registered method", () => {
+      const { template } = createCognitoApi();
+
+      const methods = methodsExcludingPreflight(template);
+      expect(methods).toHaveLength(4);
+      for (const method of methods) {
+        expect(method.Properties.AuthorizationType).toBe("COGNITO_USER_POOLS");
+        expect(method.Properties.AuthorizerId).toBeDefined();
+      }
+    });
+
+    it("attaches a custom Lambda authorizer to every registered method", () => {
+      const { template } = createLambdaAuthorizerApi();
+
+      const methods = methodsExcludingPreflight(template);
+      expect(methods).toHaveLength(4);
+      for (const method of methods) {
+        expect(method.Properties.AuthorizationType).toBe("CUSTOM");
+        expect(method.Properties.AuthorizerId).toBeDefined();
+      }
+    });
+
+    it("creates only the supplied authorizer, not the default one", () => {
+      const { template } = createCognitoApi();
+
+      template.resourceCountIs("AWS::ApiGateway::Authorizer", 1);
+      template.hasResourceProperties("AWS::ApiGateway::Authorizer", {
+        Type: "COGNITO_USER_POOLS",
+      });
+    });
+
+    it("creates no default authorizer Lambda or secret with a Cognito authorizer", () => {
+      const { template } = createCognitoApi();
+
+      template.resourceCountIs("AWS::SecretsManager::Secret", 0);
+      template.resourceCountIs("AWS::Lambda::Function", 0);
+    });
+
+    it("creates no default authorizer Lambda or secret with a custom Lambda authorizer", () => {
+      const { template } = createLambdaAuthorizerApi();
+
+      template.resourceCountIs("AWS::SecretsManager::Secret", 0);
+      template.resourceCountIs("AWS::Lambda::Function", 1);
+      template.hasResourceProperties("AWS::Lambda::Function", {
+        Handler: "custom.handler",
+      });
+    });
+
+    it("leaves secret undefined when a custom authorizer is used", () => {
+      expect(createCognitoApi().secureApi.secret).toBeUndefined();
+      expect(createLambdaAuthorizerApi().secureApi.secret).toBeUndefined();
+    });
+  });
+
+  describe("Per-route authorizer", () => {
+    const createRouteOverrideApi = (
+      routeAuthorizer: (scope: Construct) => SecureRestApiRoute["authorizer"]
+    ) => {
+      const { stack } = createStack();
+      const secureApi = new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes: [
+          {
+            path: "protected",
+            methods: [HttpMethod.GET],
+            integration: mockIntegration(),
+          },
+          {
+            path: "overridden",
+            methods: [HttpMethod.GET, HttpMethod.POST],
+            integration: mockIntegration(),
+            aliasPaths: ["overridden-alias"],
+            authorizer: routeAuthorizer(stack),
+          },
+        ],
+      });
+      return { stack, secureApi, template: Template.fromStack(stack) };
+    };
+
+    const methodsAt = (template: Template, resourcePathPart: string) => {
+      const resources = template.findResources("AWS::ApiGateway::Resource", {
+        Properties: { PathPart: resourcePathPart },
+      });
+      const [logicalId] = Object.keys(resources);
+      return Object.values(
+        template.findResources("AWS::ApiGateway::Method", {
+          Properties: { ResourceId: { Ref: logicalId } },
+        })
+      ).filter(method => method.Properties.HttpMethod !== "OPTIONS");
+    };
+
+    const cognitoAuthorizer = (scope: Construct) =>
+      new CognitoUserPoolsAuthorizer(scope, "RouteCognitoAuthorizer", {
+        cognitoUserPools: [new UserPool(scope, "UserPool")],
+      });
+
+    it("applies a route-level authorizer to that route only", () => {
+      const { template } = createRouteOverrideApi(cognitoAuthorizer);
+
+      const overridden = methodsAt(template, "overridden");
+      const protectedMethods = methodsAt(template, "protected");
+      for (const method of overridden) {
+        expect(method.Properties.AuthorizationType).toBe("COGNITO_USER_POOLS");
+      }
+      for (const method of protectedMethods) {
+        expect(method.Properties.AuthorizationType).toBe("CUSTOM");
+      }
+      expect(overridden[0].Properties.AuthorizerId).not.toEqual(
+        protectedMethods[0].Properties.AuthorizerId
+      );
+    });
+
+    it("leaves methods unauthenticated when a route is explicitly public", () => {
+      const { template } = createRouteOverrideApi(() => AuthorizationType.NONE);
+
+      const publicMethods = methodsAt(template, "overridden");
+      expect(publicMethods).toHaveLength(2);
+      for (const method of publicMethods) {
+        expect(method.Properties.AuthorizationType).toBe("NONE");
+        expect(method.Properties.AuthorizerId).toBeUndefined();
+      }
+    });
+
+    it("keeps other routes protected when one route is public", () => {
+      const { template } = createRouteOverrideApi(() => AuthorizationType.NONE);
+
+      const protectedMethods = methodsAt(template, "protected");
+      expect(protectedMethods).toHaveLength(1);
+      expect(protectedMethods[0].Properties.AuthorizationType).toBe("CUSTOM");
+      expect(protectedMethods[0].Properties.AuthorizerId).toBeDefined();
+    });
+
+    it("applies the route override to its alias paths", () => {
+      const { template } = createRouteOverrideApi(() => AuthorizationType.NONE);
+
+      const aliasMethods = methodsAt(template, "overridden-alias");
+      expect(aliasMethods).toHaveLength(2);
+      for (const method of aliasMethods) {
+        expect(method.Properties.AuthorizationType).toBe("NONE");
+      }
+    });
+
+    it("uses a supplied API-level authorizer for routes without an override", () => {
+      const { stack } = createStack();
+      const handler = new Function(stack, "CustomAuthorizerHandler", {
+        runtime: Runtime.NODEJS_22_X,
+        handler: "custom.handler",
+        code: InlineCode.fromInline("exports.handler = () => {}"),
+      });
+      new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        authorizer: new TokenAuthorizer(stack, "CustomAuthorizer", { handler }),
+        routes: [
+          {
+            path: "protected",
+            methods: [HttpMethod.GET],
+            integration: mockIntegration(),
+          },
+          {
+            path: "health",
+            methods: [HttpMethod.GET],
+            integration: mockIntegration(),
+            authorizer: AuthorizationType.NONE,
+          },
+        ],
+      });
+      const template = Template.fromStack(stack);
+
+      expect(methodsAt(template, "protected")[0].Properties).toMatchObject({
+        AuthorizationType: "CUSTOM",
+      });
+      expect(methodsAt(template, "health")[0].Properties).toMatchObject({
+        AuthorizationType: "NONE",
+      });
+    });
+
+    it("never makes a route public without an explicit override", () => {
+      const { template } = createRouteOverrideApi(cognitoAuthorizer);
+
+      for (const path of ["protected", "overridden", "overridden-alias"]) {
+        for (const method of methodsAt(template, path)) {
+          expect(method.Properties.AuthorizationType).not.toBe("NONE");
+        }
+      }
+    });
+  });
+
+  describe("Throttling", () => {
+    const createThrottledTemplate = (
+      props: Partial<SecureRestApiProps> = {}
+    ) => {
       const { stack } = createStack();
       new SecureRestApi(stack, "Api", {
         apiName: "my-api",
@@ -342,62 +716,98 @@ describe("SecureRestApi", () => {
             integration: mockIntegration(),
           },
         ],
+        ...props,
       });
+      return Template.fromStack(stack);
+    };
 
-      Template.fromStack(stack).hasResourceProperties(
-        "AWS::ApiGateway::UsagePlan",
-        {
-          Throttle: {
-            BurstLimit: 200,
-            RateLimit: 100,
-          },
-        }
+    const stageMethodSettings = (
+      template: Template
+    ): Array<Record<string, unknown>> => {
+      const stages = Object.values(
+        template.findResources("AWS::ApiGateway::Stage")
       );
+      return stages.flatMap(stage => stage.Properties.MethodSettings ?? []);
+    };
+
+    it("creates no API key or usage plan", () => {
+      const template = createThrottledTemplate();
+
+      template.resourceCountIs("AWS::ApiGateway::ApiKey", 0);
+      template.resourceCountIs("AWS::ApiGateway::UsagePlan", 0);
+      template.resourceCountIs("AWS::ApiGateway::UsagePlanKey", 0);
     });
 
-    it("uses custom throttle settings when provided", () => {
-      const { stack } = createStack();
-      new SecureRestApi(stack, "Api", {
-        apiName: "my-api",
+    it("applies the default 100 rps / 200 burst at stage level", () => {
+      const template = createThrottledTemplate();
+
+      expect(stageMethodSettings(template)).toEqual([
+        expect.objectContaining({
+          HttpMethod: "*",
+          ResourcePath: "/*",
+          ThrottlingRateLimit: 100,
+          ThrottlingBurstLimit: 200,
+        }),
+      ]);
+    });
+
+    it("applies custom throttle settings at stage level", () => {
+      const template = createThrottledTemplate({
         throttle: { rateLimit: 50, burstLimit: 100 },
-        routes: [
-          {
-            path: "items",
-            methods: [HttpMethod.GET],
-            integration: mockIntegration(),
-          },
-        ],
       });
 
-      Template.fromStack(stack).hasResourceProperties(
-        "AWS::ApiGateway::UsagePlan",
-        {
-          Throttle: {
-            BurstLimit: 100,
-            RateLimit: 50,
-          },
-        }
-      );
+      expect(stageMethodSettings(template)).toEqual([
+        expect.objectContaining({
+          ThrottlingRateLimit: 50,
+          ThrottlingBurstLimit: 100,
+        }),
+      ]);
     });
 
-    it("uses a custom usage plan name when provided", () => {
-      const { stack } = createStack();
-      new SecureRestApi(stack, "Api", {
-        apiName: "my-api",
-        usagePlanName: "custom-plan",
-        routes: [
-          {
-            path: "items",
-            methods: [HttpMethod.GET],
-            integration: mockIntegration(),
-          },
-        ],
+    it("lets throttling in deployOptions take precedence over throttle", () => {
+      const template = createThrottledTemplate({
+        throttle: { rateLimit: 50, burstLimit: 100 },
+        deployOptions: { throttlingRateLimit: 10, throttlingBurstLimit: 20 },
       });
 
-      Template.fromStack(stack).hasResourceProperties(
-        "AWS::ApiGateway::UsagePlan",
-        { UsagePlanName: "custom-plan" }
-      );
+      expect(stageMethodSettings(template)).toEqual([
+        expect.objectContaining({
+          ThrottlingRateLimit: 10,
+          ThrottlingBurstLimit: 20,
+        }),
+      ]);
+    });
+
+    it("ignores undefined throttling in deployOptions", () => {
+      const template = createThrottledTemplate({
+        deployOptions: {
+          throttlingRateLimit: undefined,
+          throttlingBurstLimit: undefined,
+        },
+      });
+
+      expect(stageMethodSettings(template)).toEqual([
+        expect.objectContaining({
+          ThrottlingRateLimit: 100,
+          ThrottlingBurstLimit: 200,
+        }),
+      ]);
+    });
+
+    it("keeps other deployOptions alongside the throttle default", () => {
+      const template = createThrottledTemplate({
+        deployOptions: { stageName: "dev" },
+      });
+
+      template.hasResourceProperties("AWS::ApiGateway::Stage", {
+        StageName: "dev",
+        MethodSettings: [
+          Match.objectLike({
+            ThrottlingRateLimit: 100,
+            ThrottlingBurstLimit: 200,
+          }),
+        ],
+      });
     });
   });
 
@@ -417,7 +827,19 @@ describe("SecureRestApi", () => {
 
       Template.fromStack(stack).hasResourceProperties(
         "AWS::ApiGateway::Method",
-        { HttpMethod: "OPTIONS" }
+        {
+          HttpMethod: "OPTIONS",
+          Integration: {
+            IntegrationResponses: [
+              {
+                ResponseParameters: {
+                  "method.response.header.Access-Control-Allow-Headers":
+                    "'Content-Type,Authorization'",
+                },
+              },
+            ],
+          },
+        }
       );
     });
 
@@ -425,7 +847,7 @@ describe("SecureRestApi", () => {
       const { stack } = createStack();
       new SecureRestApi(stack, "Api", {
         apiName: "my-api",
-        corsOptions: { additionalHeaders: ["Authorization"] },
+        corsOptions: { additionalHeaders: ["X-Custom"] },
         routes: [
           {
             path: "items",
@@ -445,7 +867,7 @@ describe("SecureRestApi", () => {
               {
                 ResponseParameters: {
                   "method.response.header.Access-Control-Allow-Headers":
-                    "'Content-Type,X-Api-Key,Authorization'",
+                    "'Content-Type,Authorization,X-Custom'",
                 },
               },
             ],

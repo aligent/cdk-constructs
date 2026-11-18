@@ -1,11 +1,13 @@
+import { Duration } from "aws-cdk-lib";
 import {
-  ApiKey,
+  AuthorizationType,
   Cors,
+  CorsOptions,
+  IAuthorizer,
   Integration,
-  IRestApi,
+  MethodOptions,
   RestApi,
   StageOptions,
-  UsagePlan,
 } from "aws-cdk-lib/aws-apigateway";
 import { HttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
 import {
@@ -14,8 +16,10 @@ import {
   PolicyDocument,
   PolicyStatement,
 } from "aws-cdk-lib/aws-iam";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { isIPv4, isIPv6 } from "node:net";
+import { createDefaultTokenAuthorizer } from "./default-token-authorizer";
 
 export interface SecureRestApiRoute {
   /**
@@ -42,6 +46,16 @@ export interface SecureRestApiRoute {
    * the old path as an alias until callers migrate to the new one.
    */
   aliasPaths?: string[];
+
+  /**
+   * Overrides the API-level authorizer for this route and its alias paths.
+   *
+   * Pass `AuthorizationType.NONE` to make the route fully public: no other
+   * control gates it, so use it only for routes that verify callers another
+   * way (e.g. health checks or signature-verified webhooks).
+   * @default the API-level authorizer
+   */
+  authorizer?: IAuthorizer | AuthorizationType.NONE;
 }
 
 export interface SecureRestApiProps {
@@ -60,7 +74,7 @@ export interface SecureRestApiProps {
    *
    * `allowOrigins` overrides the default (all origins).
    * `additionalMethods` and `additionalHeaders` are appended to the defaults
-   * (GET/OPTIONS and Content-Type/X-Api-Key respectively).
+   * (GET/OPTIONS and Content-Type/Authorization respectively).
    */
   corsOptions?: {
     allowOrigins?: string[];
@@ -74,6 +88,25 @@ export interface SecureRestApiProps {
   routes: SecureRestApiRoute[];
 
   /**
+   * Authorizer applied to every route, replacing the default token authorizer
+   * (e.g. a Cognito or custom Lambda authorizer).
+   *
+   * When set, the construct creates no authorizer Lambda or secret and
+   * `secret` is `undefined`.
+   * @default a Lambda TOKEN authorizer validating a bearer token held in a generated secret
+   */
+  authorizer?: IAuthorizer;
+
+  /**
+   * How long API Gateway caches the default authorizer's decision for a token.
+   *
+   * A revoked token can remain valid for up to this long. Cannot be combined
+   * with a custom `authorizer`.
+   * @default Duration.seconds(60)
+   */
+  authorizerCacheTtl?: Duration;
+
+  /**
    * Stage options for the API's default deployment.
    *
    * Use `stageName` to override the deployed stage name.
@@ -82,25 +115,16 @@ export interface SecureRestApiProps {
   deployOptions?: StageOptions;
 
   /**
-   * Throttling limits for the usage plan.
+   * Stage-level throttling limits applied to every method.
+   *
+   * Explicit `throttlingRateLimit` / `throttlingBurstLimit` in `deployOptions`
+   * take precedence over the matching value here.
    * @default { rateLimit: 100, burstLimit: 200 }
    */
   throttle?: {
     rateLimit: number;
     burstLimit: number;
   };
-
-  /**
-   * Override the generated API key name.
-   * @default `{apiName}-api-key`
-   */
-  apiKeyName?: string;
-
-  /**
-   * Override the generated usage plan name.
-   * @default `{apiName}-usage-plan`
-   */
-  usagePlanName?: string;
 
   /**
    * IPv4/IPv6 addresses or CIDR ranges allowed to invoke the API.
@@ -112,6 +136,8 @@ export interface SecureRestApiProps {
    */
   allowedIps?: string[];
 }
+
+const DEFAULT_THROTTLE = { rateLimit: 100, burstLimit: 200 };
 
 const MAX_PREFIX_LENGTH = { 4: 32, 6: 128 } as const;
 
@@ -141,6 +167,17 @@ function validateAllowedIps(allowedIps: string[]): void {
   }
 }
 
+function validateDefaultAuthorizerProps({
+  authorizer,
+  authorizerCacheTtl,
+}: SecureRestApiProps): void {
+  if (authorizer && authorizerCacheTtl !== undefined) {
+    throw new Error(
+      "authorizerCacheTtl only configures the default authorizer and cannot be combined with a custom authorizer"
+    );
+  }
+}
+
 function createIpAllowlistPolicy(allowedIps: string[]): PolicyDocument {
   return new PolicyDocument({
     statements: [
@@ -161,75 +198,93 @@ function createIpAllowlistPolicy(allowedIps: string[]): PolicyDocument {
   });
 }
 
+function createCorsOptions(
+  corsOptions: SecureRestApiProps["corsOptions"]
+): CorsOptions {
+  return {
+    allowOrigins: corsOptions?.allowOrigins ?? Cors.ALL_ORIGINS,
+    allowMethods: ["GET", "OPTIONS", ...(corsOptions?.additionalMethods ?? [])],
+    allowHeaders: [
+      "Content-Type",
+      "Authorization",
+      ...(corsOptions?.additionalHeaders ?? []),
+    ],
+  };
+}
+
+function createDeployOptions({
+  throttle = DEFAULT_THROTTLE,
+  deployOptions,
+}: SecureRestApiProps): StageOptions {
+  return {
+    ...deployOptions,
+    throttlingRateLimit:
+      deployOptions?.throttlingRateLimit ?? throttle.rateLimit,
+    throttlingBurstLimit:
+      deployOptions?.throttlingBurstLimit ?? throttle.burstLimit,
+  };
+}
+
+function createApi(scope: Construct, props: SecureRestApiProps): RestApi {
+  const { apiName, description, corsOptions, allowedIps } = props;
+
+  return new RestApi(scope, "Api", {
+    restApiName: apiName,
+    description: description ?? `REST API for ${apiName} service`,
+    deployOptions: createDeployOptions(props),
+    policy: allowedIps && createIpAllowlistPolicy(allowedIps),
+    defaultCorsPreflightOptions: createCorsOptions(corsOptions),
+  });
+}
+
+function createMethodOptions(
+  routeAuthorizer: SecureRestApiRoute["authorizer"],
+  apiAuthorizer: IAuthorizer
+): MethodOptions {
+  if (routeAuthorizer === AuthorizationType.NONE) {
+    return { authorizationType: AuthorizationType.NONE };
+  }
+  return { authorizer: routeAuthorizer ?? apiAuthorizer };
+}
+
+function registerRoute(
+  api: RestApi,
+  route: SecureRestApiRoute,
+  apiAuthorizer: IAuthorizer
+): void {
+  const methodOptions = createMethodOptions(route.authorizer, apiAuthorizer);
+  const paths = [route.path, ...(route.aliasPaths ?? [])];
+  for (const path of paths) {
+    const resource = api.root.resourceForPath(path.replace(/^\//, ""));
+    for (const method of route.methods) {
+      resource.addMethod(method, route.integration, methodOptions);
+    }
+  }
+}
+
 export class SecureRestApi extends Construct {
   public readonly api: RestApi;
-  public readonly apiKey: ApiKey;
-  public readonly usagePlan: UsagePlan;
+
+  /**
+   * The Secrets Manager secret holding the bearer token accepted by the
+   * default authorizer. `undefined` when a custom `authorizer` is supplied.
+   */
+  public readonly secret?: ISecret;
 
   constructor(scope: Construct, id: string, props: SecureRestApiProps) {
     super(scope, id);
 
-    const {
-      apiName,
-      description,
-      corsOptions,
-      routes,
-      deployOptions,
-      throttle = { rateLimit: 100, burstLimit: 200 },
-      apiKeyName,
-      usagePlanName,
-      allowedIps,
-    } = props;
+    if (props.allowedIps) validateAllowedIps(props.allowedIps);
+    validateDefaultAuthorizerProps(props);
 
-    if (allowedIps) validateAllowedIps(allowedIps);
-
-    this.api = new RestApi(this, "Api", {
-      restApiName: apiName,
-      description: description ?? `REST API for ${apiName} service`,
-      deployOptions,
-      policy: allowedIps && createIpAllowlistPolicy(allowedIps),
-      defaultCorsPreflightOptions: {
-        allowOrigins: corsOptions?.allowOrigins ?? Cors.ALL_ORIGINS,
-        allowMethods: [
-          "GET",
-          "OPTIONS",
-          ...(corsOptions?.additionalMethods ?? []),
-        ],
-        allowHeaders: [
-          "Content-Type",
-          "X-Api-Key",
-          ...(corsOptions?.additionalHeaders ?? []),
-        ],
-      },
-    });
-
-    for (const route of routes) {
-      const paths = [route.path, ...(route.aliasPaths ?? [])];
-      for (const path of paths) {
-        const resource = this.api.root.resourceForPath(path.replace(/^\//, ""));
-        for (const method of route.methods) {
-          resource.addMethod(method, route.integration, {
-            apiKeyRequired: true,
-          });
-        }
-      }
+    let authorizer = props.authorizer;
+    if (!authorizer) {
+      const defaultAuthorizer = createDefaultTokenAuthorizer(this, props);
+      authorizer = defaultAuthorizer.authorizer;
+      this.secret = defaultAuthorizer.secret;
     }
 
-    this.apiKey = new ApiKey(this, "ApiKey", {
-      description: `API Key for ${apiName} service`,
-      apiKeyName: apiKeyName ?? `${apiName}-api-key`,
-    });
-
-    this.usagePlan = new UsagePlan(this, "UsagePlan", {
-      name: usagePlanName ?? `${apiName}-usage-plan`,
-      description: `Usage plan for ${apiName} service`,
-      throttle,
-    });
-
-    this.usagePlan.addApiStage({
-      api: this.api as IRestApi,
-      stage: this.api.deploymentStage,
-    });
-    this.usagePlan.addApiKey(this.apiKey);
+    this.api = createApi(this, props);
+    props.routes.forEach(route => registerRoute(this.api, route, authorizer));
   }
 }
