@@ -2,6 +2,7 @@ import {
   ApiKey,
   Cors,
   CorsOptions,
+  IAuthorizer,
   Integration,
   RestApi,
   StageOptions,
@@ -14,8 +15,10 @@ import {
   PolicyDocument,
   PolicyStatement,
 } from "aws-cdk-lib/aws-iam";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { isIPv4, isIPv6 } from "node:net";
+import { createDefaultTokenAuthorizer } from "./default-token-authorizer";
 
 export interface SecureRestApiRoute {
   /**
@@ -188,12 +191,19 @@ function createApi(scope: Construct, props: SecureRestApiProps): RestApi {
   });
 }
 
-function registerRoute(api: RestApi, route: SecureRestApiRoute): void {
+function registerRoute(
+  api: RestApi,
+  route: SecureRestApiRoute,
+  authorizer: IAuthorizer
+): void {
   const paths = [route.path, ...(route.aliasPaths ?? [])];
   for (const path of paths) {
     const resource = api.root.resourceForPath(path.replace(/^\//, ""));
     for (const method of route.methods) {
-      resource.addMethod(method, route.integration, { apiKeyRequired: true });
+      resource.addMethod(method, route.integration, {
+        apiKeyRequired: true,
+        authorizer,
+      });
     }
   }
 }
@@ -203,13 +213,22 @@ export class SecureRestApi extends Construct {
   public readonly apiKey: ApiKey;
   public readonly usagePlan: UsagePlan;
 
+  /**
+   * The Secrets Manager secret holding the bearer token accepted by the
+   * default authorizer.
+   */
+  public readonly secret?: ISecret;
+
   constructor(scope: Construct, id: string, props: SecureRestApiProps) {
     super(scope, id);
 
     if (props.allowedIps) validateAllowedIps(props.allowedIps);
 
+    const { authorizer, secret } = createDefaultTokenAuthorizer(this);
+    this.secret = secret;
+
     this.api = createApi(this, props);
-    props.routes.forEach(route => registerRoute(this.api, route));
+    props.routes.forEach(route => registerRoute(this.api, route, authorizer));
 
     this.apiKey = this.createApiKey(props);
     this.usagePlan = this.createUsagePlan(props, this.api, this.apiKey);

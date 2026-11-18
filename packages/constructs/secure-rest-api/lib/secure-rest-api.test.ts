@@ -1,8 +1,9 @@
 import { App, Stack } from "aws-cdk-lib";
-import { Template } from "aws-cdk-lib/assertions";
+import { Match, Template } from "aws-cdk-lib/assertions";
 import { LambdaIntegration, MockIntegration } from "aws-cdk-lib/aws-apigateway";
 import { HttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
 import { Function, InlineCode, Runtime } from "aws-cdk-lib/aws-lambda";
+import { CfnSecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { SecureRestApi } from "./secure-rest-api";
 
@@ -240,7 +241,9 @@ describe("SecureRestApi", () => {
         ],
       });
 
-      Template.fromStack(stack).resourceCountIs("AWS::Lambda::Function", 1);
+      Template.fromStack(stack).hasResourceProperties("AWS::Lambda::Function", {
+        Handler: "index.handler",
+      });
     });
   });
 
@@ -286,6 +289,119 @@ describe("SecureRestApi", () => {
           StageName: "prod",
         }
       );
+    });
+  });
+
+  describe("Default token authorizer", () => {
+    const createDefaultApi = () => {
+      const { stack } = createStack();
+      const secureApi = new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes: [
+          {
+            path: "items",
+            methods: [HttpMethod.GET, HttpMethod.POST],
+            integration: mockIntegration(),
+          },
+          {
+            path: "customers/{id}/addresses",
+            methods: [HttpMethod.GET],
+            integration: mockIntegration(),
+            aliasPaths: ["people/{id}/addresses"],
+          },
+        ],
+      });
+      return { stack, secureApi, template: Template.fromStack(stack) };
+    };
+
+    const methodsExcludingPreflight = (template: Template) =>
+      Object.values(template.findResources("AWS::ApiGateway::Method")).filter(
+        method => method.Properties.HttpMethod !== "OPTIONS"
+      );
+
+    it("requires the default authorizer on every registered method, including nested and alias paths", () => {
+      const { template } = createDefaultApi();
+
+      const methods = methodsExcludingPreflight(template);
+      expect(methods).toHaveLength(4);
+      for (const method of methods) {
+        expect(method.Properties.AuthorizationType).toBe("CUSTOM");
+        expect(method.Properties.AuthorizerId).toBeDefined();
+      }
+    });
+
+    it("leaves CORS preflight methods without an authorizer", () => {
+      const { template } = createDefaultApi();
+
+      template.hasResourceProperties("AWS::ApiGateway::Method", {
+        HttpMethod: "OPTIONS",
+        AuthorizationType: "NONE",
+      });
+    });
+
+    it("creates a TOKEN authorizer reading the Authorization header with a 60 second cache TTL", () => {
+      const { template } = createDefaultApi();
+
+      template.resourceCountIs("AWS::ApiGateway::Authorizer", 1);
+      template.hasResourceProperties("AWS::ApiGateway::Authorizer", {
+        Type: "TOKEN",
+        IdentitySource: "method.request.header.Authorization",
+        AuthorizerResultTtlInSeconds: 60,
+      });
+    });
+
+    it("generates a plain string secret and exposes it on the construct", () => {
+      const { secureApi, template } = createDefaultApi();
+
+      expect(secureApi.secret).toBeDefined();
+      template.resourceCountIs("AWS::SecretsManager::Secret", 1);
+      const [secret] = Object.values(
+        template.findResources("AWS::SecretsManager::Secret")
+      );
+      expect(secret.Properties.GenerateSecretString).toBeDefined();
+      expect(
+        secret.Properties.GenerateSecretString.SecretStringTemplate
+      ).toBeUndefined();
+      expect(secret.Properties.SecretString).toBeUndefined();
+    });
+
+    it("passes the secret to the authorizer function via environment variable", () => {
+      const { stack, secureApi, template } = createDefaultApi();
+      const secretLogicalId = stack.getLogicalId(
+        secureApi.secret?.node.defaultChild as CfnSecret
+      );
+
+      template.hasResourceProperties("AWS::Lambda::Function", {
+        Environment: { Variables: { SECRET_ARN: { Ref: secretLogicalId } } },
+      });
+    });
+
+    it("grants the authorizer function read access to the secret", () => {
+      const { stack, secureApi, template } = createDefaultApi();
+      const secretLogicalId = stack.getLogicalId(
+        secureApi.secret?.node.defaultChild as CfnSecret
+      );
+
+      template.hasResourceProperties("AWS::IAM::Policy", {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: Match.arrayWith(["secretsmanager:GetSecretValue"]),
+              Effect: "Allow",
+              Resource: { Ref: secretLogicalId },
+            }),
+          ]),
+        },
+      });
+    });
+
+    it("runs the bundled token authorizer handler", () => {
+      const { template } = createDefaultApi();
+
+      template.hasResourceProperties("AWS::Lambda::Function", {
+        Handler: "token-authorizer.handler",
+        Runtime: "nodejs22.x",
+      });
     });
   });
 
