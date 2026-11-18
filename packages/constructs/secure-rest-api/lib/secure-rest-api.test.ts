@@ -1,7 +1,13 @@
 import { App, Stack } from "aws-cdk-lib";
 import { Match, Template } from "aws-cdk-lib/assertions";
-import { LambdaIntegration, MockIntegration } from "aws-cdk-lib/aws-apigateway";
+import {
+  CognitoUserPoolsAuthorizer,
+  LambdaIntegration,
+  MockIntegration,
+  TokenAuthorizer,
+} from "aws-cdk-lib/aws-apigateway";
 import { HttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
+import { UserPool } from "aws-cdk-lib/aws-cognito";
 import { Function, InlineCode, Runtime } from "aws-cdk-lib/aws-lambda";
 import { CfnSecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
@@ -401,6 +407,108 @@ describe("SecureRestApi", () => {
         Handler: "token-authorizer.handler",
         Runtime: "nodejs22.x",
       });
+    });
+  });
+
+  describe("Bring your own authorizer", () => {
+    const routes: SecureRestApiProps["routes"] = [
+      {
+        path: "items",
+        methods: [HttpMethod.GET, HttpMethod.POST],
+        integration: mockIntegration(),
+      },
+      {
+        path: "customers/{id}/addresses",
+        methods: [HttpMethod.GET],
+        integration: mockIntegration(),
+        aliasPaths: ["people/{id}/addresses"],
+      },
+    ];
+
+    const createCognitoApi = () => {
+      const { stack } = createStack();
+      const userPool = new UserPool(stack, "UserPool");
+      const secureApi = new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes,
+        authorizer: new CognitoUserPoolsAuthorizer(stack, "CognitoAuthorizer", {
+          cognitoUserPools: [userPool],
+        }),
+      });
+      return { stack, secureApi, template: Template.fromStack(stack) };
+    };
+
+    const createLambdaAuthorizerApi = () => {
+      const { stack } = createStack();
+      const handler = new Function(stack, "CustomAuthorizerHandler", {
+        runtime: Runtime.NODEJS_22_X,
+        handler: "custom.handler",
+        code: InlineCode.fromInline("exports.handler = () => {}"),
+      });
+      const secureApi = new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes,
+        authorizer: new TokenAuthorizer(stack, "CustomAuthorizer", { handler }),
+      });
+      return { stack, secureApi, template: Template.fromStack(stack) };
+    };
+
+    const methodsExcludingPreflight = (template: Template) =>
+      Object.values(template.findResources("AWS::ApiGateway::Method")).filter(
+        method => method.Properties.HttpMethod !== "OPTIONS"
+      );
+
+    it("attaches a Cognito authorizer to every registered method", () => {
+      const { template } = createCognitoApi();
+
+      const methods = methodsExcludingPreflight(template);
+      expect(methods).toHaveLength(4);
+      for (const method of methods) {
+        expect(method.Properties.AuthorizationType).toBe("COGNITO_USER_POOLS");
+        expect(method.Properties.AuthorizerId).toBeDefined();
+      }
+    });
+
+    it("attaches a custom Lambda authorizer to every registered method", () => {
+      const { template } = createLambdaAuthorizerApi();
+
+      const methods = methodsExcludingPreflight(template);
+      expect(methods).toHaveLength(4);
+      for (const method of methods) {
+        expect(method.Properties.AuthorizationType).toBe("CUSTOM");
+        expect(method.Properties.AuthorizerId).toBeDefined();
+      }
+    });
+
+    it("creates only the supplied authorizer, not the default one", () => {
+      const { template } = createCognitoApi();
+
+      template.resourceCountIs("AWS::ApiGateway::Authorizer", 1);
+      template.hasResourceProperties("AWS::ApiGateway::Authorizer", {
+        Type: "COGNITO_USER_POOLS",
+      });
+    });
+
+    it("creates no default authorizer Lambda or secret with a Cognito authorizer", () => {
+      const { template } = createCognitoApi();
+
+      template.resourceCountIs("AWS::SecretsManager::Secret", 0);
+      template.resourceCountIs("AWS::Lambda::Function", 0);
+    });
+
+    it("creates no default authorizer Lambda or secret with a custom Lambda authorizer", () => {
+      const { template } = createLambdaAuthorizerApi();
+
+      template.resourceCountIs("AWS::SecretsManager::Secret", 0);
+      template.resourceCountIs("AWS::Lambda::Function", 1);
+      template.hasResourceProperties("AWS::Lambda::Function", {
+        Handler: "custom.handler",
+      });
+    });
+
+    it("leaves secret undefined when a custom authorizer is used", () => {
+      expect(createCognitoApi().secureApi.secret).toBeUndefined();
+      expect(createLambdaAuthorizerApi().secureApi.secret).toBeUndefined();
     });
   });
 

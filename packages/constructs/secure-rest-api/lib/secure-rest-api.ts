@@ -75,6 +75,16 @@ export interface SecureRestApiProps {
   routes: SecureRestApiRoute[];
 
   /**
+   * Authorizer applied to every route, replacing the default token authorizer
+   * (e.g. a Cognito or custom Lambda authorizer).
+   *
+   * When set, the construct creates no authorizer Lambda or secret and
+   * `secret` is `undefined`.
+   * @default a Lambda TOKEN authorizer validating a bearer token held in a generated secret
+   */
+  authorizer?: IAuthorizer;
+
+  /**
    * Stage options for the API's default deployment.
    *
    * Use `stageName` to override the deployed stage name.
@@ -213,7 +223,7 @@ export class SecureRestApi extends Construct {
 
   /**
    * The Secrets Manager secret holding the bearer token accepted by the
-   * default authorizer.
+   * default authorizer. `undefined` when a custom `authorizer` is supplied.
    */
   public readonly secret?: ISecret;
 
@@ -222,8 +232,12 @@ export class SecureRestApi extends Construct {
 
     if (props.allowedIps) validateAllowedIps(props.allowedIps);
 
-    const { authorizer, secret } = createDefaultTokenAuthorizer(this);
-    this.secret = secret;
+    let authorizer = props.authorizer;
+    if (!authorizer) {
+      const defaultAuthorizer = createDefaultTokenAuthorizer(this);
+      authorizer = defaultAuthorizer.authorizer;
+      this.secret = defaultAuthorizer.secret;
+    }
 
     this.api = createApi(this, props);
     props.routes.forEach(route => registerRoute(this.api, route, authorizer));
