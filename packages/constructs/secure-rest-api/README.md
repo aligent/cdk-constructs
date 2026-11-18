@@ -7,11 +7,14 @@
 A CDK construct for provisioning an API Gateway REST API protected by a default Lambda token authorizer, with stage-level throttling. Routes accept any CDK `Integration`, giving callers full control over how endpoints are wired.
 
 > [!WARNING]
-> The API key and usage plan have been removed. An API key is a single shared secret for usage plans, not an authentication mechanism. Every route is now protected by the default token authorizer.
+> The API key and usage plan have been removed. An API key is a single shared secret for usage plans, not an authentication mechanism. Every route is now protected by an authorizer: the default Lambda token authorizer unless you supply your own. See [Migrating from the API key version](#migrating-from-the-api-key-version).
 
 ## Features
 
-- API Gateway REST API protected by a default Lambda token authorizer on all routes
+- API Gateway REST API protected by a default Lambda token authorizer (`Authorization: Bearer <token>`) on all routes
+- Token held in Secrets Manager, generated on first deploy and rotated with a single secret write, no redeploy
+- Bring your own authorizer (Cognito, custom Lambda) or your own token secret
+- Per-route authorizer override, including an explicit fully public route
 - Stage-level throttling with configurable rate and burst limits
 - Configurable CORS preflight options
 - Accepts any CDK `Integration` per route (Lambda, HTTP, Mock, Step Functions, etc.)
@@ -19,6 +22,15 @@ A CDK construct for provisioning an API Gateway REST API protected by a default 
 - Supports alias paths so a route can be exposed under an additional path (e.g. renaming an endpoint without breaking existing consumers)
 - Configurable deployment stage via `deployOptions` (stage name defaults to `prod`)
 - Optional IP allowlist via `allowedIps`, enforced with an API Gateway resource policy
+
+## Security Model
+
+- The default token is a **bearer secret**, not per-caller identity. Anyone holding it can call the API, and every caller shares the same token. Use a custom `authorizer` if you need per-caller identity.
+- Only the current secret version is accepted. The previous token stops working once you rotate, after at most the authorizer cache TTL.
+- A missing or malformed `Authorization` header (including a non-`Bearer` scheme) returns `401`. A well-formed but non-matching token returns `403`. If the authorizer cannot read the secret it fails closed with an error response rather than allowing the request.
+- CORS preflight (`OPTIONS`) requests are never authorized, as browsers do not send credentials on preflight.
+- `allowedIps` is defence in depth and applies **together with** the authorizer: a caller must come from an allowed IP and present a valid token.
+- Routes with `authorizer: AuthorizationType.NONE` are **fully public**. Neither the authorizer nor any token gates them.
 
 ## Installation
 
@@ -140,6 +152,59 @@ const api = new SecureRestApi(this, 'Api', {
 });
 ```
 
+### Calling the API
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" https://<api-id>.execute-api.<region>.amazonaws.com/prod/items
+```
+
+The generated token is the plain-string value of `secureApi.secret`. Fetch it with:
+
+```bash
+aws secretsmanager get-secret-value --secret-id <secret-arn> --query SecretString --output text
+```
+
+### Bring your own authorizer
+
+When `authorizer` is set, the construct creates no authorizer Lambda or secret, and `secureApi.secret` is `undefined`.
+
+```typescript
+const api = new SecureRestApi(this, 'Api', {
+  apiName: 'my-api',
+  authorizer: new CognitoUserPoolsAuthorizer(this, 'Authorizer', {
+    cognitoUserPools: [userPool],
+  }),
+  routes: [...],
+});
+```
+
+### Per-route authorizer and public routes
+
+A route's `authorizer` overrides the API-level one for that route and its alias paths. `AuthorizationType.NONE` makes the route fully public, so use it only for routes that verify callers another way (e.g. health checks or signature-verified webhooks).
+
+```typescript
+import { AuthorizationType } from 'aws-cdk-lib/aws-apigateway';
+
+const api = new SecureRestApi(this, 'Api', {
+  apiName: 'my-api',
+  routes: [
+    { path: 'items', methods: [HttpMethod.GET], integration: itemsIntegration },
+    {
+      path: 'health',
+      methods: [HttpMethod.GET],
+      integration: healthIntegration,
+      authorizer: AuthorizationType.NONE, // fully public
+    },
+    {
+      path: 'admin',
+      methods: [HttpMethod.GET],
+      integration: adminIntegration,
+      authorizer: adminAuthorizer, // different authorizer for this route
+    },
+  ],
+});
+```
+
 ### Customising the default authorizer
 
 ```typescript
@@ -223,6 +288,13 @@ Routes to register on the API. Each route requires:
 | `methods` | `HttpMethod[]` | HTTP methods to register on the resource |
 | `integration` | `Integration` | Any CDK API Gateway integration |
 | `aliasPaths` | `string[]` | Optional. Additional paths that register the same `methods` and `integration` |
+| `authorizer` | `IAuthorizer \| AuthorizationType.NONE` | Optional. Overrides the API-level authorizer for this route and its aliases. `AuthorizationType.NONE` makes the route fully public. Default: the API-level authorizer |
+
+### `authorizer` (IAuthorizer)
+
+Authorizer applied to every route, replacing the default token authorizer. When set, no authorizer Lambda or secret is created and `secret` is `undefined`. IAM (SigV4) authorization is not supported.
+
+Default: a Lambda TOKEN authorizer validating a bearer token held in a generated secret.
 
 ### `secret` (ISecret)
 
@@ -271,9 +343,48 @@ IPv4/IPv6 addresses or CIDR ranges allowed to invoke the API. Enforced with an A
 - Applies to every request, including CORS preflight (`OPTIONS`), so browsers calling from an IP outside the list will see a blocked preflight rather than a readable 403.
 - Entries are validated at synth; an empty array or any malformed entry throws an error naming the offending values.
 - `0.0.0.0/0` and `::/0` are accepted but disable the restriction.
-- The authorizer still applies to allowed callers.
+- The authorizer still applies to allowed callers: the allowlist adds a network check, it does not replace token validation.
+- Public routes (`authorizer: AuthorizationType.NONE`) are still subject to the allowlist.
 
 Default: no IP restriction.
+
+## Rotation and Emergency Revoke
+
+Rotating the token is a single Secrets Manager write. No deploy is needed, and CDK redeploys never change a live secret value.
+
+```bash
+aws secretsmanager put-secret-value \
+  --secret-id <secret-arn> \
+  --secret-string "$(openssl rand -hex 32)"
+```
+
+- The authorizer reads the current secret version on every invocation, and API Gateway caches decisions per token, so the new token is accepted as soon as the write lands. A token that was presented and denied before the write can stay denied for up to `authorizerCacheTtl`, so do not test the new token before rotating.
+- The old token is rejected once its cached decision expires, which is at most `authorizerCacheTtl` (default 60 seconds) after the write.
+- Only one token is valid at a time. There is no grace window, so share the new token with callers before or immediately after rotating.
+- **Emergency revoke** is the same single command. Tell the incident channel the old token dies within the cache TTL, or lower `authorizerCacheTtl` ahead of time if you need faster revocation.
+- If you supplied your own `secret`, write the new value to that secret instead. It must remain a plain string, not JSON.
+
+## Migrating from the API key version
+
+This is a breaking change.
+
+| Before | After |
+|--------|-------|
+| `x-api-key: <key>` header | `Authorization: Bearer <token>` header |
+| API key and usage plan created | Removed. Throttling uses stage-level throttling with the same `throttle` defaults (100 rps / 200 burst) |
+| `apiKey` and `usagePlan` readonly fields | Removed. Use `secret` to read the generated token |
+| `apiKeyName` and `usagePlanName` props | Removed |
+| CORS default headers `Content-Type`, `X-Api-Key` | `Content-Type`, `Authorization` |
+
+Migration steps:
+
+1. Upgrade and remove `apiKeyName` / `usagePlanName` from your props, and any use of `apiKey` / `usagePlan` on the construct.
+2. Deploy. A secret and authorizer Lambda are created, and every route now requires a bearer token.
+3. Give callers the token from `secureApi.secret` and switch them from `x-api-key` to `Authorization: Bearer <token>`.
+4. Update any CORS `additionalHeaders` that only existed to allow `Authorization`.
+5. Any route that must stay open now needs an explicit `authorizer: AuthorizationType.NONE`.
+
+Callers still sending `x-api-key` are rejected with `401` once the deploy completes, so coordinate the switch with your consumers.
 
 ## Local Development
 

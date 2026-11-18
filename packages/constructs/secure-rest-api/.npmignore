@@ -2,6 +2,9 @@
 *.ts
 !*.d.ts
 
+# But keep Lambda handler TypeScript files
+!lib/handlers/**/*.ts
+
 # TypeScript configuration
 tsconfig*.json
 

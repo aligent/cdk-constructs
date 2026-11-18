@@ -1,7 +1,7 @@
 {
   "name": "@aligent/cdk-secure-rest-api",
   "version": "1.3.0",
-  "description": "A CDK construct for creating API Gateway REST APIs secured with API Key authentication and usage plan throttling",
+  "description": "A CDK construct for creating API Gateway REST APIs secured by a default Lambda token authorizer with stage-level throttling",
   "main": "index.js",
   "types": "index.d.ts",
   "license": "MIT",
