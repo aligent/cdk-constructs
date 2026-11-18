@@ -1,8 +1,8 @@
 import {
   ApiKey,
   Cors,
+  CorsOptions,
   Integration,
-  IRestApi,
   RestApi,
   StageOptions,
   UsagePlan,
@@ -161,6 +161,43 @@ function createIpAllowlistPolicy(allowedIps: string[]): PolicyDocument {
   });
 }
 
+function createCorsOptions(
+  corsOptions: SecureRestApiProps["corsOptions"]
+): CorsOptions {
+  return {
+    allowOrigins: corsOptions?.allowOrigins ?? Cors.ALL_ORIGINS,
+    allowMethods: ["GET", "OPTIONS", ...(corsOptions?.additionalMethods ?? [])],
+    allowHeaders: [
+      "Content-Type",
+      "X-Api-Key",
+      ...(corsOptions?.additionalHeaders ?? []),
+    ],
+  };
+}
+
+function createApi(scope: Construct, props: SecureRestApiProps): RestApi {
+  const { apiName, description, corsOptions, deployOptions, allowedIps } =
+    props;
+
+  return new RestApi(scope, "Api", {
+    restApiName: apiName,
+    description: description ?? `REST API for ${apiName} service`,
+    deployOptions,
+    policy: allowedIps && createIpAllowlistPolicy(allowedIps),
+    defaultCorsPreflightOptions: createCorsOptions(corsOptions),
+  });
+}
+
+function registerRoute(api: RestApi, route: SecureRestApiRoute): void {
+  const paths = [route.path, ...(route.aliasPaths ?? [])];
+  for (const path of paths) {
+    const resource = api.root.resourceForPath(path.replace(/^\//, ""));
+    for (const method of route.methods) {
+      resource.addMethod(method, route.integration, { apiKeyRequired: true });
+    }
+  }
+}
+
 export class SecureRestApi extends Construct {
   public readonly api: RestApi;
   public readonly apiKey: ApiKey;
@@ -169,67 +206,38 @@ export class SecureRestApi extends Construct {
   constructor(scope: Construct, id: string, props: SecureRestApiProps) {
     super(scope, id);
 
-    const {
-      apiName,
-      description,
-      corsOptions,
-      routes,
-      deployOptions,
-      throttle = { rateLimit: 100, burstLimit: 200 },
-      apiKeyName,
-      usagePlanName,
-      allowedIps,
-    } = props;
+    if (props.allowedIps) validateAllowedIps(props.allowedIps);
 
-    if (allowedIps) validateAllowedIps(allowedIps);
+    this.api = createApi(this, props);
+    props.routes.forEach(route => registerRoute(this.api, route));
 
-    this.api = new RestApi(this, "Api", {
-      restApiName: apiName,
-      description: description ?? `REST API for ${apiName} service`,
-      deployOptions,
-      policy: allowedIps && createIpAllowlistPolicy(allowedIps),
-      defaultCorsPreflightOptions: {
-        allowOrigins: corsOptions?.allowOrigins ?? Cors.ALL_ORIGINS,
-        allowMethods: [
-          "GET",
-          "OPTIONS",
-          ...(corsOptions?.additionalMethods ?? []),
-        ],
-        allowHeaders: [
-          "Content-Type",
-          "X-Api-Key",
-          ...(corsOptions?.additionalHeaders ?? []),
-        ],
-      },
-    });
+    this.apiKey = this.createApiKey(props);
+    this.usagePlan = this.createUsagePlan(props, this.api, this.apiKey);
+  }
 
-    for (const route of routes) {
-      const paths = [route.path, ...(route.aliasPaths ?? [])];
-      for (const path of paths) {
-        const resource = this.api.root.resourceForPath(path.replace(/^\//, ""));
-        for (const method of route.methods) {
-          resource.addMethod(method, route.integration, {
-            apiKeyRequired: true,
-          });
-        }
-      }
-    }
-
-    this.apiKey = new ApiKey(this, "ApiKey", {
+  private createApiKey({ apiName, apiKeyName }: SecureRestApiProps): ApiKey {
+    return new ApiKey(this, "ApiKey", {
       description: `API Key for ${apiName} service`,
       apiKeyName: apiKeyName ?? `${apiName}-api-key`,
     });
+  }
 
-    this.usagePlan = new UsagePlan(this, "UsagePlan", {
+  private createUsagePlan(
+    {
+      apiName,
+      usagePlanName,
+      throttle = { rateLimit: 100, burstLimit: 200 },
+    }: SecureRestApiProps,
+    api: RestApi,
+    apiKey: ApiKey
+  ): UsagePlan {
+    const usagePlan = new UsagePlan(this, "UsagePlan", {
       name: usagePlanName ?? `${apiName}-usage-plan`,
       description: `Usage plan for ${apiName} service`,
       throttle,
     });
-
-    this.usagePlan.addApiStage({
-      api: this.api as IRestApi,
-      stage: this.api.deploymentStage,
-    });
-    this.usagePlan.addApiKey(this.apiKey);
+    usagePlan.addApiStage({ api, stage: api.deploymentStage });
+    usagePlan.addApiKey(apiKey);
+    return usagePlan;
   }
 }
