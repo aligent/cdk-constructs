@@ -12,7 +12,8 @@ const SECRET_ARN =
   "arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:token";
 const METHOD_ARN =
   "arn:aws:execute-api:ap-southeast-2:123456789012:abc123/prod/GET/items/42";
-const CURRENT_TOKEN = "current-token-value";
+const CURRENT_TOKEN = "current-token-0123456789abcdef0123";
+const ROTATED_TOKEN = "rotated-token-0123456789abcdef0123";
 
 const secretsMock = mockClient(SecretsManagerClient);
 
@@ -69,7 +70,7 @@ describe("token authorizer handler", () => {
   it("denies the previous secret version's token after rotation", async () => {
     secretsMock
       .on(GetSecretValueCommand, { SecretId: SECRET_ARN })
-      .resolves({ SecretString: "rotated-token-value" });
+      .resolves({ SecretString: ROTATED_TOKEN });
 
     const result = await handler(eventWith(`Bearer ${CURRENT_TOKEN}`));
 
@@ -103,6 +104,14 @@ describe("token authorizer handler", () => {
     await expect(handler(eventWith(header))).rejects.toThrow("Unauthorized");
   });
 
+  it("denies a token of the same length that differs from the secret", async () => {
+    const sameLength = `${CURRENT_TOKEN.slice(0, -1)}X`;
+
+    const result = await handler(eventWith(`Bearer ${sameLength}`));
+
+    expect(effectOf(result)).toBe("Deny");
+  });
+
   it("denies a token that is a prefix of the secret", async () => {
     const result = await handler(
       eventWith(`Bearer ${CURRENT_TOKEN.slice(0, -1)}`)
@@ -125,6 +134,28 @@ describe("token authorizer handler", () => {
     await expect(
       handler(eventWith(`Bearer ${CURRENT_TOKEN}`))
     ).rejects.toThrow();
+  });
+
+  it("fails closed when the secret is shorter than 32 characters, even if the token matches", async () => {
+    const shortSecret = "a".repeat(31);
+    secretsMock
+      .on(GetSecretValueCommand, { SecretId: SECRET_ARN })
+      .resolves({ SecretString: shortSecret });
+
+    await expect(handler(eventWith(`Bearer ${shortSecret}`))).rejects.toThrow(
+      /at least 32 characters/
+    );
+  });
+
+  it("accepts a secret of exactly 32 characters", async () => {
+    const minimumSecret = "a".repeat(32);
+    secretsMock
+      .on(GetSecretValueCommand, { SecretId: SECRET_ARN })
+      .resolves({ SecretString: minimumSecret });
+
+    const result = await handler(eventWith(`Bearer ${minimumSecret}`));
+
+    expect(effectOf(result)).toBe("Allow");
   });
 
   it("fails closed when the secret has no string value", async () => {

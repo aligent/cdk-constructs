@@ -7,10 +7,12 @@ import {
   APIGatewayAuthorizerResult,
   APIGatewayTokenAuthorizerEvent,
 } from "aws-lambda";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 
 const client = new SecretsManagerClient({});
 const BEARER_PREFIX = "Bearer ";
+// 32 characters is 128 bits of entropy even for a hex-encoded token.
+const MIN_TOKEN_LENGTH = 32;
 
 function extractBearerToken(header: string | undefined): string {
   if (!header?.startsWith(BEARER_PREFIX)) throw new Error("Unauthorized");
@@ -26,14 +28,23 @@ async function fetchCurrentToken(): Promise<string> {
     new GetSecretValueCommand({ SecretId: process.env.SECRET_ARN })
   );
   if (!SecretString) throw new Error("Authorizer secret has no string value");
+  if (SecretString.length < MIN_TOKEN_LENGTH) {
+    throw new Error(
+      `Authorizer secret must be at least ${MIN_TOKEN_LENGTH} characters`
+    );
+  }
 
   return SecretString;
 }
 
-// Hashing first gives equal-length buffers, so neither length nor prefix leaks through timing.
+// A token's length is not secret, and timingSafeEqual throws on unequal lengths.
 function tokensMatch(presented: string, expected: string): boolean {
-  const digest = (value: string) => createHash("sha256").update(value).digest();
-  return timingSafeEqual(digest(presented), digest(expected));
+  const presentedBytes = Buffer.from(presented);
+  const expectedBytes = Buffer.from(expected);
+  return (
+    presentedBytes.length === expectedBytes.length &&
+    timingSafeEqual(presentedBytes, expectedBytes)
+  );
 }
 
 // The decision is cached per token across all methods, so it must cover the whole stage.

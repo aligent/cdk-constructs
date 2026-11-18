@@ -13,7 +13,7 @@ A CDK construct for provisioning an API Gateway REST API protected by a default 
 
 - API Gateway REST API protected by a default Lambda token authorizer (`Authorization: Bearer <token>`) on all routes
 - Token held in Secrets Manager, generated on first deploy and rotated with a single secret write, no redeploy
-- Bring your own authorizer (Cognito, custom Lambda) or your own token secret
+- Bring your own authorizer (Cognito, custom Lambda)
 - Per-route authorizer override, including an explicit fully public route
 - Stage-level throttling with configurable rate and burst limits
 - Configurable CORS preflight options
@@ -46,7 +46,7 @@ yarn add @aligent/cdk-secure-rest-api aws-cdk-lib constructs
 
 ### Peer Dependencies
 
-- `aws-cdk-lib` (^2.113.0)
+- `aws-cdk-lib` (^2.224.0, needed for the Node.js 24 runtime of the default authorizer)
 - `constructs` (^10.5.0)
 
 ## Basic Usage
@@ -210,7 +210,6 @@ const api = new SecureRestApi(this, 'Api', {
 ```typescript
 const api = new SecureRestApi(this, 'Api', {
   apiName: 'my-api',
-  secret: mySecret,                         // plain-string token, not JSON
   authorizerCacheTtl: Duration.seconds(30), // default is 60 seconds
   routes: [...],
 });
@@ -296,12 +295,6 @@ Authorizer applied to every route, replacing the default token authorizer. When 
 
 Default: a Lambda TOKEN authorizer validating a bearer token held in a generated secret.
 
-### `secret` (ISecret)
-
-Secrets Manager secret holding the token accepted by the default authorizer. It must contain the token as a plain string, not JSON. When set, no secret is generated and the authorizer function is granted read access to this one. Cannot be combined with a custom `authorizer`; doing so throws at synth.
-
-Default: a secret with a generated token.
-
 ### `authorizerCacheTtl` (Duration)
 
 How long API Gateway caches the default authorizer's decision for a token. A revoked token can remain valid for up to this long. Cannot be combined with a custom `authorizer`; doing so throws at synth.
@@ -362,7 +355,14 @@ aws secretsmanager put-secret-value \
 - The old token is rejected once its cached decision expires, which is at most `authorizerCacheTtl` (default 60 seconds) after the write.
 - Only one token is valid at a time. There is no grace window, so share the new token with callers before or immediately after rotating.
 - **Emergency revoke** is the same single command. Tell the incident channel the old token dies within the cache TTL, or lower `authorizerCacheTtl` ahead of time if you need faster revocation.
-- If you supplied your own `secret`, write the new value to that secret instead. It must remain a plain string, not JSON.
+
+### Token requirements
+
+The generated token is 64 random alphanumeric characters. Any value you write during rotation must meet the same bar, because the authorizer fails closed with an error response on a secret shorter than 32 characters.
+
+- Generate it with a cryptographically secure pseudo-random number generator (CSPRNG), such as `openssl rand`. Never write one by hand or derive it from something guessable.
+- Use at least 128 bits of entropy. 32 hex characters is exactly 128 bits, and printable ASCII needs 20 characters, so the enforced minimum of 32 characters is safe for any encoding.
+- Store it as a plain string, not JSON.
 
 ## Migrating from the API key version
 

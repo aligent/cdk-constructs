@@ -10,7 +10,7 @@ import {
 import { HttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
 import { UserPool } from "aws-cdk-lib/aws-cognito";
 import { Function, InlineCode, Runtime } from "aws-cdk-lib/aws-lambda";
-import { CfnSecret, Secret } from "aws-cdk-lib/aws-secretsmanager";
+import { CfnSecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import {
   SecureRestApi,
@@ -410,7 +410,7 @@ describe("SecureRestApi", () => {
 
       template.hasResourceProperties("AWS::Lambda::Function", {
         Handler: "token-authorizer.handler",
-        Runtime: "nodejs22.x",
+        Runtime: "nodejs24.x",
       });
     });
   });
@@ -423,59 +423,6 @@ describe("SecureRestApi", () => {
         integration: mockIntegration(),
       },
     ];
-
-    const createApiWithSuppliedSecret = () => {
-      const { stack } = createStack();
-      const suppliedSecret = new Secret(stack, "SuppliedSecret");
-      const secureApi = new SecureRestApi(stack, "Api", {
-        apiName: "my-api",
-        routes,
-        secret: suppliedSecret,
-      });
-      const secretLogicalId = stack.getLogicalId(
-        suppliedSecret.node.defaultChild as CfnSecret
-      );
-      return { stack, suppliedSecret, secureApi, secretLogicalId };
-    };
-
-    it("creates no secret of its own when one is supplied", () => {
-      const { stack } = createApiWithSuppliedSecret();
-
-      Template.fromStack(stack).resourceCountIs(
-        "AWS::SecretsManager::Secret",
-        1
-      );
-    });
-
-    it("exposes the supplied secret on the construct", () => {
-      const { suppliedSecret, secureApi } = createApiWithSuppliedSecret();
-
-      expect(secureApi.secret).toBe(suppliedSecret);
-    });
-
-    it("passes the supplied secret to the authorizer function", () => {
-      const { stack, secretLogicalId } = createApiWithSuppliedSecret();
-
-      Template.fromStack(stack).hasResourceProperties("AWS::Lambda::Function", {
-        Environment: { Variables: { SECRET_ARN: { Ref: secretLogicalId } } },
-      });
-    });
-
-    it("grants the authorizer function read access to the supplied secret", () => {
-      const { stack, secretLogicalId } = createApiWithSuppliedSecret();
-
-      Template.fromStack(stack).hasResourceProperties("AWS::IAM::Policy", {
-        PolicyDocument: {
-          Statement: Match.arrayWith([
-            Match.objectLike({
-              Action: Match.arrayWith(["secretsmanager:GetSecretValue"]),
-              Effect: "Allow",
-              Resource: { Ref: secretLogicalId },
-            }),
-          ]),
-        },
-      });
-    });
 
     it("overrides the authorizer cache TTL", () => {
       const { stack } = createStack();
@@ -526,14 +473,6 @@ describe("SecureRestApi", () => {
           ...extraProps,
         });
     };
-
-    it("throws when secret is supplied with a custom authorizer", () => {
-      const create = createWithCustomAuthorizer({
-        secret: new Secret(createStack().stack, "OtherSecret"),
-      });
-
-      expect(create).toThrow(/secret.*authorizer/i);
-    });
 
     it("throws when authorizerCacheTtl is supplied with a custom authorizer", () => {
       const create = createWithCustomAuthorizer({

@@ -34,7 +34,7 @@ function createAuthorizerFunction(
 ): LambdaFunction {
   const handlersDir = join(__dirname, "handlers");
   const fn = new LambdaFunction(scope, "TokenAuthorizerFunction", {
-    runtime: Runtime.NODEJS_22_X,
+    runtime: Runtime.NODEJS_24_X,
     handler: "token-authorizer.handler",
     code: Code.fromAsset(handlersDir, {
       assetHashType: AssetHashType.OUTPUT,
@@ -57,7 +57,6 @@ function createAuthorizerFunction(
 }
 
 export interface DefaultTokenAuthorizerOptions {
-  secret?: ISecret;
   authorizerCacheTtl?: Duration;
 }
 
@@ -65,7 +64,7 @@ export function createDefaultTokenAuthorizer(
   scope: Construct,
   options: DefaultTokenAuthorizerOptions
 ): DefaultTokenAuthorizer {
-  const secret = options.secret ?? createTokenSecret(scope);
+  const secret = createTokenSecret(scope);
   const authorizer = new TokenAuthorizer(scope, "TokenAuthorizer", {
     handler: createAuthorizerFunction(scope, secret),
     identitySource: "method.request.header.Authorization",

@@ -98,16 +98,6 @@ export interface SecureRestApiProps {
   authorizer?: IAuthorizer;
 
   /**
-   * Secrets Manager secret holding the token accepted by the default
-   * authorizer. It must contain the token as a plain string, not JSON.
-   *
-   * When set, the construct generates no secret and the authorizer reads this
-   * one. Cannot be combined with a custom `authorizer`.
-   * @default a secret with a generated token
-   */
-  secret?: ISecret;
-
-  /**
    * How long API Gateway caches the default authorizer's decision for a token.
    *
    * A revoked token can remain valid for up to this long. Cannot be combined
@@ -179,17 +169,11 @@ function validateAllowedIps(allowedIps: string[]): void {
 
 function validateDefaultAuthorizerProps({
   authorizer,
-  secret,
   authorizerCacheTtl,
 }: SecureRestApiProps): void {
-  if (!authorizer) return;
-
-  const ignored = Object.entries({ secret, authorizerCacheTtl })
-    .filter(([, value]) => value !== undefined)
-    .map(([name]) => name);
-  if (ignored.length > 0) {
+  if (authorizer && authorizerCacheTtl !== undefined) {
     throw new Error(
-      `${ignored.join(", ")} only configure the default authorizer and cannot be combined with a custom authorizer`
+      "authorizerCacheTtl only configures the default authorizer and cannot be combined with a custom authorizer"
     );
   }
 }
