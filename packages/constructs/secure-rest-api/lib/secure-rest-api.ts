@@ -1,3 +1,4 @@
+import { Duration } from "aws-cdk-lib";
 import {
   Cors,
   CorsOptions,
@@ -85,6 +86,25 @@ export interface SecureRestApiProps {
   authorizer?: IAuthorizer;
 
   /**
+   * Secrets Manager secret holding the token accepted by the default
+   * authorizer. It must contain the token as a plain string, not JSON.
+   *
+   * When set, the construct generates no secret and the authorizer reads this
+   * one. Cannot be combined with a custom `authorizer`.
+   * @default a secret with a generated token
+   */
+  secret?: ISecret;
+
+  /**
+   * How long API Gateway caches the default authorizer's decision for a token.
+   *
+   * A revoked token can remain valid for up to this long. Cannot be combined
+   * with a custom `authorizer`.
+   * @default Duration.seconds(60)
+   */
+  authorizerCacheTtl?: Duration;
+
+  /**
    * Stage options for the API's default deployment.
    *
    * Use `stageName` to override the deployed stage name.
@@ -141,6 +161,23 @@ function validateAllowedIps(allowedIps: string[]): void {
   if (invalid.length > 0) {
     throw new Error(
       `allowedIps contains invalid IP addresses or CIDR ranges: ${invalid.join(", ")}`
+    );
+  }
+}
+
+function validateDefaultAuthorizerProps({
+  authorizer,
+  secret,
+  authorizerCacheTtl,
+}: SecureRestApiProps): void {
+  if (!authorizer) return;
+
+  const ignored = Object.entries({ secret, authorizerCacheTtl })
+    .filter(([, value]) => value !== undefined)
+    .map(([name]) => name);
+  if (ignored.length > 0) {
+    throw new Error(
+      `${ignored.join(", ")} only configure the default authorizer and cannot be combined with a custom authorizer`
     );
   }
 }
@@ -231,10 +268,11 @@ export class SecureRestApi extends Construct {
     super(scope, id);
 
     if (props.allowedIps) validateAllowedIps(props.allowedIps);
+    validateDefaultAuthorizerProps(props);
 
     let authorizer = props.authorizer;
     if (!authorizer) {
-      const defaultAuthorizer = createDefaultTokenAuthorizer(this);
+      const defaultAuthorizer = createDefaultTokenAuthorizer(this, props);
       authorizer = defaultAuthorizer.authorizer;
       this.secret = defaultAuthorizer.secret;
     }

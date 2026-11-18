@@ -140,6 +140,17 @@ const api = new SecureRestApi(this, 'Api', {
 });
 ```
 
+### Customising the default authorizer
+
+```typescript
+const api = new SecureRestApi(this, 'Api', {
+  apiName: 'my-api',
+  secret: mySecret,                         // plain-string token, not JSON
+  authorizerCacheTtl: Duration.seconds(30), // default is 60 seconds
+  routes: [...],
+});
+```
+
 ### Custom throttling
 
 ```typescript
@@ -212,6 +223,18 @@ Routes to register on the API. Each route requires:
 | `methods` | `HttpMethod[]` | HTTP methods to register on the resource |
 | `integration` | `Integration` | Any CDK API Gateway integration |
 | `aliasPaths` | `string[]` | Optional. Additional paths that register the same `methods` and `integration` |
+
+### `secret` (ISecret)
+
+Secrets Manager secret holding the token accepted by the default authorizer. It must contain the token as a plain string, not JSON. When set, no secret is generated and the authorizer function is granted read access to this one. Cannot be combined with a custom `authorizer`; doing so throws at synth.
+
+Default: a secret with a generated token.
+
+### `authorizerCacheTtl` (Duration)
+
+How long API Gateway caches the default authorizer's decision for a token. A revoked token can remain valid for up to this long. Cannot be combined with a custom `authorizer`; doing so throws at synth.
+
+Default: 60 seconds.
 
 ### `deployOptions` (StageOptions)
 

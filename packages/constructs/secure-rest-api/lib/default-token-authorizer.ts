@@ -56,14 +56,20 @@ function createAuthorizerFunction(
   return fn;
 }
 
+export interface DefaultTokenAuthorizerOptions {
+  secret?: ISecret;
+  authorizerCacheTtl?: Duration;
+}
+
 export function createDefaultTokenAuthorizer(
-  scope: Construct
+  scope: Construct,
+  options: DefaultTokenAuthorizerOptions
 ): DefaultTokenAuthorizer {
-  const secret = createTokenSecret(scope);
+  const secret = options.secret ?? createTokenSecret(scope);
   const authorizer = new TokenAuthorizer(scope, "TokenAuthorizer", {
     handler: createAuthorizerFunction(scope, secret),
     identitySource: "method.request.header.Authorization",
-    resultsCacheTtl: DEFAULT_CACHE_TTL,
+    resultsCacheTtl: options.authorizerCacheTtl ?? DEFAULT_CACHE_TTL,
   });
   return { authorizer, secret };
 }
