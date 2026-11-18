@@ -4,12 +4,15 @@
 
 ![TypeScript version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/typescript?filename=packages/constructs/secure-rest-api/package.json&color=red) ![AWS CDK version](https://img.shields.io/github/package-json/dependency-version/aligent/cdk-constructs/dev/aws-cdk?filename=packages/constructs/secure-rest-api/package.json) ![NPM version](https://img.shields.io/npm/v/%40aligent%2Fcdk-secure-rest-api?color=green)
 
-A CDK construct for provisioning an API Gateway REST API secured with API Key authentication and usage plan throttling. Routes accept any CDK `Integration`, giving callers full control over how endpoints are wired.
+A CDK construct for provisioning an API Gateway REST API protected by a default Lambda token authorizer, with stage-level throttling. Routes accept any CDK `Integration`, giving callers full control over how endpoints are wired.
+
+> [!WARNING]
+> The API key and usage plan have been removed. An API key is a single shared secret for usage plans, not an authentication mechanism. Every route is now protected by the default token authorizer.
 
 ## Features
 
-- API Gateway REST API with API Key authentication (`apiKeyRequired: true` on all routes)
-- Usage plan with configurable throttle rate and burst limits
+- API Gateway REST API protected by a default Lambda token authorizer on all routes
+- Stage-level throttling with configurable rate and burst limits
 - Configurable CORS preflight options
 - Accepts any CDK `Integration` per route (Lambda, HTTP, Mock, Step Functions, etc.)
 - Supports nested, multi-segment route paths (e.g. `rewards/accounts/{accountId}/redeem`)
@@ -41,7 +44,7 @@ import { SecureRestApi } from '@aligent/cdk-secure-rest-api';
 import { LambdaIntegration } from 'aws-cdk-lib/aws-apigateway';
 import { HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 
-const api = new SecureRestApi(this, 'Api', {
+const secureApi = new SecureRestApi(this, 'Api', {
   apiName: 'my-api',
   routes: [
     {
@@ -53,7 +56,7 @@ const api = new SecureRestApi(this, 'Api', {
 });
 
 // Access created resources
-const { api, apiKey, usagePlan } = api;
+const { api, secret } = secureApi;
 ```
 
 ## Configuration Examples
@@ -219,12 +222,14 @@ Default: CDK default (`prod` stage).
 
 ### `throttle` (object)
 
-Throttling limits applied to the usage plan.
+Stage-level throttling limits applied to every method.
 
 | Property | Type | Default |
 |----------|------|---------|
 | `rateLimit` | `number` | `100` |
 | `burstLimit` | `number` | `200` |
+
+`throttlingRateLimit` / `throttlingBurstLimit` set explicitly in `deployOptions` take precedence over the matching value here.
 
 ### `corsOptions` (object)
 
@@ -236,18 +241,6 @@ CORS preflight configuration applied to all resources.
 | `additionalMethods` | `string[]` | Appended to the defaults: `GET`, `OPTIONS` |
 | `additionalHeaders` | `string[]` | Appended to the defaults: `Content-Type`, `X-Api-Key` |
 
-### `apiKeyName` (string)
-
-Override the name of the generated API key.
-
-Default: `{apiName}-api-key`
-
-### `usagePlanName` (string)
-
-Override the name of the generated usage plan.
-
-Default: `{apiName}-usage-plan`
-
 ### `allowedIps` (string[])
 
 IPv4/IPv6 addresses or CIDR ranges allowed to invoke the API. Enforced with an API Gateway resource policy that allows `execute-api:Invoke` and denies any source IP not in the list.
@@ -255,7 +248,7 @@ IPv4/IPv6 addresses or CIDR ranges allowed to invoke the API. Enforced with an A
 - Applies to every request, including CORS preflight (`OPTIONS`), so browsers calling from an IP outside the list will see a blocked preflight rather than a readable 403.
 - Entries are validated at synth; an empty array or any malformed entry throws an error naming the offending values.
 - `0.0.0.0/0` and `::/0` are accepted but disable the restriction.
-- The API key and usage plan still apply to allowed callers.
+- The authorizer still applies to allowed callers.
 
 Default: no IP restriction.
 

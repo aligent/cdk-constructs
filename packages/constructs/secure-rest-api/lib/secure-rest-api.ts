@@ -1,12 +1,10 @@
 import {
-  ApiKey,
   Cors,
   CorsOptions,
   IAuthorizer,
   Integration,
   RestApi,
   StageOptions,
-  UsagePlan,
 } from "aws-cdk-lib/aws-apigateway";
 import { HttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
 import {
@@ -85,25 +83,16 @@ export interface SecureRestApiProps {
   deployOptions?: StageOptions;
 
   /**
-   * Throttling limits for the usage plan.
+   * Stage-level throttling limits applied to every method.
+   *
+   * Explicit `throttlingRateLimit` / `throttlingBurstLimit` in `deployOptions`
+   * take precedence over the matching value here.
    * @default { rateLimit: 100, burstLimit: 200 }
    */
   throttle?: {
     rateLimit: number;
     burstLimit: number;
   };
-
-  /**
-   * Override the generated API key name.
-   * @default `{apiName}-api-key`
-   */
-  apiKeyName?: string;
-
-  /**
-   * Override the generated usage plan name.
-   * @default `{apiName}-usage-plan`
-   */
-  usagePlanName?: string;
 
   /**
    * IPv4/IPv6 addresses or CIDR ranges allowed to invoke the API.
@@ -115,6 +104,8 @@ export interface SecureRestApiProps {
    */
   allowedIps?: string[];
 }
+
+const DEFAULT_THROTTLE = { rateLimit: 100, burstLimit: 200 };
 
 const MAX_PREFIX_LENGTH = { 4: 32, 6: 128 } as const;
 
@@ -178,14 +169,26 @@ function createCorsOptions(
   };
 }
 
+function createDeployOptions({
+  throttle = DEFAULT_THROTTLE,
+  deployOptions,
+}: SecureRestApiProps): StageOptions {
+  return {
+    ...deployOptions,
+    throttlingRateLimit:
+      deployOptions?.throttlingRateLimit ?? throttle.rateLimit,
+    throttlingBurstLimit:
+      deployOptions?.throttlingBurstLimit ?? throttle.burstLimit,
+  };
+}
+
 function createApi(scope: Construct, props: SecureRestApiProps): RestApi {
-  const { apiName, description, corsOptions, deployOptions, allowedIps } =
-    props;
+  const { apiName, description, corsOptions, allowedIps } = props;
 
   return new RestApi(scope, "Api", {
     restApiName: apiName,
     description: description ?? `REST API for ${apiName} service`,
-    deployOptions,
+    deployOptions: createDeployOptions(props),
     policy: allowedIps && createIpAllowlistPolicy(allowedIps),
     defaultCorsPreflightOptions: createCorsOptions(corsOptions),
   });
@@ -200,18 +203,13 @@ function registerRoute(
   for (const path of paths) {
     const resource = api.root.resourceForPath(path.replace(/^\//, ""));
     for (const method of route.methods) {
-      resource.addMethod(method, route.integration, {
-        apiKeyRequired: true,
-        authorizer,
-      });
+      resource.addMethod(method, route.integration, { authorizer });
     }
   }
 }
 
 export class SecureRestApi extends Construct {
   public readonly api: RestApi;
-  public readonly apiKey: ApiKey;
-  public readonly usagePlan: UsagePlan;
 
   /**
    * The Secrets Manager secret holding the bearer token accepted by the
@@ -229,34 +227,5 @@ export class SecureRestApi extends Construct {
 
     this.api = createApi(this, props);
     props.routes.forEach(route => registerRoute(this.api, route, authorizer));
-
-    this.apiKey = this.createApiKey(props);
-    this.usagePlan = this.createUsagePlan(props, this.api, this.apiKey);
-  }
-
-  private createApiKey({ apiName, apiKeyName }: SecureRestApiProps): ApiKey {
-    return new ApiKey(this, "ApiKey", {
-      description: `API Key for ${apiName} service`,
-      apiKeyName: apiKeyName ?? `${apiName}-api-key`,
-    });
-  }
-
-  private createUsagePlan(
-    {
-      apiName,
-      usagePlanName,
-      throttle = { rateLimit: 100, burstLimit: 200 },
-    }: SecureRestApiProps,
-    api: RestApi,
-    apiKey: ApiKey
-  ): UsagePlan {
-    const usagePlan = new UsagePlan(this, "UsagePlan", {
-      name: usagePlanName ?? `${apiName}-usage-plan`,
-      description: `Usage plan for ${apiName} service`,
-      throttle,
-    });
-    usagePlan.addApiStage({ api, stage: api.deploymentStage });
-    usagePlan.addApiKey(apiKey);
-    return usagePlan;
   }
 }

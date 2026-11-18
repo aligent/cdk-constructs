@@ -5,7 +5,7 @@ import { HttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
 import { Function, InlineCode, Runtime } from "aws-cdk-lib/aws-lambda";
 import { CfnSecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
-import { SecureRestApi } from "./secure-rest-api";
+import { SecureRestApi, SecureRestApiProps } from "./secure-rest-api";
 
 const createStack = () => {
   const app = new App();
@@ -68,7 +68,7 @@ describe("SecureRestApi", () => {
       );
     });
 
-    it("registers each route method with apiKeyRequired", () => {
+    it("registers each route method without requiring an API key", () => {
       const { stack } = createStack();
       new SecureRestApi(stack, "Api", {
         apiName: "my-api",
@@ -84,11 +84,11 @@ describe("SecureRestApi", () => {
       const template = Template.fromStack(stack);
       template.hasResourceProperties("AWS::ApiGateway::Method", {
         HttpMethod: "GET",
-        ApiKeyRequired: true,
+        ApiKeyRequired: Match.absent(),
       });
       template.hasResourceProperties("AWS::ApiGateway::Method", {
         HttpMethod: "POST",
-        ApiKeyRequired: true,
+        ApiKeyRequired: Match.absent(),
       });
     });
 
@@ -109,7 +109,7 @@ describe("SecureRestApi", () => {
         "AWS::ApiGateway::Method",
         {
           HttpMethod: "POST",
-          ApiKeyRequired: true,
+          AuthorizationType: "CUSTOM",
         }
       );
     });
@@ -166,10 +166,9 @@ describe("SecureRestApi", () => {
       expect(resourcesByPathPart("redeem")).toHaveLength(1);
       expect(resourcesByPathPart("reversal")).toHaveLength(1);
 
-      // Each leaf registers its POST method with apiKeyRequired.
       template.resourcePropertiesCountIs(
         "AWS::ApiGateway::Method",
-        { HttpMethod: "POST", ApiKeyRequired: true },
+        { HttpMethod: "POST", AuthorizationType: "CUSTOM" },
         2
       );
     });
@@ -196,7 +195,7 @@ describe("SecureRestApi", () => {
       }
       template.resourcePropertiesCountIs(
         "AWS::ApiGateway::Method",
-        { HttpMethod: "GET", ApiKeyRequired: true },
+        { HttpMethod: "GET", AuthorizationType: "CUSTOM" },
         2
       );
     });
@@ -223,7 +222,7 @@ describe("SecureRestApi", () => {
       }
       template.resourcePropertiesCountIs(
         "AWS::ApiGateway::Method",
-        { HttpMethod: "GET", ApiKeyRequired: true },
+        { HttpMethod: "GET", AuthorizationType: "CUSTOM" },
         2
       );
     });
@@ -405,8 +404,10 @@ describe("SecureRestApi", () => {
     });
   });
 
-  describe("API Key", () => {
-    it("creates an API key with a default name", () => {
+  describe("Throttling", () => {
+    const createThrottledTemplate = (
+      props: Partial<SecureRestApiProps> = {}
+    ) => {
       const { stack } = createStack();
       new SecureRestApi(stack, "Api", {
         apiName: "my-api",
@@ -417,103 +418,98 @@ describe("SecureRestApi", () => {
             integration: mockIntegration(),
           },
         ],
+        ...props,
       });
+      return Template.fromStack(stack);
+    };
 
-      Template.fromStack(stack).hasResourceProperties(
-        "AWS::ApiGateway::ApiKey",
-        { Name: "my-api-api-key" }
+    const stageMethodSettings = (
+      template: Template
+    ): Array<Record<string, unknown>> => {
+      const stages = Object.values(
+        template.findResources("AWS::ApiGateway::Stage")
       );
+      return stages.flatMap(stage => stage.Properties.MethodSettings ?? []);
+    };
+
+    it("creates no API key or usage plan", () => {
+      const template = createThrottledTemplate();
+
+      template.resourceCountIs("AWS::ApiGateway::ApiKey", 0);
+      template.resourceCountIs("AWS::ApiGateway::UsagePlan", 0);
+      template.resourceCountIs("AWS::ApiGateway::UsagePlanKey", 0);
     });
 
-    it("uses a custom API key name when provided", () => {
-      const { stack } = createStack();
-      new SecureRestApi(stack, "Api", {
-        apiName: "my-api",
-        apiKeyName: "custom-key",
-        routes: [
-          {
-            path: "items",
-            methods: [HttpMethod.GET],
-            integration: mockIntegration(),
-          },
-        ],
-      });
+    it("applies the default 100 rps / 200 burst at stage level", () => {
+      const template = createThrottledTemplate();
 
-      Template.fromStack(stack).hasResourceProperties(
-        "AWS::ApiGateway::ApiKey",
-        { Name: "custom-key" }
-      );
-    });
-  });
-
-  describe("Usage Plan", () => {
-    it("creates a usage plan with default throttle settings", () => {
-      const { stack } = createStack();
-      new SecureRestApi(stack, "Api", {
-        apiName: "my-api",
-        routes: [
-          {
-            path: "items",
-            methods: [HttpMethod.GET],
-            integration: mockIntegration(),
-          },
-        ],
-      });
-
-      Template.fromStack(stack).hasResourceProperties(
-        "AWS::ApiGateway::UsagePlan",
-        {
-          Throttle: {
-            BurstLimit: 200,
-            RateLimit: 100,
-          },
-        }
-      );
+      expect(stageMethodSettings(template)).toEqual([
+        expect.objectContaining({
+          HttpMethod: "*",
+          ResourcePath: "/*",
+          ThrottlingRateLimit: 100,
+          ThrottlingBurstLimit: 200,
+        }),
+      ]);
     });
 
-    it("uses custom throttle settings when provided", () => {
-      const { stack } = createStack();
-      new SecureRestApi(stack, "Api", {
-        apiName: "my-api",
+    it("applies custom throttle settings at stage level", () => {
+      const template = createThrottledTemplate({
         throttle: { rateLimit: 50, burstLimit: 100 },
-        routes: [
-          {
-            path: "items",
-            methods: [HttpMethod.GET],
-            integration: mockIntegration(),
-          },
-        ],
       });
 
-      Template.fromStack(stack).hasResourceProperties(
-        "AWS::ApiGateway::UsagePlan",
-        {
-          Throttle: {
-            BurstLimit: 100,
-            RateLimit: 50,
-          },
-        }
-      );
+      expect(stageMethodSettings(template)).toEqual([
+        expect.objectContaining({
+          ThrottlingRateLimit: 50,
+          ThrottlingBurstLimit: 100,
+        }),
+      ]);
     });
 
-    it("uses a custom usage plan name when provided", () => {
-      const { stack } = createStack();
-      new SecureRestApi(stack, "Api", {
-        apiName: "my-api",
-        usagePlanName: "custom-plan",
-        routes: [
-          {
-            path: "items",
-            methods: [HttpMethod.GET],
-            integration: mockIntegration(),
-          },
-        ],
+    it("lets throttling in deployOptions take precedence over throttle", () => {
+      const template = createThrottledTemplate({
+        throttle: { rateLimit: 50, burstLimit: 100 },
+        deployOptions: { throttlingRateLimit: 10, throttlingBurstLimit: 20 },
       });
 
-      Template.fromStack(stack).hasResourceProperties(
-        "AWS::ApiGateway::UsagePlan",
-        { UsagePlanName: "custom-plan" }
-      );
+      expect(stageMethodSettings(template)).toEqual([
+        expect.objectContaining({
+          ThrottlingRateLimit: 10,
+          ThrottlingBurstLimit: 20,
+        }),
+      ]);
+    });
+
+    it("ignores undefined throttling in deployOptions", () => {
+      const template = createThrottledTemplate({
+        deployOptions: {
+          throttlingRateLimit: undefined,
+          throttlingBurstLimit: undefined,
+        },
+      });
+
+      expect(stageMethodSettings(template)).toEqual([
+        expect.objectContaining({
+          ThrottlingRateLimit: 100,
+          ThrottlingBurstLimit: 200,
+        }),
+      ]);
+    });
+
+    it("keeps other deployOptions alongside the throttle default", () => {
+      const template = createThrottledTemplate({
+        deployOptions: { stageName: "dev" },
+      });
+
+      template.hasResourceProperties("AWS::ApiGateway::Stage", {
+        StageName: "dev",
+        MethodSettings: [
+          Match.objectLike({
+            ThrottlingRateLimit: 100,
+            ThrottlingBurstLimit: 200,
+          }),
+        ],
+      });
     });
   });
 
