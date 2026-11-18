@@ -529,7 +529,19 @@ describe("SecureRestApi", () => {
 
       Template.fromStack(stack).hasResourceProperties(
         "AWS::ApiGateway::Method",
-        { HttpMethod: "OPTIONS" }
+        {
+          HttpMethod: "OPTIONS",
+          Integration: {
+            IntegrationResponses: [
+              {
+                ResponseParameters: {
+                  "method.response.header.Access-Control-Allow-Headers":
+                    "'Content-Type,Authorization'",
+                },
+              },
+            ],
+          },
+        }
       );
     });
 
@@ -537,7 +549,7 @@ describe("SecureRestApi", () => {
       const { stack } = createStack();
       new SecureRestApi(stack, "Api", {
         apiName: "my-api",
-        corsOptions: { additionalHeaders: ["Authorization"] },
+        corsOptions: { additionalHeaders: ["X-Custom"] },
         routes: [
           {
             path: "items",
@@ -557,7 +569,7 @@ describe("SecureRestApi", () => {
               {
                 ResponseParameters: {
                   "method.response.header.Access-Control-Allow-Headers":
-                    "'Content-Type,X-Api-Key,Authorization'",
+                    "'Content-Type,Authorization,X-Custom'",
                 },
               },
             ],

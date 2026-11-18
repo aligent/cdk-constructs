@@ -61,7 +61,7 @@ export interface SecureRestApiProps {
    *
    * `allowOrigins` overrides the default (all origins).
    * `additionalMethods` and `additionalHeaders` are appended to the defaults
-   * (GET/OPTIONS and Content-Type/X-Api-Key respectively).
+   * (GET/OPTIONS and Content-Type/Authorization respectively).
    */
   corsOptions?: {
     allowOrigins?: string[];
@@ -163,7 +163,7 @@ function createCorsOptions(
     allowMethods: ["GET", "OPTIONS", ...(corsOptions?.additionalMethods ?? [])],
     allowHeaders: [
       "Content-Type",
-      "X-Api-Key",
+      "Authorization",
       ...(corsOptions?.additionalHeaders ?? []),
     ],
   };

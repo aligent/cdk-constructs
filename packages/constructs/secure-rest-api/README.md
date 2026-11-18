@@ -174,7 +174,7 @@ const api = new SecureRestApi(this, 'Api', {
   corsOptions: {
     allowOrigins: ['https://example.com'],  // overrides default (all origins)
     additionalMethods: ['POST'],            // appended to GET, OPTIONS
-    additionalHeaders: ['Authorization'],   // appended to Content-Type, X-Api-Key
+    additionalHeaders: ['X-Custom'],        // appended to Content-Type, Authorization
   },
   routes: [...],
 });
@@ -239,7 +239,7 @@ CORS preflight configuration applied to all resources.
 |----------|------|-----------|
 | `allowOrigins` | `string[]` | Overrides the default (all origins) |
 | `additionalMethods` | `string[]` | Appended to the defaults: `GET`, `OPTIONS` |
-| `additionalHeaders` | `string[]` | Appended to the defaults: `Content-Type`, `X-Api-Key` |
+| `additionalHeaders` | `string[]` | Appended to the defaults: `Content-Type`, `Authorization` |
 
 ### `allowedIps` (string[])
 
