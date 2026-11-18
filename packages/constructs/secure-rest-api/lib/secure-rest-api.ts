@@ -1,9 +1,11 @@
 import { Duration } from "aws-cdk-lib";
 import {
+  AuthorizationType,
   Cors,
   CorsOptions,
   IAuthorizer,
   Integration,
+  MethodOptions,
   RestApi,
   StageOptions,
 } from "aws-cdk-lib/aws-apigateway";
@@ -44,6 +46,16 @@ export interface SecureRestApiRoute {
    * the old path as an alias until callers migrate to the new one.
    */
   aliasPaths?: string[];
+
+  /**
+   * Overrides the API-level authorizer for this route and its alias paths.
+   *
+   * Pass `AuthorizationType.NONE` to make the route fully public: no other
+   * control gates it, so use it only for routes that verify callers another
+   * way (e.g. health checks or signature-verified webhooks).
+   * @default the API-level authorizer
+   */
+  authorizer?: IAuthorizer | AuthorizationType.NONE;
 }
 
 export interface SecureRestApiProps {
@@ -241,16 +253,27 @@ function createApi(scope: Construct, props: SecureRestApiProps): RestApi {
   });
 }
 
+function createMethodOptions(
+  routeAuthorizer: SecureRestApiRoute["authorizer"],
+  apiAuthorizer: IAuthorizer
+): MethodOptions {
+  if (routeAuthorizer === AuthorizationType.NONE) {
+    return { authorizationType: AuthorizationType.NONE };
+  }
+  return { authorizer: routeAuthorizer ?? apiAuthorizer };
+}
+
 function registerRoute(
   api: RestApi,
   route: SecureRestApiRoute,
-  authorizer: IAuthorizer
+  apiAuthorizer: IAuthorizer
 ): void {
+  const methodOptions = createMethodOptions(route.authorizer, apiAuthorizer);
   const paths = [route.path, ...(route.aliasPaths ?? [])];
   for (const path of paths) {
     const resource = api.root.resourceForPath(path.replace(/^\//, ""));
     for (const method of route.methods) {
-      resource.addMethod(method, route.integration, { authorizer });
+      resource.addMethod(method, route.integration, methodOptions);
     }
   }
 }

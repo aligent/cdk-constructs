@@ -1,6 +1,7 @@
 import { App, Duration, Stack } from "aws-cdk-lib";
 import { Match, Template } from "aws-cdk-lib/assertions";
 import {
+  AuthorizationType,
   CognitoUserPoolsAuthorizer,
   LambdaIntegration,
   MockIntegration,
@@ -11,7 +12,11 @@ import { UserPool } from "aws-cdk-lib/aws-cognito";
 import { Function, InlineCode, Runtime } from "aws-cdk-lib/aws-lambda";
 import { CfnSecret, Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
-import { SecureRestApi, SecureRestApiProps } from "./secure-rest-api";
+import {
+  SecureRestApi,
+  SecureRestApiProps,
+  SecureRestApiRoute,
+} from "./secure-rest-api";
 
 const createStack = () => {
   const app = new App();
@@ -622,6 +627,139 @@ describe("SecureRestApi", () => {
     it("leaves secret undefined when a custom authorizer is used", () => {
       expect(createCognitoApi().secureApi.secret).toBeUndefined();
       expect(createLambdaAuthorizerApi().secureApi.secret).toBeUndefined();
+    });
+  });
+
+  describe("Per-route authorizer", () => {
+    const createRouteOverrideApi = (
+      routeAuthorizer: (scope: Construct) => SecureRestApiRoute["authorizer"]
+    ) => {
+      const { stack } = createStack();
+      const secureApi = new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        routes: [
+          {
+            path: "protected",
+            methods: [HttpMethod.GET],
+            integration: mockIntegration(),
+          },
+          {
+            path: "overridden",
+            methods: [HttpMethod.GET, HttpMethod.POST],
+            integration: mockIntegration(),
+            aliasPaths: ["overridden-alias"],
+            authorizer: routeAuthorizer(stack),
+          },
+        ],
+      });
+      return { stack, secureApi, template: Template.fromStack(stack) };
+    };
+
+    const methodsAt = (template: Template, resourcePathPart: string) => {
+      const resources = template.findResources("AWS::ApiGateway::Resource", {
+        Properties: { PathPart: resourcePathPart },
+      });
+      const [logicalId] = Object.keys(resources);
+      return Object.values(
+        template.findResources("AWS::ApiGateway::Method", {
+          Properties: { ResourceId: { Ref: logicalId } },
+        })
+      ).filter(method => method.Properties.HttpMethod !== "OPTIONS");
+    };
+
+    const cognitoAuthorizer = (scope: Construct) =>
+      new CognitoUserPoolsAuthorizer(scope, "RouteCognitoAuthorizer", {
+        cognitoUserPools: [new UserPool(scope, "UserPool")],
+      });
+
+    it("applies a route-level authorizer to that route only", () => {
+      const { template } = createRouteOverrideApi(cognitoAuthorizer);
+
+      const overridden = methodsAt(template, "overridden");
+      const protectedMethods = methodsAt(template, "protected");
+      for (const method of overridden) {
+        expect(method.Properties.AuthorizationType).toBe("COGNITO_USER_POOLS");
+      }
+      for (const method of protectedMethods) {
+        expect(method.Properties.AuthorizationType).toBe("CUSTOM");
+      }
+      expect(overridden[0].Properties.AuthorizerId).not.toEqual(
+        protectedMethods[0].Properties.AuthorizerId
+      );
+    });
+
+    it("leaves methods unauthenticated when a route is explicitly public", () => {
+      const { template } = createRouteOverrideApi(() => AuthorizationType.NONE);
+
+      const publicMethods = methodsAt(template, "overridden");
+      expect(publicMethods).toHaveLength(2);
+      for (const method of publicMethods) {
+        expect(method.Properties.AuthorizationType).toBe("NONE");
+        expect(method.Properties.AuthorizerId).toBeUndefined();
+      }
+    });
+
+    it("keeps other routes protected when one route is public", () => {
+      const { template } = createRouteOverrideApi(() => AuthorizationType.NONE);
+
+      const protectedMethods = methodsAt(template, "protected");
+      expect(protectedMethods).toHaveLength(1);
+      expect(protectedMethods[0].Properties.AuthorizationType).toBe("CUSTOM");
+      expect(protectedMethods[0].Properties.AuthorizerId).toBeDefined();
+    });
+
+    it("applies the route override to its alias paths", () => {
+      const { template } = createRouteOverrideApi(() => AuthorizationType.NONE);
+
+      const aliasMethods = methodsAt(template, "overridden-alias");
+      expect(aliasMethods).toHaveLength(2);
+      for (const method of aliasMethods) {
+        expect(method.Properties.AuthorizationType).toBe("NONE");
+      }
+    });
+
+    it("uses a supplied API-level authorizer for routes without an override", () => {
+      const { stack } = createStack();
+      const handler = new Function(stack, "CustomAuthorizerHandler", {
+        runtime: Runtime.NODEJS_22_X,
+        handler: "custom.handler",
+        code: InlineCode.fromInline("exports.handler = () => {}"),
+      });
+      new SecureRestApi(stack, "Api", {
+        apiName: "my-api",
+        authorizer: new TokenAuthorizer(stack, "CustomAuthorizer", { handler }),
+        routes: [
+          {
+            path: "protected",
+            methods: [HttpMethod.GET],
+            integration: mockIntegration(),
+          },
+          {
+            path: "health",
+            methods: [HttpMethod.GET],
+            integration: mockIntegration(),
+            authorizer: AuthorizationType.NONE,
+          },
+        ],
+      });
+      const template = Template.fromStack(stack);
+
+      expect(methodsAt(template, "protected")[0].Properties).toMatchObject({
+        AuthorizationType: "CUSTOM",
+      });
+      expect(methodsAt(template, "health")[0].Properties).toMatchObject({
+        AuthorizationType: "NONE",
+      });
+    });
+
+    it("never makes a route public without an explicit override", () => {
+      const { template } = createRouteOverrideApi(cognitoAuthorizer);
+
+      for (const path of ["protected", "overridden", "overridden-alias"]) {
+        for (const method of methodsAt(template, path)) {
+          expect(method.Properties.AuthorizationType).not.toBe("NONE");
+        }
+      }
     });
   });
 
