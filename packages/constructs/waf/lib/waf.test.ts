@@ -6,6 +6,7 @@ import {
   WebApplicationFirewallProps,
   REGIONAL,
   CLOUDFRONT,
+  RateLimitRule,
 } from "./waf";
 
 describe("WebApplicationFirewall", () => {
@@ -1034,6 +1035,281 @@ describe("WebApplicationFirewall", () => {
       template.hasResourceProperties("AWS::Logs::LogGroup", {
         LogGroupName: "aws-waf-logs-full-test-waf",
         RetentionInDays: 30,
+      });
+    });
+  });
+
+  describe("Legacy rate limit back-compat", () => {
+    // Snapshots were recorded before rateLimitRules was added; a diff here means an
+    // existing consumer's template would change.
+    const legacyTemplate = (props: Partial<WebApplicationFirewallProps>) => {
+      const { stack } = createTestStack();
+      new WebApplicationFirewall(stack, "TestWAF", {
+        ...defaultProps,
+        ...props,
+      });
+      return Template.fromStack(stack).toJSON();
+    };
+
+    it("keeps the FORWARDED_IP rate limit template unchanged", () => {
+      expect(
+        legacyTemplate({
+          rateLimit: 2000,
+          allowedIPs: ["10.0.0.0/8"],
+          blockedIPs: ["1.2.3.4/32"],
+          postProcessCustomRules: [
+            {
+              name: "post_rule",
+              priority: 31,
+              statement: {
+                byteMatchStatement: {
+                  fieldToMatch: { uriPath: {} },
+                  positionalConstraint: "STARTS_WITH",
+                  searchString: "/post",
+                  textTransformations: [{ priority: 0, type: "NONE" }],
+                },
+              },
+              action: { block: {} },
+              visibilityConfig: {
+                cloudWatchMetricsEnabled: true,
+                metricName: "post_rule",
+                sampledRequestsEnabled: true,
+              },
+            },
+          ],
+        })
+      ).toMatchSnapshot();
+    });
+
+    it("keeps the activated IP rate limit template unchanged", () => {
+      expect(
+        legacyTemplate({
+          activate: true,
+          rateLimit: 500,
+          rateLimitAggregation: "IP",
+        })
+      ).toMatchSnapshot();
+    });
+  });
+
+  describe("Rate Limit Rules", () => {
+    type SynthRule = {
+      Name: string;
+      Priority: number;
+      Action?: Record<string, unknown>;
+      OverrideAction?: Record<string, unknown>;
+      Statement: { RateBasedStatement?: Record<string, unknown> };
+    };
+
+    const startsWith = (path: string) => ({
+      byteMatchStatement: {
+        fieldToMatch: { uriPath: {} },
+        positionalConstraint: "STARTS_WITH",
+        searchString: path,
+        textTransformations: [{ priority: 0, type: "NONE" }],
+      },
+    });
+
+    const synthRules = (props: Partial<WebApplicationFirewallProps>) => {
+      const { stack } = createTestStack();
+      new WebApplicationFirewall(stack, "TestWAF", {
+        ...defaultProps,
+        ...props,
+      });
+      const webAcl =
+        Template.fromStack(stack).findResources("AWS::WAFv2::WebACL");
+      return Object.values(webAcl)[0].Properties.Rules as SynthRule[];
+    };
+
+    const synthRule = (rule: RateLimitRule, activate?: boolean) =>
+      synthRules({ rateLimitRules: [rule], activate }).find(
+        r => r.Name === rule.name
+      );
+
+    it("synthesizes an IP rule", () => {
+      expect(
+        synthRule({ name: "per_ip", limit: 100, aggregateKeyType: "IP" })
+      ).toEqual({
+        Name: "per_ip",
+        Priority: 31,
+        Action: { Count: {} },
+        Statement: {
+          RateBasedStatement: { AggregateKeyType: "IP", Limit: 100 },
+        },
+        VisibilityConfig: {
+          CloudWatchMetricsEnabled: true,
+          MetricName: "per_ip",
+          SampledRequestsEnabled: true,
+        },
+      });
+    });
+
+    it("synthesizes a CONSTANT rule with its scope-down", () => {
+      const rule = synthRule({
+        name: "webhooks_ceiling",
+        limit: 5000,
+        aggregateKeyType: "CONSTANT",
+        scopeDownStatement: startsWith("/webhooks/"),
+      });
+      expect(rule?.Statement.RateBasedStatement).toEqual({
+        AggregateKeyType: "CONSTANT",
+        Limit: 5000,
+        ScopeDownStatement: {
+          ByteMatchStatement: {
+            FieldToMatch: { UriPath: {} },
+            PositionalConstraint: "STARTS_WITH",
+            SearchString: "/webhooks/",
+            TextTransformations: [{ Priority: 0, Type: "NONE" }],
+          },
+        },
+      });
+    });
+
+    it("synthesizes a CUSTOM_KEYS rule with scope-down and window", () => {
+      const rule = synthRule({
+        name: "api_per_token",
+        limit: 600,
+        aggregateKeyType: "CUSTOM_KEYS",
+        customKeys: [
+          {
+            header: {
+              name: "Authorization",
+              textTransformations: [{ priority: 0, type: "NONE" }],
+            },
+          },
+        ],
+        scopeDownStatement: startsWith("/api/"),
+        evaluationWindowSec: 60,
+      });
+      expect(rule?.Statement.RateBasedStatement).toMatchObject({
+        AggregateKeyType: "CUSTOM_KEYS",
+        Limit: 600,
+        EvaluationWindowSec: 60,
+        CustomKeys: [
+          {
+            Header: {
+              Name: "Authorization",
+              TextTransformations: [{ Priority: 0, Type: "NONE" }],
+            },
+          },
+        ],
+        ScopeDownStatement: { ByteMatchStatement: { SearchString: "/api/" } },
+      });
+    });
+
+    describe("action", () => {
+      const base: RateLimitRule = {
+        name: "r",
+        limit: 100,
+        aggregateKeyType: "IP",
+      };
+
+      it("follows activate when not set", () => {
+        expect(synthRule(base)?.Action).toEqual({ Count: {} });
+        expect(synthRule(base, true)?.Action).toEqual({ Block: {} });
+      });
+
+      it("blocks on 'block' while managed rules stay in count mode", () => {
+        const rules = synthRules({
+          rateLimitRules: [{ ...base, action: "block" }],
+        });
+        expect(rules.find(r => r.Name === "r")?.Action).toEqual({ Block: {} });
+        expect(
+          rules.find(r => r.Name === "common_rule_set")?.OverrideAction
+        ).toEqual({ Count: {} });
+      });
+
+      it("counts on 'count' even when activated", () => {
+        expect(synthRule({ ...base, action: "count" }, true)?.Action).toEqual({
+          Count: {},
+        });
+      });
+    });
+
+    it("places rules after the legacy rule, which is unchanged", () => {
+      const rules = synthRules({
+        rateLimit: 2000,
+        rateLimitRules: [
+          { name: "a", limit: 100, aggregateKeyType: "IP" },
+          { name: "b", limit: 100, aggregateKeyType: "IP" },
+        ],
+      });
+      expect(
+        rules
+          .filter(r => r.Statement.RateBasedStatement)
+          .map(r => [r.Name, r.Priority])
+      ).toEqual([
+        ["rate_limit_rule", 30],
+        ["a", 31],
+        ["b", 32],
+      ]);
+      expect(rules.find(r => r.Name === "rate_limit_rule")?.Statement).toEqual({
+        RateBasedStatement: {
+          AggregateKeyType: "FORWARDED_IP",
+          ForwardedIPConfig: {
+            FallbackBehavior: "MATCH",
+            HeaderName: "X-Forwarded-For",
+          },
+          Limit: 2000,
+        },
+      });
+    });
+
+    describe("validation", () => {
+      it("requires customKeys for CUSTOM_KEYS", () => {
+        expect(() =>
+          synthRules({
+            rateLimitRules: [
+              { name: "r", limit: 100, aggregateKeyType: "CUSTOM_KEYS" },
+            ],
+          })
+        ).toThrow(
+          'rateLimitRules "r": aggregateKeyType CUSTOM_KEYS requires customKeys'
+        );
+      });
+
+      it("requires a scopeDownStatement for CONSTANT", () => {
+        expect(() =>
+          synthRules({
+            rateLimitRules: [
+              { name: "r", limit: 100, aggregateKeyType: "CONSTANT" },
+            ],
+          })
+        ).toThrow(
+          'rateLimitRules "r": aggregateKeyType CONSTANT requires a scopeDownStatement'
+        );
+      });
+
+      it("rejects a priority shared with a post-process custom rule", () => {
+        expect(() =>
+          synthRules({
+            rateLimitRules: [{ name: "a", limit: 100, aggregateKeyType: "IP" }],
+            postProcessCustomRules: [
+              {
+                name: "post_rule",
+                priority: 31,
+                statement: startsWith("/post"),
+                action: { block: {} },
+                visibilityConfig: {
+                  cloudWatchMetricsEnabled: true,
+                  metricName: "post_rule",
+                  sampledRequestsEnabled: true,
+                },
+              },
+            ],
+          })
+        ).toThrow('WAF rules "a" and "post_rule" both use priority 31');
+      });
+
+      it("rejects a name used by another rule", () => {
+        expect(() =>
+          synthRules({
+            rateLimit: 1000,
+            rateLimitRules: [
+              { name: "rate_limit_rule", limit: 100, aggregateKeyType: "IP" },
+            ],
+          })
+        ).toThrow('More than one WAF rule is named "rate_limit_rule"');
       });
     });
   });

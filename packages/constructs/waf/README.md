@@ -11,7 +11,7 @@ This repository defines a CDK construct for provisioning an AWS Web Application 
 - IP allowlisting and blocklisting (IPv4 and IPv6)
 - Path-based allowlisting
 - User-Agent allowlisting
-- Rate limiting with configurable aggregation
+- Rate limiting with configurable aggregation, plus any number of additional rate-based rules (`rateLimitRules`) with scope-down statements, custom aggregation keys and evaluation windows
 - AWS Managed Rule Groups:
   - Known Bad Inputs (always enabled)
   - Common Rule Set (always enabled)
@@ -120,6 +120,80 @@ const waf = new WebApplicationFirewall(this, 'WAF', {
 });
 ```
 
+### Rate Limit Rules
+
+`rateLimitRules` adds rate-based rules alongside (or instead of) `rateLimit`. Each rule takes a
+`name` (also the metric name), a `limit`, an `aggregateKeyType` and optionally:
+
+- `customKeys`: the [aggregation keys](https://docs.aws.amazon.com/waf/latest/developerguide/waf-rule-statement-type-rate-based-aggregation-options.html), required for `CUSTOM_KEYS`
+- `scopeDownStatement`: only matching requests are counted, required for `CONSTANT`
+- `evaluationWindowSec`: `60`, `120`, `300` (default) or `600`
+- `action`: `'block'` or `'count'`, defaulting to follow `activate`. Set `'block'` to enforce rate
+  limits while the managed rules are still in count mode.
+
+`aggregateKeyType` is `'IP'` (one bucket per source IP), `'CONSTANT'` (one bucket shared by every
+request matching the scope-down) or `'CUSTOM_KEYS'` (one bucket per combination of key values).
+Requests missing a custom key (e.g. no `Authorization` header) aren't counted by that rule.
+
+Example: a global ceiling, a per-token limit on `/api/*` and a per-tenant limit on `/webhooks/*`:
+
+```typescript
+const startsWith = (path: string): aws_wafv2.CfnWebACL.StatementProperty => ({
+  byteMatchStatement: {
+    fieldToMatch: { uriPath: {} },
+    positionalConstraint: 'STARTS_WITH',
+    searchString: path,
+    textTransformations: [{ priority: 0, type: 'NONE' }],
+  },
+});
+
+const header = (name: string): aws_wafv2.CfnWebACL.RateBasedStatementCustomKeyProperty => ({
+  header: { name, textTransformations: [{ priority: 0, type: 'NONE' }] },
+});
+
+const waf = new WebApplicationFirewall(this, 'WAF', {
+  wafName: 'core-api-waf',
+  associations: [alb.loadBalancerArn],
+  enablePhpRules: false,
+  rateLimitRules: [
+    {
+      name: 'global_ceiling',
+      limit: 50000,
+      aggregateKeyType: 'CONSTANT',
+      scopeDownStatement: startsWith('/'), // every request
+      action: 'block',
+    },
+    {
+      name: 'api_per_token',
+      limit: 1000,
+      aggregateKeyType: 'CUSTOM_KEYS',
+      customKeys: [header('Authorization')],
+      scopeDownStatement: startsWith('/api/'),
+      evaluationWindowSec: 60,
+      action: 'block',
+    },
+    {
+      name: 'webhooks_per_tenant',
+      limit: 600,
+      aggregateKeyType: 'CUSTOM_KEYS',
+      customKeys: [header('X-Kazilo-Tenant')],
+      scopeDownStatement: startsWith('/webhooks/'),
+      evaluationWindowSec: 60,
+      action: 'block',
+    },
+  ],
+});
+```
+
+### Warning: X-Forwarded-For is spoofable without a trusted proxy
+
+`rateLimit`'s default `FORWARDED_IP` aggregation and the X-Forwarded-For IP rules
+(`block_xff_ip_rule_*`, `allow_xff_ip_rule*`) trust the request's `X-Forwarded-For` header. That's
+only safe when a proxy you control (e.g. CloudFront) sets it. When an ALB faces the internet directly,
+clients set it themselves: a random `X-Forwarded-For` per request gets a fresh rate limit bucket each
+time, and an allowlisted IP in the header matches `allow_xff_ip_rule`. In that setup use
+`rateLimitAggregation: 'IP'` and `aggregateKeyType: 'IP'`.
+
 ## Rule Priority Structure
 
 | Priority | Rule | Description |
@@ -135,8 +209,11 @@ const waf = new WebApplicationFirewall(this, 'WAF', {
 | 24 | Anonymous IP | AWS Anonymous IP List (optional) |
 | 25 | SQL Injection | AWS SQLi Rule Set (optional) |
 | 26 | Bot Control | AWS Bot Control (optional) |
-| 30 | Rate Limiting | Rate-based blocking |
-| 30+ | Post-process custom rules | User-defined rules |
+| 30 | Rate Limiting | Legacy `rateLimit` rule |
+| 31 to 30+N | Rate Limit Rules | `rateLimitRules` entries, in array order |
+| 30+ | Post-process custom rules | User-defined rules, after any `rateLimitRules` |
+
+Duplicate rule priorities or names fail at synth time.
 
 ## Monitor and Activate
 

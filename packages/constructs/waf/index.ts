@@ -1,6 +1,7 @@
 import {
   WebApplicationFirewall,
   WebApplicationFirewallProps,
+  RateLimitRule,
   REGIONAL,
   CLOUDFRONT,
 } from "./lib/waf";
@@ -8,6 +9,7 @@ import {
 export {
   WebApplicationFirewall,
   WebApplicationFirewallProps,
+  RateLimitRule,
   REGIONAL,
   CLOUDFRONT,
 };
