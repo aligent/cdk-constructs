@@ -1,0 +1,492 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`WebApplicationFirewall Legacy rate limit back-compat keeps the FORWARDED_IP rate limit template unchanged 1`] = `
+{
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "TestWAFBlockedIPSetIPv499ED7335": {
+      "Properties": {
+        "Addresses": [
+          "1.2.3.4/32",
+        ],
+        "Description": "test-waf - Blocked IPv4 addresses",
+        "IPAddressVersion": "IPV4",
+        "Scope": "REGIONAL",
+      },
+      "Type": "AWS::WAFv2::IPSet",
+    },
+    "TestWAFCloudWatchLogging27339EAF": {
+      "Properties": {
+        "LogDestinationConfigs": [
+          {
+            "Fn::GetAtt": [
+              "TestWAFWAFLogstestwafC1D30F8C",
+              "Arn",
+            ],
+          },
+        ],
+        "ResourceArn": {
+          "Fn::GetAtt": [
+            "TestWAFWebAclC09D5E14",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::WAFv2::LoggingConfiguration",
+    },
+    "TestWAFIPSetIPv45DA9F27C": {
+      "Properties": {
+        "Addresses": [
+          "10.0.0.0/8",
+        ],
+        "Description": "test-waf",
+        "IPAddressVersion": "IPV4",
+        "Scope": "REGIONAL",
+      },
+      "Type": "AWS::WAFv2::IPSet",
+    },
+    "TestWAFWAFLogstestwafC1D30F8C": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "LogGroupName": "aws-waf-logs-test-waf",
+        "RetentionInDays": 365,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "TestWAFWebAclC09D5E14": {
+      "Properties": {
+        "DefaultAction": {
+          "Allow": {},
+        },
+        "Name": "test-waf",
+        "Rules": [
+          {
+            "Action": {
+              "Block": {},
+            },
+            "Name": "block_xff_ip_rule_v4",
+            "Priority": 1,
+            "Statement": {
+              "IPSetReferenceStatement": {
+                "Arn": {
+                  "Fn::GetAtt": [
+                    "TestWAFBlockedIPSetIPv499ED7335",
+                    "Arn",
+                  ],
+                },
+                "IPSetForwardedIPConfig": {
+                  "FallbackBehavior": "NO_MATCH",
+                  "HeaderName": "X-Forwarded-For",
+                  "Position": "ANY",
+                },
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "BlockXFFIPRuleV4",
+              "SampledRequestsEnabled": true,
+            },
+          },
+          {
+            "Action": {
+              "Block": {},
+            },
+            "Name": "block_src_ip_rule_v4",
+            "Priority": 2,
+            "Statement": {
+              "IPSetReferenceStatement": {
+                "Arn": {
+                  "Fn::GetAtt": [
+                    "TestWAFBlockedIPSetIPv499ED7335",
+                    "Arn",
+                  ],
+                },
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "BlockSrcIPRuleV4",
+              "SampledRequestsEnabled": true,
+            },
+          },
+          {
+            "Action": {
+              "Allow": {},
+            },
+            "Name": "allow_xff_ip_rule",
+            "Priority": 11,
+            "Statement": {
+              "IPSetReferenceStatement": {
+                "Arn": {
+                  "Fn::GetAtt": [
+                    "TestWAFIPSetIPv45DA9F27C",
+                    "Arn",
+                  ],
+                },
+                "IPSetForwardedIPConfig": {
+                  "FallbackBehavior": "NO_MATCH",
+                  "HeaderName": "X-Forwarded-For",
+                  "Position": "ANY",
+                },
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "AllowXFFIPRule",
+              "SampledRequestsEnabled": true,
+            },
+          },
+          {
+            "Action": {
+              "Allow": {},
+            },
+            "Name": "allow_src_ip_rule",
+            "Priority": 12,
+            "Statement": {
+              "IPSetReferenceStatement": {
+                "Arn": {
+                  "Fn::GetAtt": [
+                    "TestWAFIPSetIPv45DA9F27C",
+                    "Arn",
+                  ],
+                },
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "allow_src_ip_rule",
+              "SampledRequestsEnabled": true,
+            },
+          },
+          {
+            "Name": "bad_actors_rule",
+            "OverrideAction": {
+              "None": {},
+            },
+            "Priority": 20,
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "ExcludedRules": [
+                  {
+                    "Name": "Host_localhost_HEADER",
+                  },
+                  {
+                    "Name": "PROPFIND_METHOD",
+                  },
+                  {
+                    "Name": "ExploitablePaths_URIPATH",
+                  },
+                ],
+                "Name": "AWSManagedRulesKnownBadInputsRuleSet",
+                "VendorName": "AWS",
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "bad_actors_rule",
+              "SampledRequestsEnabled": true,
+            },
+          },
+          {
+            "Name": "common_rule_set",
+            "OverrideAction": {
+              "Count": {},
+            },
+            "Priority": 21,
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "ExcludedRules": [],
+                "Name": "AWSManagedRulesCommonRuleSet",
+                "VendorName": "AWS",
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "common_rule_set",
+              "SampledRequestsEnabled": true,
+            },
+          },
+          {
+            "Name": "php_rule_set",
+            "OverrideAction": {
+              "Count": {},
+            },
+            "Priority": 22,
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "Name": "AWSManagedRulesPHPRuleSet",
+                "VendorName": "AWS",
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "php_rule_set",
+              "SampledRequestsEnabled": true,
+            },
+          },
+          {
+            "Action": {
+              "Count": {},
+            },
+            "Name": "rate_limit_rule",
+            "Priority": 30,
+            "Statement": {
+              "RateBasedStatement": {
+                "AggregateKeyType": "FORWARDED_IP",
+                "ForwardedIPConfig": {
+                  "FallbackBehavior": "MATCH",
+                  "HeaderName": "X-Forwarded-For",
+                },
+                "Limit": 2000,
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "rate_limit_rule",
+              "SampledRequestsEnabled": true,
+            },
+          },
+          {
+            "Action": {
+              "Block": {},
+            },
+            "Name": "post_rule",
+            "Priority": 31,
+            "Statement": {
+              "ByteMatchStatement": {
+                "FieldToMatch": {
+                  "UriPath": {},
+                },
+                "PositionalConstraint": "STARTS_WITH",
+                "SearchString": "/post",
+                "TextTransformations": [
+                  {
+                    "Priority": 0,
+                    "Type": "NONE",
+                  },
+                ],
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "post_rule",
+              "SampledRequestsEnabled": true,
+            },
+          },
+        ],
+        "Scope": "REGIONAL",
+        "VisibilityConfig": {
+          "CloudWatchMetricsEnabled": true,
+          "MetricName": "WebAcl",
+          "SampledRequestsEnabled": true,
+        },
+      },
+      "Type": "AWS::WAFv2::WebACL",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;
+
+exports[`WebApplicationFirewall Legacy rate limit back-compat keeps the activated IP rate limit template unchanged 1`] = `
+{
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "TestWAFCloudWatchLogging27339EAF": {
+      "Properties": {
+        "LogDestinationConfigs": [
+          {
+            "Fn::GetAtt": [
+              "TestWAFWAFLogstestwafC1D30F8C",
+              "Arn",
+            ],
+          },
+        ],
+        "ResourceArn": {
+          "Fn::GetAtt": [
+            "TestWAFWebAclC09D5E14",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::WAFv2::LoggingConfiguration",
+    },
+    "TestWAFWAFLogstestwafC1D30F8C": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "LogGroupName": "aws-waf-logs-test-waf",
+        "RetentionInDays": 365,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "TestWAFWebAclC09D5E14": {
+      "Properties": {
+        "DefaultAction": {
+          "Allow": {},
+        },
+        "Name": "test-waf",
+        "Rules": [
+          {
+            "Name": "bad_actors_rule",
+            "OverrideAction": {
+              "None": {},
+            },
+            "Priority": 20,
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "ExcludedRules": [
+                  {
+                    "Name": "Host_localhost_HEADER",
+                  },
+                  {
+                    "Name": "PROPFIND_METHOD",
+                  },
+                  {
+                    "Name": "ExploitablePaths_URIPATH",
+                  },
+                ],
+                "Name": "AWSManagedRulesKnownBadInputsRuleSet",
+                "VendorName": "AWS",
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "bad_actors_rule",
+              "SampledRequestsEnabled": true,
+            },
+          },
+          {
+            "Name": "common_rule_set",
+            "OverrideAction": {
+              "None": {},
+            },
+            "Priority": 21,
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "ExcludedRules": [],
+                "Name": "AWSManagedRulesCommonRuleSet",
+                "VendorName": "AWS",
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "common_rule_set",
+              "SampledRequestsEnabled": true,
+            },
+          },
+          {
+            "Name": "php_rule_set",
+            "OverrideAction": {
+              "None": {},
+            },
+            "Priority": 22,
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "Name": "AWSManagedRulesPHPRuleSet",
+                "VendorName": "AWS",
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "php_rule_set",
+              "SampledRequestsEnabled": true,
+            },
+          },
+          {
+            "Action": {
+              "Block": {},
+            },
+            "Name": "rate_limit_rule",
+            "Priority": 30,
+            "Statement": {
+              "RateBasedStatement": {
+                "AggregateKeyType": "IP",
+                "Limit": 500,
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "rate_limit_rule",
+              "SampledRequestsEnabled": true,
+            },
+          },
+        ],
+        "Scope": "REGIONAL",
+        "VisibilityConfig": {
+          "CloudWatchMetricsEnabled": true,
+          "MetricName": "WebAcl",
+          "SampledRequestsEnabled": true,
+        },
+      },
+      "Type": "AWS::WAFv2::WebACL",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;

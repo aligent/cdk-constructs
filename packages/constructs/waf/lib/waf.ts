@@ -8,6 +8,50 @@ export type REGIONAL = typeof REGIONAL;
 export const CLOUDFRONT = "CLOUDFRONT";
 export type CLOUDFRONT = typeof CLOUDFRONT;
 
+/**
+ * An additional rate-based rule. See the README for the priority layout.
+ */
+export interface RateLimitRule {
+  /**
+   * Rule name, also used as its CloudWatch metric name. Must be unique within the WebACL.
+   */
+  name: string;
+
+  /**
+   * Maximum requests per aggregation bucket within the evaluation window.
+   */
+  limit: number;
+
+  /**
+   * How requests are aggregated into buckets:
+   * - `IP`: one bucket per source IP
+   * - `CONSTANT`: one bucket for every request matching `scopeDownStatement` (required)
+   * - `CUSTOM_KEYS`: one bucket per combination of `customKeys` values (required)
+   */
+  aggregateKeyType: "IP" | "CONSTANT" | "CUSTOM_KEYS";
+
+  /**
+   * Aggregation keys, for `CUSTOM_KEYS`.
+   */
+  customKeys?: aws_wafv2.CfnWebACL.RateBasedStatementCustomKeyProperty[];
+
+  /**
+   * Only count and limit requests matching this statement. Required for `CONSTANT`.
+   */
+  scopeDownStatement?: aws_wafv2.CfnWebACL.StatementProperty;
+
+  /**
+   * Evaluation window in seconds. Default: 300
+   */
+  evaluationWindowSec?: 60 | 120 | 300 | 600;
+
+  /**
+   * Action when the limit is exceeded. Default: follows `activate`
+   * ('block' when activated, otherwise 'count').
+   */
+  action?: "block" | "count";
+}
+
 export interface WebApplicationFirewallProps {
   /**
    * Whether this WAF is global or regional
@@ -141,6 +185,13 @@ export interface WebApplicationFirewallProps {
    * - 'IP': Use the source IP address directly
    */
   rateLimitAggregation?: "FORWARDED_IP" | "IP";
+
+  /**
+   * Additional rate-based rules, alongside (or instead of) the legacy `rateLimit` rule.
+   * Entry `i` gets priority 31 + i, after the legacy rule (30). Priorities and names
+   * are checked for uniqueness across the whole WebACL at synth time.
+   */
+  rateLimitRules?: RateLimitRule[];
 }
 
 export class WebApplicationFirewall extends Construct {
@@ -616,10 +667,17 @@ export class WebApplicationFirewall extends Construct {
       });
     }
 
+    // Additional rate-based rules, after the legacy rule at 30
+    props.rateLimitRules?.forEach((rule, index) => {
+      finalRules.push(buildRateLimitRule(rule, 31 + index, action));
+    });
+
     // postprocess custom rules
     if (props.postProcessCustomRules) {
       finalRules.push(...props.postProcessCustomRules);
     }
+
+    validateUniqueRules(finalRules);
 
     // Define Default action
     const defaultAction = props.blockByDefault ? { block: {} } : { allow: {} };
@@ -665,5 +723,69 @@ export class WebApplicationFirewall extends Construct {
         resourceArn: this.web_acl.attrArn,
       });
     }
+  }
+}
+
+function buildRateLimitRule(
+  rule: RateLimitRule,
+  priority: number,
+  defaultAction: object
+): aws_wafv2.CfnWebACL.RuleProperty {
+  if (rule.aggregateKeyType === "CUSTOM_KEYS" && !rule.customKeys?.length) {
+    throw new Error(
+      `rateLimitRules "${rule.name}": aggregateKeyType CUSTOM_KEYS requires customKeys`
+    );
+  }
+  if (rule.aggregateKeyType === "CONSTANT" && !rule.scopeDownStatement) {
+    throw new Error(
+      `rateLimitRules "${rule.name}": aggregateKeyType CONSTANT requires a scopeDownStatement`
+    );
+  }
+
+  const actions = { block: { block: {} }, count: { count: {} } };
+
+  return {
+    name: rule.name,
+    priority,
+    statement: {
+      rateBasedStatement: {
+        aggregateKeyType: rule.aggregateKeyType,
+        limit: rule.limit,
+        customKeys: rule.customKeys,
+        scopeDownStatement: rule.scopeDownStatement,
+        evaluationWindowSec: rule.evaluationWindowSec,
+      },
+    },
+    action: rule.action ? actions[rule.action] : defaultAction,
+    visibilityConfig: {
+      cloudWatchMetricsEnabled: true,
+      metricName: rule.name,
+      sampledRequestsEnabled: true,
+    },
+  };
+}
+
+/**
+ * AWS WAF rejects a WebACL whose rules share a priority or a name; fail at synth instead.
+ */
+function validateUniqueRules(rules: aws_wafv2.CfnWebACL.RuleProperty[]): void {
+  const byPriority = new Map<number, string>();
+  const names = new Set<string>();
+
+  for (const rule of rules) {
+    const existing = byPriority.get(rule.priority);
+    if (existing !== undefined) {
+      throw new Error(
+        `WAF rules "${existing}" and "${rule.name}" both use priority ${rule.priority}; rule priorities must be unique`
+      );
+    }
+    byPriority.set(rule.priority, rule.name);
+
+    if (names.has(rule.name)) {
+      throw new Error(
+        `More than one WAF rule is named "${rule.name}"; rule names must be unique`
+      );
+    }
+    names.add(rule.name);
   }
 }
