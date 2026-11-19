@@ -1,5 +1,15 @@
 # @aligent/cdk-secure-rest-api
 
+## 2.0.0
+
+### Major Changes
+
+- [#1774](https://github.com/aligent/cdk-constructs/pull/1774) [`3caa132`](https://github.com/aligent/cdk-constructs/commit/3caa132bedfc136843b9fd55520e0bf4e2f13fd8) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - BREAKING: Replace the API key and usage plan with a default Lambda token authorizer (`Authorization: Bearer`, token held in a generated Secrets Manager secret) and stage-level throttling. Adds `authorizer` and `authorizerCacheTtl` props and a per-route `authorizer` override (`AuthorizationType.NONE` makes a route public). Removes `apiKey`, `usagePlan`, `apiKeyName` and `usagePlanName`. CORS default headers are now `Content-Type` and `Authorization`. The authorizer runs on Node.js 24, so the `aws-cdk-lib` peer dependency is now `^2.224.0`. See the README migration guide.
+
+### Minor Changes
+
+- [#1767](https://github.com/aligent/cdk-constructs/pull/1767) [`252e6c7`](https://github.com/aligent/cdk-constructs/commit/252e6c743819f317f74af8b18611e56053af4ec8) Thanks [@toddhainsworth](https://github.com/toddhainsworth)! - Add optional `allowedIps` prop to restrict API access by IP via a resource policy.
+
 ## 1.3.0
 
 ### Minor Changes
