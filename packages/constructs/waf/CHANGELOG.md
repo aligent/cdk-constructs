@@ -1,5 +1,13 @@
 # @aligent/cdk-waf
 
+## 2.6.0
+
+### Minor Changes
+
+- [#1775](https://github.com/aligent/cdk-constructs/pull/1775) [`f916a6a`](https://github.com/aligent/cdk-constructs/commit/f916a6a5ef4ac0a4f019195358b7d352a2c5b40a) Thanks [@AdamJHall](https://github.com/AdamJHall)! - Add rateLimitRules prop for additional rate-based rules, each aggregating on IP, CONSTANT or CUSTOM_KEYS, with an optional scope-down statement, evaluation window and action (block/count independently of activate). Rules take priorities 31+ after the legacy rateLimit rule (30), which is unchanged. Rule priorities and names are now checked for uniqueness at synth time. The README warns that X-Forwarded-For based rate limiting and IP rules are spoofable when an ALB faces the internet directly.
+
+- [#1776](https://github.com/aligent/cdk-constructs/pull/1776) [`8c5096a`](https://github.com/aligent/cdk-constructs/commit/8c5096a6a1351751e507df815b8bff43ebc44344) Thanks [@AdamJHall](https://github.com/AdamJHall)! - Add `customResponse` to `rateLimitRules` entries: a blocking rate rule can return a custom status code (e.g. `429` instead of WAF's default `403`) and optional body, registered in the WebACL's `customResponseBodies` under the rule's name. Ignored while the rule only counts. WebACLs without custom responses are unchanged.
+
 ## 2.5.7
 
 ### Patch Changes

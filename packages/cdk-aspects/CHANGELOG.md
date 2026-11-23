@@ -1,5 +1,40 @@
 # @aligent/cdk-aspects
 
+## 0.9.0
+
+### Minor Changes
+
+- [#1772](https://github.com/aligent/cdk-constructs/pull/1772) [`9c31b74`](https://github.com/aligent/cdk-constructs/commit/9c31b74606b8c3de628c726540d65f5980e9bb28) Thanks [@kai-nguyen-aligent](https://github.com/kai-nguyen-aligent)! - Fix `LogGroupDefaultsAspect` never applying profile retention to L2 `LogGroup`s. CDK renders an omitted `retention` as `TWO_YEARS`, so the old `=== undefined` guard skipped every L2 without explicit retention and instead overrode those that set `RetentionDays.INFINITE`.
+
+  - L2 `LogGroup`s with no `retention` now get the profile retention (SHORT: 1 week, MEDIUM: 6 months, LONG: 2 years).
+  - An explicit `RetentionDays.INFINITE` is now respected. If you used `INFINITE` to opt into the aspect, remove it, or those logs will be kept forever.
+  - An explicit `RetentionDays.TWO_YEARS` is overridden by the profile, since it is indistinguishable from the CDK default.
+
+- [#1772](https://github.com/aligent/cdk-constructs/pull/1772) [`e35804b`](https://github.com/aligent/cdk-constructs/commit/e35804b4aa20fb0aa702565cd8906b0d7e216a88) Thanks [@kai-nguyen-aligent](https://github.com/kai-nguyen-aligent)! - `MicroserviceChecks` now requires descriptions:
+
+  - `Microservices-ResourceDescription`: Lambda functions, API Gateway REST/HTTP APIs, EventBridge rules/schedules/pipes, SSM parameters, Secrets Manager secrets and KMS keys need a non-blank `description`. S3 buckets, DynamoDB tables (v1 `Table`), SQS queues and SNS topics need a `Description` tag. Step Functions state machines need a top-level ASL `Comment`. File-based definitions (`DefinitionBody.fromFile`, `@aligent/cdk-step-function-from-file`) can't be checked at synth time and must be suppressed.
+  - `Microservices-StackDescription`: stacks (incl. nested stacks) need a `description`.
+
+  **Heads up:**
+
+  - Both are ERRORs by default, so `cdk synth` fails until descriptions are added or the rules are suppressed (`NagSuppressions.addResourceSuppressions` / `addStackSuppressions`). Set `resourceDescriptionLevel: NagMessageLevel.WARN` to report the resource rule as a warning while you adopt it.
+  - The API Gateway stage-name rule ID changed from `Microservices-` to `Microservices-ApiGatewayStageName`. Update existing suppressions.
+  - Add `MicroserviceChecks` with `{ priority: AspectPriority.READONLY }` so tags added via `Tags.of(...)` are visible to the checks.
+
+- [#1772](https://github.com/aligent/cdk-constructs/pull/1772) [`0549e84`](https://github.com/aligent/cdk-constructs/commit/0549e8441c99c4e4c586bf4b8cb7d51c5c2b77c6) Thanks [@kai-nguyen-aligent](https://github.com/kai-nguyen-aligent)! - Fix two `S3DefaultsAspect` bugs:
+
+  - SHORT/MEDIUM expiry (30/90 days) was never added to L2 `Bucket`s: the guard checked the raw lazy `lifecycleConfiguration`, which is never `undefined`. It now checks the resolved value.
+  - Synth no longer throws "There is already a Construct with name 'AutoDeleteObjectsCustomResource'" for buckets that already set `autoDeleteObjects: true`.
+  - Buckets that set `autoDeleteObjects: true` themselves now keep their `DESTROY` removal policy under LONG. Previously the aspect forced RETAIN, so the bucket was kept on stack deletion but its objects were still emptied by the auto-delete custom resource.
+
+  **Heads up:** SHORT/MEDIUM buckets without their own `lifecycleRules` have had no expiry until now. After this release, objects older than 30/90 days are deleted on the next deploy. To opt a bucket out, give it a rule that does not expire current objects, e.g. `lifecycleRules: [{ abortIncompleteMultipartUploadAfter: Duration.days(7) }]`.
+
+### Patch Changes
+
+- [#1772](https://github.com/aligent/cdk-constructs/pull/1772) [`f12cbd3`](https://github.com/aligent/cdk-constructs/commit/f12cbd35ca2f0e7eacf1ddd9501e30ca41cfe128) Thanks [@kai-nguyen-aligent](https://github.com/kai-nguyen-aligent)! - Declare `cdk-nag` (`^2.38.2`) as a peer dependency. `MicroserviceChecks` requires it at load time, so consumers without their own `cdk-nag` got "Cannot find module 'cdk-nag'". cdk-nag v3 is not supported: its packs are `Validations` plugins, so `MicroserviceChecks` reports nothing under v3.
+
+- [#1776](https://github.com/aligent/cdk-constructs/pull/1776) [`934fd3d`](https://github.com/aligent/cdk-constructs/commit/934fd3d7a2c5ed3806764c6f7b6dba489992a819) Thanks [@AdamJHall](https://github.com/AdamJHall)! - `ResourcePrefixAspect` no longer prefixes log groups named `aws-waf-logs-*`. WAF only delivers logs to a log group whose name starts with that prefix, so prefixing it broke the logging configuration of any WAF (e.g. `@aligent/cdk-waf` with logging on) in a stack using the aspect.
+
 ## 0.8.1
 
 ### Patch Changes
