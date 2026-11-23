@@ -50,6 +50,30 @@ export interface RateLimitRule {
    * ('block' when activated, otherwise 'count').
    */
   action?: "block" | "count";
+
+  /**
+   * Response sent when this rule blocks, e.g. a `429` instead of WAF's default `403`.
+   * Ignored while the rule only counts.
+   *
+   * WAF prefixes custom response header names with `x-amzn-waf-`, so this offers no
+   * headers: a `Retry-After` would arrive as `x-amzn-waf-retry-after`.
+   */
+  customResponse?: RateLimitCustomResponse;
+}
+
+export interface RateLimitCustomResponse {
+  /**
+   * HTTP status code, 200-599. Typically `429`.
+   */
+  statusCode: number;
+
+  /**
+   * Optional response body. Stored in the WebACL's `customResponseBodies` under the rule's name.
+   */
+  body?: {
+    content: string;
+    contentType: "APPLICATION_JSON" | "TEXT_PLAIN" | "TEXT_HTML";
+  };
 }
 
 export interface WebApplicationFirewallProps {
@@ -668,8 +692,17 @@ export class WebApplicationFirewall extends Construct {
     }
 
     // Additional rate-based rules, after the legacy rule at 30
+    const customResponseBodies: Record<
+      string,
+      aws_wafv2.CfnWebACL.CustomResponseBodyProperty
+    > = {};
     props.rateLimitRules?.forEach((rule, index) => {
-      finalRules.push(buildRateLimitRule(rule, 31 + index, action));
+      const blocks = rateLimitRuleBlocks(rule, action);
+      finalRules.push(buildRateLimitRule(rule, 31 + index, blocks));
+      // Only a blocking rule sends its body; an unused body would just sit in the WebACL
+      if (blocks && rule.customResponse?.body) {
+        customResponseBodies[rule.name] = rule.customResponse.body;
+      }
     });
 
     // postprocess custom rules
@@ -692,6 +725,9 @@ export class WebApplicationFirewall extends Construct {
         sampledRequestsEnabled: true,
       },
       rules: finalRules,
+      ...(Object.keys(customResponseBodies).length > 0 && {
+        customResponseBodies,
+      }),
     });
     this.webAclArn = this.web_acl.attrArn;
 
@@ -726,10 +762,50 @@ export class WebApplicationFirewall extends Construct {
   }
 }
 
+/**
+ * Whether a rate rule blocks: its own `action` if set, otherwise whatever `activate` chose.
+ */
+function rateLimitRuleBlocks(
+  rule: RateLimitRule,
+  defaultAction: object
+): boolean {
+  if (rule.action) {
+    return rule.action === "block";
+  }
+  return "block" in defaultAction;
+}
+
+/**
+ * A rate rule's action. A blocking rule with a `customResponse` sends that status code, and its
+ * body (registered under the rule's name) if it has one.
+ */
+function rateLimitRuleAction(
+  rule: RateLimitRule,
+  blocks: boolean
+): aws_wafv2.CfnWebACL.RuleActionProperty {
+  if (!blocks) {
+    return { count: {} };
+  }
+
+  const customResponse = rule.customResponse;
+  if (!customResponse) {
+    return { block: {} };
+  }
+
+  return {
+    block: {
+      customResponse: {
+        responseCode: customResponse.statusCode,
+        customResponseBodyKey: customResponse.body ? rule.name : undefined,
+      },
+    },
+  };
+}
+
 function buildRateLimitRule(
   rule: RateLimitRule,
   priority: number,
-  defaultAction: object
+  blocks: boolean
 ): aws_wafv2.CfnWebACL.RuleProperty {
   if (rule.aggregateKeyType === "CUSTOM_KEYS" && !rule.customKeys?.length) {
     throw new Error(
@@ -741,8 +817,6 @@ function buildRateLimitRule(
       `rateLimitRules "${rule.name}": aggregateKeyType CONSTANT requires a scopeDownStatement`
     );
   }
-
-  const actions = { block: { block: {} }, count: { count: {} } };
 
   return {
     name: rule.name,
@@ -756,7 +830,7 @@ function buildRateLimitRule(
         evaluationWindowSec: rule.evaluationWindowSec,
       },
     },
-    action: rule.action ? actions[rule.action] : defaultAction,
+    action: rateLimitRuleAction(rule, blocks),
     visibilityConfig: {
       cloudWatchMetricsEnabled: true,
       metricName: rule.name,

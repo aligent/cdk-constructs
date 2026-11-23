@@ -201,6 +201,18 @@ describe("ResourcePrefixAspect", () => {
       expect(logGroupName).toBe("/aws/lambda/my-function");
     });
 
+    it("should skip WAF log groups, which must start with aws-waf-logs-", () => {
+      new LogGroup(stack, "WafLogGroup", {
+        logGroupName: "aws-waf-logs-my-acl",
+      });
+
+      app.synth();
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties("AWS::Logs::LogGroup", {
+        LogGroupName: "aws-waf-logs-my-acl",
+      });
+    });
+
     it("should prefix log groups with custom names", () => {
       new LogGroup(stack, "AppLogGroup", { logGroupName: "my-app-logs" });
 
