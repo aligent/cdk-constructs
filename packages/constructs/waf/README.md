@@ -130,6 +130,11 @@ const waf = new WebApplicationFirewall(this, 'WAF', {
 - `evaluationWindowSec`: `60`, `120`, `300` (default) or `600`
 - `action`: `'block'` or `'count'`, defaulting to follow `activate`. Set `'block'` to enforce rate
   limits while the managed rules are still in count mode.
+- `customResponse`: what a blocked request gets instead of WAF's default `403`, e.g.
+  `{ statusCode: 429, body: { content: '{"error":"Too Many Requests"}', contentType: 'APPLICATION_JSON' } }`.
+  Ignored while the rule only counts. There's no header option: WAF prefixes custom response
+  header names with `x-amzn-waf-`, so a `Retry-After` would arrive as `x-amzn-waf-retry-after`.
+  State the retry interval (the evaluation window) in the body or your API docs instead.
 
 `aggregateKeyType` is `'IP'` (one bucket per source IP), `'CONSTANT'` (one bucket shared by every
 request matching the scope-down) or `'CUSTOM_KEYS'` (one bucket per combination of key values).
@@ -151,6 +156,11 @@ const header = (name: string): aws_wafv2.CfnWebACL.RateBasedStatementCustomKeyPr
   header: { name, textTransformations: [{ priority: 0, type: 'NONE' }] },
 });
 
+const tooManyRequests = {
+  statusCode: 429,
+  body: { content: '{"error":"Too Many Requests"}', contentType: 'APPLICATION_JSON' as const },
+};
+
 const waf = new WebApplicationFirewall(this, 'WAF', {
   wafName: 'core-api-waf',
   associations: [alb.loadBalancerArn],
@@ -162,6 +172,7 @@ const waf = new WebApplicationFirewall(this, 'WAF', {
       aggregateKeyType: 'CONSTANT',
       scopeDownStatement: startsWith('/'), // every request
       action: 'block',
+      customResponse: tooManyRequests,
     },
     {
       name: 'api_per_token',
@@ -171,6 +182,7 @@ const waf = new WebApplicationFirewall(this, 'WAF', {
       scopeDownStatement: startsWith('/api/'),
       evaluationWindowSec: 60,
       action: 'block',
+      customResponse: tooManyRequests,
     },
     {
       name: 'webhooks_per_tenant',
@@ -180,6 +192,7 @@ const waf = new WebApplicationFirewall(this, 'WAF', {
       scopeDownStatement: startsWith('/webhooks/'),
       evaluationWindowSec: 60,
       action: 'block',
+      customResponse: tooManyRequests,
     },
   ],
 });

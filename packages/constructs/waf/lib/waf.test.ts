@@ -1312,5 +1312,109 @@ describe("WebApplicationFirewall", () => {
         ).toThrow('More than one WAF rule is named "rate_limit_rule"');
       });
     });
+
+    describe("custom responses", () => {
+      const tooManyRequests = {
+        statusCode: 429,
+        body: {
+          content: '{"error":"Too Many Requests"}',
+          contentType: "APPLICATION_JSON" as const,
+        },
+      };
+
+      const synthWebAcl = (props: Partial<WebApplicationFirewallProps>) => {
+        const { stack } = createTestStack();
+        new WebApplicationFirewall(stack, "TestWAF", {
+          ...defaultProps,
+          ...props,
+        });
+        const webAcl =
+          Template.fromStack(stack).findResources("AWS::WAFv2::WebACL");
+        return Object.values(webAcl)[0].Properties;
+      };
+
+      it("blocks with the custom status code and body", () => {
+        const props = synthWebAcl({
+          rateLimitRules: [
+            {
+              name: "per_ip",
+              limit: 100,
+              aggregateKeyType: "IP",
+              action: "block",
+              customResponse: tooManyRequests,
+            },
+          ],
+        });
+        const rule = (props.Rules as SynthRule[]).find(
+          r => r.Name === "per_ip"
+        );
+        expect(rule?.Action).toEqual({
+          Block: {
+            CustomResponse: {
+              ResponseCode: 429,
+              CustomResponseBodyKey: "per_ip",
+            },
+          },
+        });
+        expect(props.CustomResponseBodies).toEqual({
+          per_ip: {
+            Content: '{"error":"Too Many Requests"}',
+            ContentType: "APPLICATION_JSON",
+          },
+        });
+      });
+
+      it("sends a status code alone when there is no body", () => {
+        const props = synthWebAcl({
+          activate: true,
+          rateLimitRules: [
+            {
+              name: "per_ip",
+              limit: 100,
+              aggregateKeyType: "IP",
+              customResponse: { statusCode: 429 },
+            },
+          ],
+        });
+        const rule = (props.Rules as SynthRule[]).find(
+          r => r.Name === "per_ip"
+        );
+        expect(rule?.Action).toEqual({
+          Block: { CustomResponse: { ResponseCode: 429 } },
+        });
+        expect(props.CustomResponseBodies).toBeUndefined();
+      });
+
+      it("ignores the custom response while the rule only counts", () => {
+        const rule = synthRule({
+          name: "per_ip",
+          limit: 100,
+          aggregateKeyType: "IP",
+          customResponse: tooManyRequests,
+        });
+        expect(rule?.Action).toEqual({ Count: {} });
+        expect(
+          synthWebAcl({
+            rateLimitRules: [
+              {
+                name: "per_ip",
+                limit: 100,
+                aggregateKeyType: "IP",
+                customResponse: tooManyRequests,
+              },
+            ],
+          }).CustomResponseBodies
+        ).toBeUndefined();
+      });
+
+      it("adds no customResponseBodies without custom responses", () => {
+        const props = synthWebAcl({
+          rateLimitRules: [
+            { name: "per_ip", limit: 100, aggregateKeyType: "IP" },
+          ],
+        });
+        expect(props.CustomResponseBodies).toBeUndefined();
+      });
+    });
   });
 });
