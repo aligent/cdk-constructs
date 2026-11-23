@@ -38,6 +38,13 @@ interface ResourceNames {
 }
 
 /**
+ * Log group name prefixes AWS requires or reserves, which must never be prefixed:
+ * - `/aws/`: AWS-managed log groups (e.g. `/aws/lambda/<function>`)
+ * - `aws-waf-logs-`: WAF only delivers logs to a log group whose name starts with this
+ */
+const RESERVED_LOG_GROUP_PREFIXES = ["/aws/", "aws-waf-logs-"];
+
+/**
  * Maps CloudFormation resource types to their name property and AWS length limits.
  * Sources: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html
  */
@@ -211,7 +218,8 @@ export class ResourcePrefixAspect implements IAspect {
   private shouldSkipResource(cfnResourceType: string, names: ResourceNames) {
     const name = names.rawName ?? names.logicalName;
     return (
-      cfnResourceType === "AWS::Logs::LogGroup" && name.startsWith("/aws/")
+      cfnResourceType === "AWS::Logs::LogGroup" &&
+      RESERVED_LOG_GROUP_PREFIXES.some(prefix => name.startsWith(prefix))
     );
   }
 
