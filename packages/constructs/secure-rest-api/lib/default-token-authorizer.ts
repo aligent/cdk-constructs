@@ -5,6 +5,7 @@ import {
   Code,
   Function as LambdaFunction,
   Runtime,
+  Tracing,
 } from "aws-cdk-lib/aws-lambda";
 import { ISecret, Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
@@ -12,6 +13,9 @@ import { join } from "node:path";
 
 const DEFAULT_CACHE_TTL = Duration.seconds(60);
 const TOKEN_LENGTH = 64;
+const AUTHORIZER_MEMORY_SIZE = 256;
+// Headroom over the 3s MicroserviceChecks default for the cold-start secret fetch
+const AUTHORIZER_TIMEOUT = Duration.seconds(5);
 
 export interface DefaultTokenAuthorizer {
   authorizer: TokenAuthorizer;
@@ -50,6 +54,9 @@ function createAuthorizerFunction(
         }),
       },
     }),
+    memorySize: AUTHORIZER_MEMORY_SIZE,
+    timeout: AUTHORIZER_TIMEOUT,
+    tracing: Tracing.ACTIVE,
     environment: { SECRET_ARN: secret.secretArn },
   });
   secret.grantRead(fn);
