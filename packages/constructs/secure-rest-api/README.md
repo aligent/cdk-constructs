@@ -207,6 +207,8 @@ const api = new SecureRestApi(this, 'Api', {
 
 ### Customising the default authorizer
 
+The default authorizer Lambda runs with 256 MB of memory, a 5 second timeout and active X-Ray tracing, so it satisfies `MicroserviceChecks` without extra configuration.
+
 ```typescript
 const api = new SecureRestApi(this, 'Api', {
   apiName: 'my-api',

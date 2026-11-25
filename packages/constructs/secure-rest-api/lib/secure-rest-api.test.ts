@@ -405,6 +405,32 @@ describe("SecureRestApi", () => {
       });
     });
 
+    it("gives the authorizer function explicit memory, timeout and active tracing", () => {
+      const { template } = createDefaultApi();
+
+      template.hasResourceProperties("AWS::Lambda::Function", {
+        Handler: "token-authorizer.handler",
+        MemorySize: 256,
+        Timeout: 5,
+        TracingConfig: { Mode: "Active" },
+      });
+    });
+
+    it("grants the authorizer function X-Ray write permissions", () => {
+      const { template } = createDefaultApi();
+
+      template.hasResourceProperties("AWS::IAM::Policy", {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: ["xray:PutTraceSegments", "xray:PutTelemetryRecords"],
+              Effect: "Allow",
+            }),
+          ]),
+        },
+      });
+    });
+
     it("runs the bundled token authorizer handler", () => {
       const { template } = createDefaultApi();
 
